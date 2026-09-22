@@ -1,0 +1,34 @@
+name: Bootstrap repository
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/bootstrap-playmobil.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import-history:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Import verified local history
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch ./playmobil-collection-papa.bundle main
+          git rm README.md
+          git commit -m "chore: prepare repository import"
+          git cherry-pick cc03421a389aa22e332ef985b5a21315ca5c887b
+          git cherry-pick dd242b59e90c3dc50a4f642a542141507679b55e
+          git cherry-pick 9151fea330b6f22e2e71ff1bd7e919638049148f
+          git cherry-pick e253c68b30ae3ddedaf91b470311fcd46482ed6b
+          git cherry-pick 12bb95d92bfc3287a95628690c819dcc33d2542d
+          git rm playmobil-collection-papa.bundle .github/workflows/bootstrap-playmobil.yml
+          git commit -m "chore: remove bootstrap artifacts"
+          git push origin HEAD:main
