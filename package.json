@@ -14,9 +14,9 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "source:audit": "tsx src/cli.ts source:audit",
-    "import:klickypedia:index": "tsx src/cli.ts import:klickypedia-index",
-    "report": "tsx src/cli.ts report"
+    "source:audit": "pnpm build --silent && node dist/src/cli.js source:audit",
+    "import:klickypedia:index": "pnpm build --silent && node dist/src/cli.js import:klickypedia-index",
+    "report": "pnpm build --silent && node dist/src/cli.js report"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
