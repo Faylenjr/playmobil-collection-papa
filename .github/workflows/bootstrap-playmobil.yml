@@ -29,6 +29,6 @@ jobs:
           git cherry-pick 9151fea330b6f22e2e71ff1bd7e919638049148f
           git cherry-pick e253c68b30ae3ddedaf91b470311fcd46482ed6b
           git cherry-pick 12bb95d92bfc3287a95628690c819dcc33d2542d
-          git rm playmobil-collection-papa.bundle .github/workflows/bootstrap-playmobil.yml
+          git rm playmobil-collection-papa.bundle .github/workflows/bootstrap-playmobil.yml .github/workflows/ci.yml
           git commit -m "chore: remove bootstrap artifacts"
           git push origin HEAD:main
