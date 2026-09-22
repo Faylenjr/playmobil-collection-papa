@@ -1,0 +1,39 @@
+{
+  "name": "playmobil-collection-papa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:migrate:dev": "prisma migrate dev",
+    "db:seed": "tsx prisma/seed.ts",
+    "source:audit": "tsx src/cli.ts source:audit",
+    "import:klickypedia:index": "tsx src/cli.ts import:klickypedia-index",
+    "report": "tsx src/cli.ts report"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "cheerio": "1.2.0",
+    "dotenv": "17.2.3",
+    "fast-xml-parser": "5.11.1",
+    "p-limit": "7.2.0",
+    "pg": "8.16.3",
+    "zod": "4.1.11"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.0",
+    "@types/pg": "8.15.5",
+    "prisma": "7.10.0",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  }
+}

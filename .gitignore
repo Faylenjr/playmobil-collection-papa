@@ -1,0 +1,12 @@
+node_modules/
+dist/
+generated/
+.env
+.env.*
+!.env.example
+coverage/
+reports/*.json
+reports/*.csv
+data/raw/
+*.log
+.DS_Store

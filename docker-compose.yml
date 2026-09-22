@@ -1,0 +1,29 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: playmobil
+      POSTGRES_USER: playmobil
+      POSTGRES_PASSWORD: playmobil
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U playmobil -d playmobil"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  migrate:
+    build: .
+    command: ["pnpm", "db:migrate"]
+    environment:
+      DATABASE_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
+      DIRECT_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
