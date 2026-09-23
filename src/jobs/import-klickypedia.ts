@@ -6,8 +6,9 @@ import type { SitemapEntry } from "../importers/types.js";
 import { importRecord } from "../pipeline/import-record.js";
 
 export interface KlickypediaImportOptions {
-  mode: "sample" | "full";
+  mode: "sample" | "full" | "batch";
   limit?: number;
+  offset?: number;
   resume?: boolean;
 }
 
@@ -53,6 +54,9 @@ function selectRepresentative(entries: SitemapEntry[], limit: number): SitemapEn
 
 const selectionHash = (entries: SitemapEntry[]) => createHash("sha256").update(entries.map((entry) => `${entry.loc}\t${entry.lastmod ?? ""}`).join("\n")).digest("hex");
 
+export const selectBatchEntries = (entries: SitemapEntry[], offset: number, limit: number) =>
+  entries.slice(Math.max(0, offset), Math.max(0, offset) + Math.min(Math.max(limit, 1), 2_000));
+
 export async function runKlickypediaImport(db: PrismaClient, options: KlickypediaImportOptions) {
   const source = await db.source.upsert({
     where: { key: KLICKYPEDIA.key },
@@ -62,18 +66,30 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
   const client = new PoliteHttpClient();
   const indexed = await listKlickypediaSetUrls(client);
   const detailEntries = indexed.filter((entry) => new URL(entry.loc).pathname !== "/sets/");
-  const limit = options.mode === "full" ? detailEntries.length : Math.min(Math.max(options.limit ?? 200, 1), 300);
-  const entries = options.mode === "full" ? detailEntries : selectRepresentative(detailEntries, limit);
+  const offset = Math.max(0, options.offset ?? 0);
+  const limit = options.mode === "full"
+    ? detailEntries.length
+    : options.mode === "batch"
+      ? Math.min(Math.max(options.limit ?? 1_900, 1), 2_000)
+      : Math.min(Math.max(options.limit ?? 200, 1), 300);
+  const entries = options.mode === "full"
+    ? detailEntries
+    : options.mode === "batch"
+      ? selectBatchEntries(detailEntries, offset, limit)
+      : selectRepresentative(detailEntries, limit);
   const hash = selectionHash(entries);
+  const runMode = options.mode === "batch" ? `klickypedia:batch:${offset}:${limit}` : `klickypedia:${options.mode}`;
 
   const resumable = options.resume ? await db.importRun.findFirst({
-    where: { sourceId: source.id, mode: `klickypedia:${options.mode}`, status: { in: ["RUNNING", "PARTIAL", "FAILED"] } },
+    where: { sourceId: source.id, mode: runMode, status: { in: ["RUNNING", "PARTIAL", "FAILED"] } },
     orderBy: { startedAt: "desc" },
   }) : null;
   const savedCursor = resumable?.cursor as { index?: number; selectionHash?: string } | null;
-  const canResume = savedCursor?.selectionHash === hash;
+  // A completed PARTIAL run is deliberately restarted: unchanged records are
+  // skipped via lastmod/hash while failed URLs are attempted again.
+  const canResume = savedCursor?.selectionHash === hash && (savedCursor.index ?? 0) < entries.length;
   const run = canResume && resumable ? await db.importRun.update({ where: { id: resumable.id }, data: { status: "RUNNING", finishedAt: null } }) : await db.importRun.create({
-    data: { sourceId: source.id, mode: `klickypedia:${options.mode}`, cursor: { index: 0, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash } },
+    data: { sourceId: source.id, mode: runMode, cursor: { index: 0, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash } },
   });
   let index = canResume ? Math.min(savedCursor?.index ?? 0, entries.length) : 0;
   const counters = { scanned: run.scanned, created: run.created, updated: run.updated, unchanged: run.unchanged, errors: run.errors, conflicts: run.conflicts, inaccessible: run.inaccessible };
@@ -115,7 +131,7 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
         if (errorSummary.length < 100) errorSummary.push({ url: entry.loc, error: error instanceof Error ? error.message : String(error) });
       }
       counters.scanned += 1;
-      await db.importRun.update({ where: { id: run.id }, data: { ...counters, cursor: { index: index + 1, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
+      await db.importRun.update({ where: { id: run.id }, data: { ...counters, cursor: { index: index + 1, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
       if ((index + 1) % 25 === 0) console.log(JSON.stringify({ runId: run.id, progress: index + 1, total: entries.length, ...counters }));
     }
   } finally {
@@ -124,6 +140,6 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
   }
 
   const status = interrupted ? "PARTIAL" : counters.errors > 0 ? "PARTIAL" : "SUCCEEDED";
-  const completed = await db.importRun.update({ where: { id: run.id }, data: { ...counters, status, finishedAt: new Date(), cursor: { index, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
-  return { run: completed, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectedUrls: entries.length, errors: errorSummary };
+  const completed = await db.importRun.update({ where: { id: run.id }, data: { ...counters, status, finishedAt: new Date(), cursor: { index, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
+  return { run: completed, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectedUrls: entries.length, offset, errors: errorSummary };
 }
