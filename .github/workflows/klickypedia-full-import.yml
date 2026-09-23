@@ -1,0 +1,143 @@
+name: Klickypedia full import
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Run the five-page smoke test or the complete sequential import
+        required: true
+        default: smoke
+        type: choice
+        options:
+          - smoke
+          - full
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: klickypedia-full-import
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: inputs.mode == 'smoke'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with:
+          offset: "0"
+          limit: "5"
+          restore-suffix: smoke-seed
+          save-suffix: smoke-complete
+          require-restore: "false"
+      - name: Generate smoke reports
+        env:
+          PGLITE_DIR: ./.data/pglite-full
+        run: |
+          mkdir -p reports
+          node dist/src/embedded-cli.js report > reports/coverage.json
+          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: klickypedia-smoke-${{ github.run_id }}
+          path: reports
+          retention-days: 3
+
+  batch-0:
+    if: inputs.mode == 'full'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "0", limit: "1900", restore-suffix: seed, save-suffix: batch-0, require-restore: "false" }
+
+  batch-1:
+    if: inputs.mode == 'full'
+    needs: batch-0
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "1900", limit: "1900", restore-suffix: batch-0, save-suffix: batch-1 }
+
+  batch-2:
+    if: inputs.mode == 'full'
+    needs: batch-1
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "3800", limit: "1900", restore-suffix: batch-1, save-suffix: batch-2 }
+
+  batch-3:
+    if: inputs.mode == 'full'
+    needs: batch-2
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "5700", limit: "1900", restore-suffix: batch-2, save-suffix: batch-3 }
+
+  batch-4:
+    if: inputs.mode == 'full'
+    needs: batch-3
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "7600", limit: "1900", restore-suffix: batch-3, save-suffix: batch-4 }
+
+  batch-5:
+    if: inputs.mode == 'full'
+    needs: batch-4
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "9500", limit: "1900", restore-suffix: batch-4, save-suffix: batch-5 }
+
+  batch-6:
+    if: inputs.mode == 'full'
+    needs: batch-5
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "11400", limit: "1900", restore-suffix: batch-5, save-suffix: batch-6 }
+
+  batch-7-and-report:
+    if: inputs.mode == 'full'
+    needs: batch-6
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/klickypedia-batch
+        with: { offset: "13300", limit: "1900", restore-suffix: batch-6, save-suffix: batch-7 }
+      - name: Generate final measured results
+        env:
+          PGLITE_DIR: ./.data/pglite-full
+        run: |
+          mkdir -p reports
+          node dist/src/embedded-cli.js report > reports/coverage.json
+          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
+          node dist/src/embedded-cli.js export > reports/catalogue-export.json
+      - name: Preserve final catalogue and reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: klickypedia-complete-${{ github.run_id }}
+          path: |
+            .data/pglite-full
+            reports
+          retention-days: 30
