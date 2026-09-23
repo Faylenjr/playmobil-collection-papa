@@ -1,0 +1,560 @@
+From 4b72c393dd43810d8ec5d3b32448131c36f653ef Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 23 Sep 2026 08:27:29 +0500
+Subject: [PATCH] feat: run full catalogue import in sequential batches
+
+---
+ .github/actions/klickypedia-batch/action.yml  |  54 +++++++
+ .github/workflows/klickypedia-full-import.yml | 143 ++++++++++++++++++
+ README.md                                     |   2 +
+ docs/import-process.md                        |  16 ++
+ package.json                                  |   2 +
+ src/cli.ts                                    |   4 +-
+ src/embedded-cli.ts                           |  11 +-
+ src/jobs/import-klickypedia.ts                |  34 +++--
+ src/report/anomalies.ts                       |  63 ++++++++
+ src/report/coverage.ts                        |  14 ++
+ tests/parsers.test.ts                         |  17 +++
+ 11 files changed, 348 insertions(+), 12 deletions(-)
+ create mode 100644 .github/actions/klickypedia-batch/action.yml
+ create mode 100644 .github/workflows/klickypedia-full-import.yml
+ create mode 100644 src/report/anomalies.ts
+
+diff --git a/.github/actions/klickypedia-batch/action.yml b/.github/actions/klickypedia-batch/action.yml
+new file mode 100644
+index 0000000..0f32c42
+--- /dev/null
++++ b/.github/actions/klickypedia-batch/action.yml
+@@ -0,0 +1,54 @@
++name: Import Klickypedia batch
++description: Restore the persistent PGlite catalogue, import one sequential batch, then checkpoint it.
++inputs:
++  offset:
++    required: true
++  limit:
++    required: true
++  restore-suffix:
++    required: true
++  save-suffix:
++    required: true
++  require-restore:
++    required: false
++    default: "true"
++runs:
++  using: composite
++  steps:
++    - uses: pnpm/action-setup@v4
++      with:
++        version: 11.19.0
++    - uses: actions/setup-node@v4
++      with:
++        node-version: 24
++        cache: pnpm
++    - run: pnpm install --frozen-lockfile
++      shell: bash
++    - run: pnpm db:generate && pnpm build
++      shell: bash
++    - name: Restore previous database checkpoint
++      id: restore-db
++      uses: actions/cache/restore@v4
++      with:
++        path: .data/pglite-full
++        key: klickypedia-${{ github.run_id }}-${{ inputs.restore-suffix }}
++    - name: Verify required checkpoint
++      if: inputs.require-restore == 'true' && steps.restore-db.outputs.cache-hit != 'true'
++      shell: bash
++      run: |
++        echo "Required database checkpoint was not found; refusing to start from an empty catalogue." >&2
++        exit 1
++    - name: Import batch
++      shell: bash
++      env:
++        PGLITE_DIR: ./.data/pglite-full
++        IMPORT_MIN_DELAY_MS: "2000"
++        IMPORT_TIMEOUT_MS: "20000"
++        IMPORT_MAX_RETRIES: "3"
++        IMPORT_USER_AGENT: PlaymobilCollectionResearch/0.2 (+https://github.com/Faylenjr/playmobil-collection-papa; non-commercial research)
++      run: node dist/src/embedded-cli.js import:klickypedia --offset=${{ inputs.offset }} --limit=${{ inputs.limit }} --resume
++    - name: Save database checkpoint
++      uses: actions/cache/save@v4
++      with:
++        path: .data/pglite-full
++        key: klickypedia-${{ github.run_id }}-${{ inputs.save-suffix }}
+diff --git a/.github/workflows/klickypedia-full-import.yml b/.github/workflows/klickypedia-full-import.yml
+new file mode 100644
+index 0000000..cb628f8
+--- /dev/null
++++ b/.github/workflows/klickypedia-full-import.yml
+@@ -0,0 +1,143 @@
++name: Klickypedia full import
++
++on:
++  workflow_dispatch:
++    inputs:
++      mode:
++        description: Run the five-page smoke test or the complete sequential import
++        required: true
++        default: smoke
++        type: choice
++        options:
++          - smoke
++          - full
++
++permissions:
++  contents: read
++  actions: write
++
++concurrency:
++  group: klickypedia-full-import
++  cancel-in-progress: false
++
++jobs:
++  smoke:
++    if: inputs.mode == 'smoke'
++    runs-on: ubuntu-latest
++    timeout-minutes: 20
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with:
++          offset: "0"
++          limit: "5"
++          restore-suffix: smoke-seed
++          save-suffix: smoke-complete
++          require-restore: "false"
++      - name: Generate smoke reports
++        env:
++          PGLITE_DIR: ./.data/pglite-full
++        run: |
++          mkdir -p reports
++          node dist/src/embedded-cli.js report > reports/coverage.json
++          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
++      - uses: actions/upload-artifact@v4
++        with:
++          name: klickypedia-smoke-${{ github.run_id }}
++          path: reports
++          retention-days: 3
++
++  batch-0:
++    if: inputs.mode == 'full'
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "0", limit: "1900", restore-suffix: seed, save-suffix: batch-0, require-restore: "false" }
++
++  batch-1:
++    if: inputs.mode == 'full'
++    needs: batch-0
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "1900", limit: "1900", restore-suffix: batch-0, save-suffix: batch-1 }
++
++  batch-2:
++    if: inputs.mode == 'full'
++    needs: batch-1
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "3800", limit: "1900", restore-suffix: batch-1, save-suffix: batch-2 }
++
++  batch-3:
++    if: inputs.mode == 'full'
++    needs: batch-2
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "5700", limit: "1900", restore-suffix: batch-2, save-suffix: batch-3 }
++
++  batch-4:
++    if: inputs.mode == 'full'
++    needs: batch-3
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "7600", limit: "1900", restore-suffix: batch-3, save-suffix: batch-4 }
++
++  batch-5:
++    if: inputs.mode == 'full'
++    needs: batch-4
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "9500", limit: "1900", restore-suffix: batch-4, save-suffix: batch-5 }
++
++  batch-6:
++    if: inputs.mode == 'full'
++    needs: batch-5
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "11400", limit: "1900", restore-suffix: batch-5, save-suffix: batch-6 }
++
++  batch-7-and-report:
++    if: inputs.mode == 'full'
++    needs: batch-6
++    runs-on: ubuntu-latest
++    timeout-minutes: 180
++    steps:
++      - uses: actions/checkout@v4
++      - uses: ./.github/actions/klickypedia-batch
++        with: { offset: "13300", limit: "1900", restore-suffix: batch-6, save-suffix: batch-7 }
++      - name: Generate final measured results
++        env:
++          PGLITE_DIR: ./.data/pglite-full
++        run: |
++          mkdir -p reports
++          node dist/src/embedded-cli.js report > reports/coverage.json
++          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
++          node dist/src/embedded-cli.js export > reports/catalogue-export.json
++      - name: Preserve final catalogue and reports
++        uses: actions/upload-artifact@v4
++        with:
++          name: klickypedia-complete-${{ github.run_id }}
++          path: |
++            .data/pglite-full
++            reports
++          retention-days: 30
+diff --git a/README.md b/README.md
+index 166eef1..2cab195 100644
+--- a/README.md
++++ b/README.md
+@@ -73,6 +73,8 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
+ | `pnpm import:playmobil -- --limit=20` | Enrichit les références connues depuis PLAYMOBIL DE/FR |
+ | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
+ 
++L'import historique autonome se déclenche manuellement dans GitHub Actions via **Klickypedia full import**. Toujours exécuter le mode `smoke` avant `full`. Le workflow complet est séquentiel et conserve sa base entre les huit lots ; il ne nécessite pas qu'une session ChatGPT reste ouverte.
++
+ ## Documentation
+ 
+ - [Architecture](docs/architecture.md)
+diff --git a/docs/import-process.md b/docs/import-process.md
+index 2b13303..ad3cfb1 100644
+--- a/docs/import-process.md
++++ b/docs/import-process.md
+@@ -29,6 +29,22 @@ pnpm report
+ 
+ Le job Klickypedia mémorise son index et son curseur dans `ImportRun`. `--resume` reprend un run `RUNNING`, `PARTIAL` ou `FAILED` si la sélection de sitemap n'a pas changé. PLAYMOBIL DE/FR enrichit uniquement des références déjà connues, sauf liste explicite passée avec `--references=`.
+ 
++## Import nocturne GitHub Actions
++
++Le workflow manuel `Klickypedia full import` propose deux modes :
++
++- `smoke` importe cinq fiches dans une base vierge et publie ses rapports pendant trois jours ;
++- `full` exécute huit jobs strictement chaînés, soit sept lots de 1 900 fiches et un dernier lot de 1 166.
++
++Chaque job restaure le checkpoint PGlite exact produit par son prédécesseur. L'absence du checkpoint fait échouer le lot au lieu de repartir silencieusement d'une base vide. Les caches sont propres au `run_id`, empêchant deux exécutions de mélanger leurs données. Le dernier job publie pendant 30 jours :
++
++- la base PostgreSQL/PGlite complète ;
++- `coverage.json` ;
++- `anomalies.json` ;
++- `catalogue-export.json`, qui contient notamment toutes les URL et tous les journaux d'import.
++
++Une relance d'un lot déjà terminé réutilise `lastmod` et les hashes. Un run `PARTIAL` arrivé au bout est recréé afin de retenter ses URL en erreur ; les fiches réussies et inchangées sont ignorées.
++
+ ## Synchronisation
+ 
+ - PLAYMOBIL : sitemap/nouveautés quotidien, fiches modifiées seulement.
+diff --git a/package.json b/package.json
+index 9266698..50c597f 100644
+--- a/package.json
++++ b/package.json
+@@ -24,6 +24,8 @@
+     "import:playmobil": "pnpm --silent build && node dist/src/cli.js import:playmobil",
+     "import:playmobil:embedded": "pnpm --silent build && node dist/src/embedded-cli.js import:playmobil",
+     "report:embedded": "pnpm --silent build && node dist/src/embedded-cli.js report",
++    "anomalies:embedded": "pnpm --silent build && node dist/src/embedded-cli.js anomalies",
++    "export:embedded": "pnpm --silent build && node dist/src/embedded-cli.js export",
+     "report": "pnpm --silent build && node dist/src/cli.js report"
+   },
+   "dependencies": {
+diff --git a/src/cli.ts b/src/cli.ts
+index a844fa6..2daa73b 100644
+--- a/src/cli.ts
++++ b/src/cli.ts
+@@ -27,8 +27,10 @@ switch (command) {
+     const db = createDatabaseClient();
+     const mode = process.argv.includes("--full") ? "full" : "sample";
+     const limitArgument = process.argv.find((argument) => argument.startsWith("--limit="));
++    const offsetArgument = process.argv.find((argument) => argument.startsWith("--offset="));
+     const limit = limitArgument ? Number(limitArgument.split("=")[1]) : undefined;
+-    try { console.log(JSON.stringify(await runKlickypediaImport(db, { mode, ...(limit ? { limit } : {}), resume: process.argv.includes("--resume") }), null, 2)); }
++    const offset = offsetArgument ? Number(offsetArgument.split("=")[1]) : undefined;
++    try { console.log(JSON.stringify(await runKlickypediaImport(db, { mode: offset === undefined ? mode : "batch", ...(limit ? { limit } : {}), ...(offset === undefined ? {} : { offset }), resume: process.argv.includes("--resume") }), null, 2)); }
+     finally { await db.$disconnect(); }
+     break;
+   }
+diff --git a/src/embedded-cli.ts b/src/embedded-cli.ts
+index 661d06a..3c2a0b4 100644
+--- a/src/embedded-cli.ts
++++ b/src/embedded-cli.ts
+@@ -3,16 +3,23 @@ import { createEmbeddedDatabaseClient } from "./db/embedded.js";
+ import { runKlickypediaImport } from "./jobs/import-klickypedia.js";
+ import { buildCoverageReport } from "./report/coverage.js";
+ import { runPlaymobilImport } from "./jobs/import-playmobil.js";
++import { buildAnomalyReport, buildExportBundle } from "./report/anomalies.js";
+ 
+ const command = process.argv[2];
+ const { db, database } = await createEmbeddedDatabaseClient();
+ try {
+   if (command === "import:klickypedia") {
+     const limitArgument = process.argv.find((argument) => argument.startsWith("--limit="));
++    const offsetArgument = process.argv.find((argument) => argument.startsWith("--offset="));
+     const limit = limitArgument ? Number(limitArgument.split("=")[1]) : 200;
+-    console.log(JSON.stringify(await runKlickypediaImport(db, { mode: "sample", limit, resume: process.argv.includes("--resume") }), null, 2));
++    const offset = offsetArgument ? Number(offsetArgument.split("=")[1]) : undefined;
++    console.log(JSON.stringify(await runKlickypediaImport(db, { mode: offset === undefined ? "sample" : "batch", limit, ...(offset === undefined ? {} : { offset }), resume: process.argv.includes("--resume") }), null, 2));
+   } else if (command === "report") {
+     console.log(JSON.stringify(await buildCoverageReport(db), null, 2));
++  } else if (command === "anomalies") {
++    console.log(JSON.stringify(await buildAnomalyReport(db), null, 2));
++  } else if (command === "export") {
++    console.log(JSON.stringify(await buildExportBundle(db), null, 2));
+   } else if (command === "import:playmobil") {
+     const limitArgument = process.argv.find((argument) => argument.startsWith("--limit="));
+     const referencesArgument = process.argv.find((argument) => argument.startsWith("--references="));
+@@ -21,7 +28,7 @@ try {
+       ...(referencesArgument ? { references: referencesArgument.split("=")[1]!.split(",") } : {}),
+     }), null, 2));
+   } else {
+-    throw new Error("Usage: embedded-cli import:klickypedia --limit=200 --resume | embedded-cli import:playmobil --limit=20 | embedded-cli report");
++    throw new Error("Usage: embedded-cli import:klickypedia --offset=0 --limit=1900 --resume | embedded-cli import:playmobil --limit=20 | embedded-cli report | anomalies | export");
+   }
+ } finally {
+   await db.$disconnect();
+diff --git a/src/jobs/import-klickypedia.ts b/src/jobs/import-klickypedia.ts
+index c4deac6..bd75f28 100644
+--- a/src/jobs/import-klickypedia.ts
++++ b/src/jobs/import-klickypedia.ts
+@@ -6,8 +6,9 @@ import type { SitemapEntry } from "../importers/types.js";
+ import { importRecord } from "../pipeline/import-record.js";
+ 
+ export interface KlickypediaImportOptions {
+-  mode: "sample" | "full";
++  mode: "sample" | "full" | "batch";
+   limit?: number;
++  offset?: number;
+   resume?: boolean;
+ }
+ 
+@@ -53,6 +54,9 @@ function selectRepresentative(entries: SitemapEntry[], limit: number): SitemapEn
+ 
+ const selectionHash = (entries: SitemapEntry[]) => createHash("sha256").update(entries.map((entry) => `${entry.loc}\t${entry.lastmod ?? ""}`).join("\n")).digest("hex");
+ 
++export const selectBatchEntries = (entries: SitemapEntry[], offset: number, limit: number) =>
++  entries.slice(Math.max(0, offset), Math.max(0, offset) + Math.min(Math.max(limit, 1), 2_000));
++
+ export async function runKlickypediaImport(db: PrismaClient, options: KlickypediaImportOptions) {
+   const source = await db.source.upsert({
+     where: { key: KLICKYPEDIA.key },
+@@ -62,18 +66,30 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
+   const client = new PoliteHttpClient();
+   const indexed = await listKlickypediaSetUrls(client);
+   const detailEntries = indexed.filter((entry) => new URL(entry.loc).pathname !== "/sets/");
+-  const limit = options.mode === "full" ? detailEntries.length : Math.min(Math.max(options.limit ?? 200, 1), 300);
+-  const entries = options.mode === "full" ? detailEntries : selectRepresentative(detailEntries, limit);
++  const offset = Math.max(0, options.offset ?? 0);
++  const limit = options.mode === "full"
++    ? detailEntries.length
++    : options.mode === "batch"
++      ? Math.min(Math.max(options.limit ?? 1_900, 1), 2_000)
++      : Math.min(Math.max(options.limit ?? 200, 1), 300);
++  const entries = options.mode === "full"
++    ? detailEntries
++    : options.mode === "batch"
++      ? selectBatchEntries(detailEntries, offset, limit)
++      : selectRepresentative(detailEntries, limit);
+   const hash = selectionHash(entries);
++  const runMode = options.mode === "batch" ? `klickypedia:batch:${offset}:${limit}` : `klickypedia:${options.mode}`;
+ 
+   const resumable = options.resume ? await db.importRun.findFirst({
+-    where: { sourceId: source.id, mode: `klickypedia:${options.mode}`, status: { in: ["RUNNING", "PARTIAL", "FAILED"] } },
++    where: { sourceId: source.id, mode: runMode, status: { in: ["RUNNING", "PARTIAL", "FAILED"] } },
+     orderBy: { startedAt: "desc" },
+   }) : null;
+   const savedCursor = resumable?.cursor as { index?: number; selectionHash?: string } | null;
+-  const canResume = savedCursor?.selectionHash === hash;
++  // A completed PARTIAL run is deliberately restarted: unchanged records are
++  // skipped via lastmod/hash while failed URLs are attempted again.
++  const canResume = savedCursor?.selectionHash === hash && (savedCursor.index ?? 0) < entries.length;
+   const run = canResume && resumable ? await db.importRun.update({ where: { id: resumable.id }, data: { status: "RUNNING", finishedAt: null } }) : await db.importRun.create({
+-    data: { sourceId: source.id, mode: `klickypedia:${options.mode}`, cursor: { index: 0, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash } },
++    data: { sourceId: source.id, mode: runMode, cursor: { index: 0, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash } },
+   });
+   let index = canResume ? Math.min(savedCursor?.index ?? 0, entries.length) : 0;
+   const counters = { scanned: run.scanned, created: run.created, updated: run.updated, unchanged: run.unchanged, errors: run.errors, conflicts: run.conflicts, inaccessible: run.inaccessible };
+@@ -115,7 +131,7 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
+         if (errorSummary.length < 100) errorSummary.push({ url: entry.loc, error: error instanceof Error ? error.message : String(error) });
+       }
+       counters.scanned += 1;
+-      await db.importRun.update({ where: { id: run.id }, data: { ...counters, cursor: { index: index + 1, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
++      await db.importRun.update({ where: { id: run.id }, data: { ...counters, cursor: { index: index + 1, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
+       if ((index + 1) % 25 === 0) console.log(JSON.stringify({ runId: run.id, progress: index + 1, total: entries.length, ...counters }));
+     }
+   } finally {
+@@ -124,6 +140,6 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
+   }
+ 
+   const status = interrupted ? "PARTIAL" : counters.errors > 0 ? "PARTIAL" : "SUCCEEDED";
+-  const completed = await db.importRun.update({ where: { id: run.id }, data: { ...counters, status, finishedAt: new Date(), cursor: { index, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
+-  return { run: completed, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectedUrls: entries.length, errors: errorSummary };
++  const completed = await db.importRun.update({ where: { id: run.id }, data: { ...counters, status, finishedAt: new Date(), cursor: { index, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
++  return { run: completed, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectedUrls: entries.length, offset, errors: errorSummary };
+ }
+diff --git a/src/report/anomalies.ts b/src/report/anomalies.ts
+new file mode 100644
+index 0000000..6ba2906
+--- /dev/null
++++ b/src/report/anomalies.ts
+@@ -0,0 +1,63 @@
++import type { PrismaClient } from "../../generated/prisma/client.js";
++import { buildCoverageReport } from "./coverage.js";
++
++export async function buildAnomalyReport(db: PrismaClient) {
++  const [references, missingCore, suspiciousYears, conflicts, reviews, failedRuns] = await Promise.all([
++    db.productReference.findMany({ select: { normalizedValue: true, variantId: true, displayValue: true } }),
++    db.productVariant.findMany({
++      where: { OR: [{ references: { none: {} } }, { name: null }] },
++      select: { id: true, canonicalKey: true, name: true, references: { select: { displayValue: true } } },
++    }),
++    db.productVariant.findMany({
++      where: { OR: [{ releaseYear: { lt: 1974 } }, { releaseYear: { gt: new Date().getUTCFullYear() + 1 } }, { discontinuedYear: { lt: 1974 } }] },
++      select: { id: true, canonicalKey: true, releaseYear: true, discontinuedYear: true },
++    }),
++    db.conflict.findMany({
++      where: { status: "OPEN" },
++      select: { id: true, entityType: true, entityId: true, field: true, createdAt: true, values: { select: { sourceValue: { select: { normalizedValue: true, source: { select: { key: true } } } } } } },
++    }),
++    db.reviewTask.findMany({ where: { status: "OPEN" }, select: { id: true, kind: true, entityType: true, entityId: true, reason: true, payload: true, createdAt: true } }),
++    db.importRun.findMany({ where: { OR: [{ errors: { gt: 0 } }, { inaccessible: { gt: 0 } }, { status: { in: ["FAILED", "PARTIAL"] } }] }, orderBy: { startedAt: "asc" } }),
++  ]);
++
++  const byReference = new Map<string, Array<{ variantId: string; displayValue: string }>>();
++  for (const reference of references) {
++    const values = byReference.get(reference.normalizedValue) ?? [];
++    values.push({ variantId: reference.variantId, displayValue: reference.displayValue });
++    byReference.set(reference.normalizedValue, values);
++  }
++  const repeatedReferences = [...byReference.entries()]
++    .filter(([, values]) => new Set(values.map((value) => value.variantId)).size > 1)
++    .map(([reference, values]) => ({ reference, variants: values }))
++    .sort((a, b) => b.variants.length - a.variants.length || a.reference.localeCompare(b.reference));
++
++  return {
++    generatedAt: new Date().toISOString(),
++    summary: {
++      missingCoreFields: missingCore.length,
++      suspiciousYears: suspiciousYears.length,
++      repeatedReferenceValues: repeatedReferences.length,
++      openConflicts: conflicts.length,
++      openReviewTasks: reviews.length,
++      importRunsWithIssues: failedRuns.length,
++    },
++    missingCore, suspiciousYears, repeatedReferences, conflicts, reviews,
++    importRunsWithIssues: failedRuns.map((run) => ({
++      id: run.id, mode: run.mode, status: run.status, scanned: run.scanned, errors: run.errors,
++      inaccessible: run.inaccessible, startedAt: run.startedAt, finishedAt: run.finishedAt,
++      cursor: run.cursor, errorSummary: run.errorSummary,
++    })),
++  };
++}
++
++export async function buildExportBundle(db: PrismaClient) {
++  const [coverage, anomalies, sourceRecords, importRuns] = await Promise.all([
++    buildCoverageReport(db), buildAnomalyReport(db),
++    db.sourceRecord.findMany({
++      orderBy: [{ sourceId: "asc" }, { externalId: "asc" }],
++      select: { source: { select: { key: true } }, externalId: true, sourceUrl: true, contentHash: true, sourceUpdatedAt: true, firstSeenAt: true, lastSeenAt: true, lastCheckedAt: true },
++    }),
++    db.importRun.findMany({ orderBy: { startedAt: "asc" } }),
++  ]);
++  return { generatedAt: new Date().toISOString(), coverage, anomalies, sourceRecords, importRuns };
++}
+diff --git a/src/report/coverage.ts b/src/report/coverage.ts
+index f58d3bf..ea35db9 100644
+--- a/src/report/coverage.ts
++++ b/src/report/coverage.ts
+@@ -8,6 +8,7 @@ export async function buildCoverageReport(db: PrismaClient) {
+     products, variants, sourceRecords, referenceRows, names, namesFr, years, discontinued, themes, mainImages, boxFront, boxBack,
+     instructions, figureCounts, pieceCounts, linkedParts, fullPartsInventory, openConflicts, openReviews, sourceStats, yearRows, sourceReferenceValues,
+     productKinds, variantKinds, promotions, exclusives, variantPartRows,
++    translations, mediaAssets, instructionRows, figureRows, partRows, variantFigureRows,
+   ] = await Promise.all([
+     db.product.count(),
+     db.productVariant.count(),
+@@ -36,6 +37,12 @@ export async function buildCoverageReport(db: PrismaClient) {
+     db.productVariant.count({ where: { isPromotion: true } }),
+     db.productVariant.count({ where: { isExclusive: true } }),
+     db.variantPart.count(),
++    db.variantTranslation.count(),
++    db.mediaAsset.count(),
++    db.instruction.count(),
++    db.figure.count(),
++    db.part.count(),
++    db.variantFigure.count(),
+   ]);
+ 
+   const normalizedReferenceCount = new Set(referenceRows.map((row) => row.normalizedValue)).size;
+@@ -66,6 +73,13 @@ export async function buildCoverageReport(db: PrismaClient) {
+       openConflicts,
+       openReviewTasks: openReviews,
+       referencesOnlyInOneSource: onlyOneSource,
++      translations,
++      images: mediaAssets,
++      instructions: instructionRows,
++      figures: figureRows,
++      parts: partRows,
++      variantFigureRelations: variantFigureRows,
++      variantPartRelations: variantPartRows,
+     },
+     coverage: [
+       metric("reference", referencedVariants, variants), metric("name", names, variants), metric("name_fr", namesFr, variants),
+diff --git a/tests/parsers.test.ts b/tests/parsers.test.ts
+index f2058ca..63a6fc5 100644
+--- a/tests/parsers.test.ts
++++ b/tests/parsers.test.ts
+@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
+ import { parseKlickypediaSet } from "../src/importers/klickypedia.js";
+ import { parsePlaymobilProduct } from "../src/importers/playmobil.js";
+ import { parsePlaymoDbStats } from "../src/importers/playmodb.js";
++import { selectBatchEntries } from "../src/jobs/import-klickypedia.js";
+ 
+ const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), "utf8");
+ 
+@@ -28,3 +29,19 @@ describe("source parsers", () => {
+     expect(parsePlaymoDbStats(`<body>Sets: now 7718 sets in the database Parts: now 68711 parts in the database, appearing in 6023 sets Who's that Klicky? now 7706 klickies annotated</body>`)).toEqual({ sets: 7718, parts: 68711, inventoriedSets: 6023, figures: 7706 });
+   });
+ });
++
++describe("sequential import batches", () => {
++  const entries = Array.from({ length: 14_466 }, (_, index) => ({ loc: `https://example.test/sets/${index}/` }));
++
++  it("covers the complete sitemap exactly once in eight 1,900-entry batches", () => {
++    const batches = Array.from({ length: 8 }, (_, index) => selectBatchEntries(entries, index * 1_900, 1_900));
++    const urls = batches.flat().map((entry) => entry.loc);
++    expect(urls).toHaveLength(14_466);
++    expect(new Set(urls).size).toBe(14_466);
++    expect(batches.map((batch) => batch.length)).toEqual([1_900, 1_900, 1_900, 1_900, 1_900, 1_900, 1_900, 1_166]);
++  });
++
++  it("caps an accidental oversized batch at 2,000 pages", () => {
++    expect(selectBatchEntries(entries, 0, 9_000)).toHaveLength(2_000);
++  });
++});
+-- 
+2.51.1
+
