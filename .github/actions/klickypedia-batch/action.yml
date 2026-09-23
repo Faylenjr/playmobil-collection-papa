@@ -1,0 +1,54 @@
+name: Import Klickypedia batch
+description: Restore the persistent PGlite catalogue, import one sequential batch, then checkpoint it.
+inputs:
+  offset:
+    required: true
+  limit:
+    required: true
+  restore-suffix:
+    required: true
+  save-suffix:
+    required: true
+  require-restore:
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+      with:
+        version: 11.19.0
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+        cache: pnpm
+    - run: pnpm install --frozen-lockfile
+      shell: bash
+    - run: pnpm db:generate && pnpm build
+      shell: bash
+    - name: Restore previous database checkpoint
+      id: restore-db
+      uses: actions/cache/restore@v4
+      with:
+        path: .data/pglite-full
+        key: klickypedia-${{ github.run_id }}-${{ inputs.restore-suffix }}
+    - name: Verify required checkpoint
+      if: inputs.require-restore == 'true' && steps.restore-db.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        echo "Required database checkpoint was not found; refusing to start from an empty catalogue." >&2
+        exit 1
+    - name: Import batch
+      shell: bash
+      env:
+        PGLITE_DIR: ./.data/pglite-full
+        IMPORT_MIN_DELAY_MS: "2000"
+        IMPORT_TIMEOUT_MS: "20000"
+        IMPORT_MAX_RETRIES: "3"
+        IMPORT_USER_AGENT: PlaymobilCollectionResearch/0.2 (+https://github.com/Faylenjr/playmobil-collection-papa; non-commercial research)
+      run: node dist/src/embedded-cli.js import:klickypedia --offset=${{ inputs.offset }} --limit=${{ inputs.limit }} --resume
+    - name: Save database checkpoint
+      uses: actions/cache/save@v4
+      with:
+        path: .data/pglite-full
+        key: klickypedia-${{ github.run_id }}-${{ inputs.save-suffix }}
