@@ -74,7 +74,9 @@ export interface MergedIdentityAuditReport {
 }
 
 /** Read-only by design: this job executes only count/findMany queries. */
-export async function auditMergedIdentities(db: PrismaClient): Promise<MergedIdentityAuditReport> {
+export async function auditMergedIdentities(
+  db: Pick<PrismaClient, "sourceRecord" | "productVariant">,
+): Promise<MergedIdentityAuditReport> {
   const [recordLinks, currentVariantCount] = await Promise.all([
     db.sourceRecord.findMany({ where: { variantId: { not: null } }, select: { variantId: true } }),
     db.productVariant.count(),

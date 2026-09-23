@@ -75,6 +75,8 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
 | `pnpm identities:reclassify` | Prévisualise la reclassification d'identité, sans écrire |
 | `pnpm identities:reclassify -- --apply` | Applique la reclassification et résout les revues attendues |
 | `pnpm identities:audit-merged` | Audite en lecture seule les variants ayant plusieurs SourceRecords |
+| `pnpm identities:repair-merged -- --plan <rapport.json>` | Valide en lecture seule un plan de réparation des merges historiques |
+| `pnpm identities:repair-merged -- --plan <rapport.json> --apply` | Applique atomiquement un plan validé si aucune provenance n'est ambiguë |
 | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
 
 ## Documentation
@@ -85,5 +87,6 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
 - [Processus d'import](docs/import-process.md)
 - [Droit et licences](docs/legal-and-licensing.md)
 - [Qualité](docs/data-quality.md)
+- [Réparation des variants fusionnés](docs/merged-identity-repair.md)
 - [Déploiement](docs/deployment.md)
 - [Rapport de phase 0](docs/phase-0-report.md)

@@ -119,18 +119,30 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
       .filter((_, otherIndex) => otherIndex !== index)
       .every((other) => compareIdentitySignals(snapshot, other) === "DISTINCT"));
     const hasStableAnchors = distinctVariants.every((reference) => reference.variant.sourceRecords.length > 0);
-    const safelyReused = pairwiseDistinct && hasStableAnchors;
+    const expectedKeys = hasStableAnchors ? new Map(distinctVariants.map((reference) => [reference.variant.id, qualifiedIdentityKeys(
+      reference.baseValue ?? reference.variant.product.baseReference ?? reference.variant.product.canonicalKey.replace(/^ref:|:record:.*$/g, ""),
+      normalizedValue,
+      reference.variant.sourceRecords.map((sourceRecord) => ({ sourceKey: sourceRecord.source.key, externalId: sourceRecord.externalId })),
+    )])) : new Map<string, { productKey: string; variantKey: string }>();
+    // A human-validated split may rely on richer multilingual evidence than
+    // compareIdentitySignals() sees. Once every member is explicitly REUSED
+    // and already has its deterministic record-qualified key, preserve that
+    // validated state on later idempotent reclassification passes.
+    const validatedQualifiedReuse = hasStableAnchors && distinctVariants.every((reference) => {
+      const keys = expectedKeys.get(reference.variant.id);
+      return reference.identityClass === "REUSED"
+        && keys?.variantKey === reference.variant.canonicalKey
+        && keys.productKey === reference.variant.product.canonicalKey;
+    });
+    const safelyReused = hasStableAnchors && (pairwiseDistinct || validatedQualifiedReuse);
     const identityClass: ReferenceIdentityClass = safelyReused ? "REUSED" : "AMBIGUOUS";
-    const identityReason = safelyReused ? "distinct-objects-reuse-reference"
+    const identityReason = validatedQualifiedReuse ? "validated-record-qualified-reuse"
+      : safelyReused ? "distinct-objects-reuse-reference"
       : pairwiseDistinct ? "missing-source-record-identity" : "true-identity-conflict";
     if (safelyReused) {
       reusedReferenceGroups += 1;
       for (const reference of distinctVariants) {
-        const keys = qualifiedIdentityKeys(
-          reference.baseValue ?? reference.variant.product.baseReference ?? reference.variant.product.canonicalKey.replace(/^ref:|:record:.*$/g, ""),
-          normalizedValue,
-          reference.variant.sourceRecords.map((sourceRecord) => ({ sourceKey: sourceRecord.source.key, externalId: sourceRecord.externalId })),
-        );
+        const keys = expectedKeys.get(reference.variant.id)!;
         if (reference.variant.canonicalKey !== keys.variantKey || reference.variant.product.canonicalKey !== keys.productKey) {
           canonicalRekeys.set(reference.variant.id, keys);
         }
