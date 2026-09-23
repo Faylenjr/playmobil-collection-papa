@@ -10,11 +10,18 @@ Le parseur est volontairement conservateur : `70733v1` est reconnu comme variant
 
 Les noms, traductions, thèmes, dates, format, dimensions, poids, âge, compteurs, médias, notices, figurines et pièces peuvent être portés par `ProductVariant`. Les tables au niveau `Product` restent disponibles pour la consolidation du concept de base. Une variante peut donc posséder un contenu ou un nom différent sans contaminer ses voisines.
 
-Les références-placeholder (`0`, `0000`, `00000`) ne sont pas considérées uniques. Leur clé canonique est qualifiée par l'identité stable de la fiche source et une `ReviewTask` est ouverte.
+Chaque `ProductReference` porte une classe d'identité :
+
+- `ASSIGNED` : référence attribuée à un objet sans collision connue ;
+- `PLACEHOLDER` : valeur générique (`0`, `0000`, `00000`, `N/A` et variantes de marché/version strictement reconnues) ;
+- `REUSED` : même référence publiée pour plusieurs objets dont les signaux distinctifs sont suffisants ;
+- `AMBIGUOUS` : collision que les données disponibles ne permettent pas de trancher sûrement.
+
+Les placeholders et les réutilisations restent des objets séparés avec une clé qualifiée par le couple stable source/identifiant externe. Ils ne créent pas de revue humaine ouverte. Une `ReviewTask` n'est conservée que pour `AMBIGUOUS`. La détection des placeholders est ancrée sur toute la référence : une référence légitime comme `0001` ou `0104-sch` n'est donc pas capturée.
 
 ## Provenance
 
-`source_records` conserve l'identité externe, l'URL, le hash et éventuellement la charge brute. `source_values` conserve chaque affirmation champ par champ, sa valeur brute, sa valeur normalisée, sa confiance, sa priorité et sa date. `conflicts` relie les affirmations contradictoires ; `review_tasks` contient les cas ambigus.
+`source_records` conserve l'identité externe, l'URL, le hash, éventuellement la charge brute et un lien explicite vers la variante importée. Ce lien rend les réimports idempotents même si le nom, l'année ou le thème source change. `source_values` conserve chaque affirmation champ par champ, sa valeur brute, sa valeur normalisée, sa confiance, sa priorité et sa date. `conflicts` relie les affirmations contradictoires ; `review_tasks` contient les cas réellement ambigus.
 
 La valeur canonique est recalculée par priorité de source sans perdre l'opinion d'une source. Les traductions utilisent des champs de provenance localisés (`name.fr`, `name.de`, etc.) afin de ne pas traiter deux langues comme une contradiction.
 

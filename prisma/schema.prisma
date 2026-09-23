@@ -59,6 +59,13 @@ enum ReviewStatus {
   IGNORED
 }
 
+enum ReferenceIdentityClass {
+  ASSIGNED
+  PLACEHOLDER
+  REUSED
+  AMBIGUOUS
+}
+
 enum CollectionCondition {
   SEALED
   NEW
@@ -135,6 +142,7 @@ model ProductVariant {
   parts                  VariantPart[]
   collectionItems        CollectionItem[]
   wishlistItems          WishlistItem[]
+  sourceRecords          SourceRecord[]
 
   @@index([productId])
   @@index([releaseYear])
@@ -142,20 +150,23 @@ model ProductVariant {
 }
 
 model ProductReference {
-  id              String         @id @default(uuid()) @db.Uuid
-  variantId       String         @map("variant_id") @db.Uuid
-  displayValue    String         @map("display_value")
-  normalizedValue String         @map("normalized_value")
-  baseValue       String?        @map("base_value")
+  id              String                 @id @default(uuid()) @db.Uuid
+  variantId       String                 @map("variant_id") @db.Uuid
+  displayValue    String                 @map("display_value")
+  normalizedValue String                 @map("normalized_value")
+  baseValue       String?                @map("base_value")
   suffix          String?
-  isPrimary       Boolean        @default(false) @map("is_primary")
-  sourceId        String?        @map("source_id") @db.Uuid
-  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  source          Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+  isPrimary       Boolean                @default(false) @map("is_primary")
+  sourceId        String?                @map("source_id") @db.Uuid
+  identityClass   ReferenceIdentityClass @default(ASSIGNED) @map("identity_class")
+  identityReason  String?                @map("identity_reason")
+  variant         ProductVariant         @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  source          Source?                @relation(fields: [sourceId], references: [id], onDelete: SetNull)
 
   @@unique([variantId, normalizedValue])
   @@index([normalizedValue])
   @@index([baseValue])
+  @@index([identityClass])
   @@map("product_references")
 }
 
@@ -361,22 +372,25 @@ model Source {
 }
 
 model SourceRecord {
-  id              String        @id @default(uuid()) @db.Uuid
-  sourceId        String        @map("source_id") @db.Uuid
-  externalId      String        @map("external_id")
-  sourceUrl       String        @map("source_url")
-  recordType      String        @map("record_type")
-  rawPayload      Json?         @map("raw_payload")
-  contentHash     String        @map("content_hash")
-  sourceUpdatedAt DateTime?     @map("source_updated_at")
-  firstSeenAt     DateTime      @default(now()) @map("first_seen_at")
-  lastSeenAt      DateTime      @default(now()) @map("last_seen_at")
-  lastCheckedAt   DateTime      @default(now()) @map("last_checked_at")
-  source          Source        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  id              String          @id @default(uuid()) @db.Uuid
+  sourceId        String          @map("source_id") @db.Uuid
+  variantId       String?         @map("variant_id") @db.Uuid
+  externalId      String          @map("external_id")
+  sourceUrl       String          @map("source_url")
+  recordType      String          @map("record_type")
+  rawPayload      Json?           @map("raw_payload")
+  contentHash     String          @map("content_hash")
+  sourceUpdatedAt DateTime?       @map("source_updated_at")
+  firstSeenAt     DateTime        @default(now()) @map("first_seen_at")
+  lastSeenAt      DateTime        @default(now()) @map("last_seen_at")
+  lastCheckedAt   DateTime        @default(now()) @map("last_checked_at")
+  source          Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
   values          SourceValue[]
 
   @@unique([sourceId, externalId])
   @@index([contentHash])
+  @@index([variantId])
   @@map("source_records")
 }
 
@@ -428,15 +442,16 @@ model ConflictValue {
 }
 
 model ReviewTask {
-  id         String       @id @default(uuid()) @db.Uuid
-  kind       String
-  entityType String       @map("entity_type")
-  entityId   String?      @map("entity_id") @db.Uuid
-  reason     String
-  payload    Json?
-  status     ReviewStatus @default(OPEN)
-  createdAt  DateTime     @default(now()) @map("created_at")
-  resolvedAt DateTime?    @map("resolved_at")
+  id             String       @id @default(uuid()) @db.Uuid
+  kind           String
+  entityType     String       @map("entity_type")
+  entityId       String?      @map("entity_id") @db.Uuid
+  reason         String
+  payload        Json?
+  status         ReviewStatus @default(OPEN)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  resolvedAt     DateTime?    @map("resolved_at")
+  resolutionNote String?      @map("resolution_note")
 
   @@index([status, kind])
   @@map("review_tasks")

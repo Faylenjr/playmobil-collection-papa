@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
-import { canonicalProductKey, canonicalVariantKey, parseReference } from "../domain/reference.js";
+import { parseReference } from "../domain/reference.js";
+import { resolveIdentityKeys, type IdentitySnapshot } from "../domain/identity.js";
 import { resolveCandidates } from "../domain/resolver.js";
 import { klickypediaThemeSlug } from "../importers/klickypedia.js";
 import type { RawCollectible } from "../importers/types.js";
@@ -8,7 +9,7 @@ import type { RawCollectible } from "../importers/types.js";
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const json = (value: unknown) => value as Prisma.InputJsonValue;
 
-function inferProductKind(item: RawCollectible) {
+export function inferProductKind(item: RawCollectible) {
   const signal = [item.format, ...(item.tags ?? [])].filter(Boolean).join(" ").toLowerCase();
   if (/catalog/.test(signal)) return "CATALOGUE" as const;
   if (/merch|sticker|book|magazine|multimedia/.test(signal)) return "MERCHANDISE" as const;
@@ -23,41 +24,6 @@ function variantKind(signal: ReturnType<typeof parseReference>["signal"], item: 
   if (item.isPromotion) return "PROMOTION" as const;
   if (item.isExclusive) return "EXCLUSIVE" as const;
   return "STANDARD" as const;
-}
-
-type ExistingIdentity = { name: string | null; releaseYear: number | null; themes: Array<{ theme: { name: string } }> };
-
-const comparable = (value: string | undefined | null) => value?.normalize("NFKD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() || null;
-
-/**
- * Some Klickypedia objects deliberately share placeholder references such as
- * `0000` and `00000`. Those values are valid display references, but they are
- * not globally unique identities. We retain the reference and derive a stable,
- * source-record-qualified identity instead of silently merging unrelated items.
- */
-export function resolveIdentityKeys(
-  item: RawCollectible,
-  parsed: ReturnType<typeof parseReference>,
-  existing?: ExistingIdentity | null,
-) {
-  const productKey = canonicalProductKey(parsed);
-  const variantKey = canonicalVariantKey(parsed);
-  const placeholderReference = /^0+$/.test(parsed.base);
-  const existingTheme = existing?.themes.find((row) => comparable(row.theme.name) === comparable(item.theme))?.theme.name
-    ?? existing?.themes[0]?.theme.name;
-  const nameDiffers = Boolean(existing?.name && item.name && comparable(existing.name) !== comparable(item.name));
-  const yearDiffers = Boolean(existing?.releaseYear && item.releaseYear && existing.releaseYear !== item.releaseYear);
-  const themeDiffers = Boolean(existingTheme && item.theme && comparable(existingTheme) !== comparable(item.theme));
-  const materiallyDifferent = Boolean(existing && nameDiffers && (yearDiffers || themeDiffers));
-  if (!placeholderReference && !materiallyDifferent) return { productKey, variantKey, ambiguous: false, reason: null };
-
-  const qualifier = createHash("sha256").update(`${item.source}:${item.externalId}`).digest("hex").slice(0, 16);
-  return {
-    productKey: `${productKey}:record:${qualifier}`,
-    variantKey: `${variantKey}:record:${qualifier}`,
-    ambiguous: true,
-    reason: placeholderReference ? "non-unique-placeholder-reference" : "conflicting-identity-signals",
-  };
 }
 
 const sourceFacts = (item: RawCollectible) => [
@@ -116,12 +82,46 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
   const previous = await db.sourceRecord.findUnique({ where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } } });
 
   return db.$transaction(async (tx) => {
-    const defaultVariantKey = canonicalVariantKey(parsed);
-    const existingIdentity = await tx.productVariant.findUnique({
-      where: { canonicalKey: defaultVariantKey },
-      select: { name: true, releaseYear: true, themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } } },
+    const record = await tx.sourceRecord.upsert({
+      where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } },
+      create: { sourceId: source.id, externalId: item.externalId, sourceUrl: item.sourceUrl, recordType: "collectible", rawPayload: json(item.raw), contentHash: hash, sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
+      update: { sourceUrl: item.sourceUrl, rawPayload: json(item.raw), contentHash: hash, lastSeenAt: new Date(), lastCheckedAt: new Date(), sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
     });
-    const identity = resolveIdentityKeys(item, parsed, existingIdentity);
+    const candidateRows = record.variantId
+      ? await tx.productVariant.findMany({ where: { id: record.variantId }, select: {
+        id: true, productId: true, canonicalKey: true, name: true, releaseYear: true, format: true,
+        product: { select: { canonicalKey: true, kind: true } },
+        themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
+        references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
+      } })
+      : await tx.productVariant.findMany({ where: { references: { some: { normalizedValue: parsed.normalized } } }, select: {
+        id: true, productId: true, canonicalKey: true, name: true, releaseYear: true, format: true,
+        product: { select: { canonicalKey: true, kind: true } },
+        themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
+        references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
+      } });
+    const candidates: IdentitySnapshot[] = candidateRows.map((candidate) => ({
+      id: candidate.id,
+      productId: candidate.productId,
+      productKey: candidate.product.canonicalKey,
+      variantKey: candidate.canonicalKey,
+      name: candidate.name,
+      releaseYear: candidate.releaseYear,
+      themes: candidate.themes.map((row) => row.theme.name),
+      productKind: candidate.product.kind,
+      format: candidate.format,
+      referenceClass: candidate.references[0]?.identityClass ?? "ASSIGNED",
+    }));
+    const identity = record.variantId && candidates[0]
+      ? {
+        productKey: candidates[0].productKey!, variantKey: candidates[0].variantKey!, matchedCandidate: candidates[0],
+        referenceClass: candidates[0].referenceClass ?? "ASSIGNED", needsReview: false as const,
+        reason: candidates[0].referenceClass === "PLACEHOLDER" ? "placeholder-reference" as const
+          : candidates[0].referenceClass === "REUSED" ? "reused-reference" as const
+            : candidates[0].referenceClass === "AMBIGUOUS" ? "true-identity-conflict" as const
+              : "assigned-reference" as const,
+      }
+      : resolveIdentityKeys(item, parsed, candidates);
     const product = await tx.product.upsert({
       where: { canonicalKey: identity.productKey },
       create: { canonicalKey: identity.productKey, baseReference: parsed.base, kind: inferProductKind(item), name: item.name ?? null, releaseYear: item.releaseYear ?? null, discontinuedYear: item.discontinuedYear ?? null },
@@ -152,26 +152,26 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
         lastSeenAt: new Date(), lastCheckedAt: new Date(),
       },
     });
-    if (identity.ambiguous) {
+    if (identity.needsReview) {
       const existingReview = await tx.reviewTask.findFirst({ where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variant.id, status: "OPEN" } });
       if (!existingReview) await tx.reviewTask.create({
         data: {
           kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variant.id,
-          reason: identity.reason ?? "ambiguous-reference",
+          reason: "true-identity-conflict",
           payload: json({ reference: item.reference, source: item.source, externalId: item.externalId, sourceUrl: item.sourceUrl }),
         },
       });
     }
     await tx.productReference.upsert({
       where: { variantId_normalizedValue: { variantId: variant.id, normalizedValue: parsed.normalized } },
-      create: { variantId: variant.id, displayValue: parsed.display, normalizedValue: parsed.normalized, baseValue: parsed.base, suffix: parsed.suffix, isPrimary: true, sourceId: source.id },
-      update: { displayValue: parsed.display, sourceId: source.id },
+      create: { variantId: variant.id, displayValue: parsed.display, normalizedValue: parsed.normalized, baseValue: parsed.base, suffix: parsed.suffix, isPrimary: true, sourceId: source.id, identityClass: identity.referenceClass, identityReason: identity.reason },
+      update: { displayValue: parsed.display, sourceId: source.id, identityClass: identity.referenceClass, identityReason: identity.reason },
     });
-    const record = await tx.sourceRecord.upsert({
-      where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } },
-      create: { sourceId: source.id, externalId: item.externalId, sourceUrl: item.sourceUrl, recordType: "collectible", rawPayload: json(item.raw), contentHash: hash, sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
-      update: { sourceUrl: item.sourceUrl, rawPayload: json(item.raw), contentHash: hash, lastSeenAt: new Date(), lastCheckedAt: new Date(), sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
+    if (identity.referenceClass === "REUSED") await tx.productReference.updateMany({
+      where: { normalizedValue: parsed.normalized, identityClass: { not: "AMBIGUOUS" } },
+      data: { identityClass: "REUSED", identityReason: "reused-reference" },
     });
+    await tx.sourceRecord.update({ where: { id: record.id }, data: { variantId: variant.id } });
 
     await tx.sourceValue.deleteMany({ where: { sourceRecordId: record.id } });
     const fields: string[] = [];

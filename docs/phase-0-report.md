@@ -1,6 +1,6 @@
 # Rapport de phase 0 — mesures reproductibles
 
-Date de mesure : 23 septembre 2026. Statut : **échantillon validé, catalogue complet non encore importé**.
+Date de mesure : 23 septembre 2026. Statut : **import complet Klickypedia terminé ; reclassification d'identité à appliquer sur la base du homelab**.
 
 ## Sources
 
@@ -20,6 +20,22 @@ Ces unités ne sont pas additionnables. PlaymoDB reste désactivé car l'accès 
 
 ## Résultats importés
 
+### Import complet Klickypedia
+
+Le dernier run sur la base PostgreSQL persistante du homelab a terminé avec les compteurs suivants :
+
+| Mesure | Résultat |
+|---|---:|
+| URL de fiches attendues | **14 466** |
+| fiches parcourues | **14 466** |
+| créations lors du dernier passage | **5** |
+| mises à jour lors du dernier passage | **0** |
+| fiches inchangées | **14 461** |
+| erreurs / inaccessibles | **0 / 0** |
+| statut | **SUCCEEDED** |
+
+Les métriques d'identité et de couverture post-reclassification doivent être régénérées directement depuis cette base avec `pnpm identities:reclassify -- --apply` puis `pnpm report`. Elles ne sont pas extrapolées depuis une copie locale incomplète.
+
 ### Validation Klickypedia (200 fiches)
 
 L'échantillon déterministe couvre 1974–2026, toutes les décennies demandées, les variantes `vN`, marchés, promotions, exclusivités, catalogues, merchandising et références atypiques.
@@ -38,7 +54,7 @@ L'échantillon déterministe couvre 1974–2026, toutes les décennies demandée
 
 Une seconde exécution incrémentale a classé les **200 fiches comme inchangées**, sans les retélécharger ni créer de doublon.
 
-Les 12 revues concernent des références génériques (`0`, `0000`, `00000`) qui ne sont pas des identifiants uniques. La première exécution les fusionnait à tort et produisait 25 conflits. La règle corrigée conserve leur référence affichée mais attribue à chaque fiche une identité stable dérivée de la source. Une seconde importation vierge a produit 200 objets distincts et zéro conflit artificiel.
+Dans cet ancien échantillon, les 12 revues concernaient des références génériques (`0`, `0000`, `00000`) qui ne sont pas des identifiants uniques. La première exécution les fusionnait à tort et produisait 25 conflits. La règle corrigée conservait déjà leur référence affichée et attribuait à chaque fiche une identité stable dérivée de la source. La nouvelle classification `PLACEHOLDER` permet désormais de résoudre ces tâches attendues sans revue humaine.
 
 ### Enrichissement officiel mesuré
 
@@ -63,7 +79,9 @@ Les deux conflits sont réels et conservés : pour la même référence, DE et F
 - `Product` représente le produit de base ; `ProductVariant` représente l'objet collectionnable.
 - Les références ne sont jamais converties en nombres.
 - Les suffixes `vN`, éditions et marchés sont interprétés de façon conservatrice.
-- Les références-placeholder sont disambiguïsées par l'identité du `SourceRecord` et placées en revue.
+- Les références-placeholder sont disambiguïsées par l'identité du `SourceRecord` sans revue humaine ouverte.
+- Une référence réellement réutilisée conserve chaque objet dans une variante séparée et n'est pas comptée comme problème.
+- Seules les collisions `AMBIGUOUS` restent en revue humaine.
 - Une fusion n'est acceptée que lorsque les signaux d'identité ne se contredisent pas.
 - Les hashes HTML et `lastmod` évitent de retraiter une fiche inchangée ; le curseur d'`ImportRun` permet la reprise.
 
@@ -124,7 +142,7 @@ Les relations existent aux niveaux produit **et variante**. L'import Klickypedia
 
 ## Problèmes restant ouverts
 
-- L'import complet de 14 466 fiches n'a pas été exécuté dans cette session : à la cadence validée (1,5–2 s minimum, séquentielle), il nécessite environ 6 à 9 heures. Le job est prêt, reprenable et journalisé avec `pnpm import:klickypedia:full`.
+- Les totaux post-reclassification restent à mesurer sur la base persistante du homelab ; aucune valeur n'est inventée depuis l'environnement Work.
 - La disponibilité des archives officielles diffère fortement entre DE et FR ; un 404 n'est pas une preuve d'inexistence historique.
 - Les prix et statuts officiels sont dépendants du marché ; une table d'offres par marché est recommandée avant un import officiel large.
 - Les licences de base et droits d'affichage des médias doivent être clarifiés avant publication publique ou usage commercial.
@@ -132,4 +150,4 @@ Les relations existent aux niveaux produit **et variante**. L'import Klickypedia
 
 ## Recommandation
 
-Conserver PostgreSQL, Prisma et le modèle de provenance actuel. Exécuter ensuite le job Klickypedia complet sur un worker durable avec PostgreSQL managé, sans augmenter la cadence, puis générer ce rapport depuis la base complète. L'enrichissement officiel doit suivre par lots et par marché. Le MVP utilisateur reste différé jusqu'à obtention des métriques complètes.
+Conserver PostgreSQL, Prisma et le modèle de provenance actuel. Appliquer la migration additive, prévisualiser puis appliquer la reclassification, et générer le rapport depuis la base complète. L'enrichissement officiel doit suivre par lots et par marché. Le MVP utilisateur reste différé jusqu'à validation des métriques post-reclassification.

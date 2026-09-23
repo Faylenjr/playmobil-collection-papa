@@ -5,6 +5,7 @@ import { buildCoverageReport } from "./report/coverage.js";
 import { listKlickypediaSetUrls } from "./importers/klickypedia.js";
 import { runKlickypediaImport } from "./jobs/import-klickypedia.js";
 import { runPlaymobilImport } from "./jobs/import-playmobil.js";
+import { reclassifyIdentities } from "./jobs/reclassify-identities.js";
 
 const command = process.argv[2];
 
@@ -20,6 +21,12 @@ switch (command) {
   case "report": {
     const db = createDatabaseClient();
     try { console.log(JSON.stringify(await buildCoverageReport(db), null, 2)); }
+    finally { await db.$disconnect(); }
+    break;
+  }
+  case "identities:reclassify": {
+    const db = createDatabaseClient();
+    try { console.log(JSON.stringify(await reclassifyIdentities(db, process.argv.includes("--apply")), null, 2)); }
     finally { await db.$disconnect(); }
     break;
   }
@@ -47,6 +54,6 @@ switch (command) {
     break;
   }
   default:
-    console.error("Usage: pnpm source:audit | pnpm import:klickypedia:index | pnpm import:klickypedia:sample | pnpm import:klickypedia:full | pnpm import:playmobil -- --limit=20 | pnpm report");
+    console.error("Usage: pnpm source:audit | pnpm import:klickypedia:index | pnpm import:klickypedia:sample | pnpm import:klickypedia:full | pnpm import:playmobil -- --limit=20 | pnpm identities:reclassify -- [--apply] | pnpm report");
     process.exitCode = 1;
 }

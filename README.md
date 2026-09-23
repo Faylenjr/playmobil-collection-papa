@@ -10,8 +10,9 @@ Catalogue non commercial, traçable et reproductible destiné aux collectionneur
 - importeurs réels et reprenables pour Klickypedia et l'enrichissement PLAYMOBIL DE/FR ;
 - audit respectueux de `robots.txt`, avec délais, timeouts et retries ;
 - rapport de couverture calculé depuis la base ;
-- 22 tests automatisés ;
-- échantillon mesuré : 200 fiches Klickypedia, 0 erreur, 192 références distinctes, 197 produits et 200 objets collectionnables.
+- 45 tests automatisés hors réseau ;
+- import complet Klickypedia exécuté sur le homelab : 14 466 fiches sur 14 466, sans erreur technique ;
+- identité explicite des références assignées, placeholders, réutilisées et réellement ambiguës.
 
 L'audit du 22 septembre 2026 mesure 14 467 URL de fiches réparties sur 15 sitemaps `sets` de Klickypedia. Ce nombre n'est **pas** présenté comme un nombre de références uniques. Voir [`docs/phase-0-report.md`](docs/phase-0-report.md).
 
@@ -71,6 +72,8 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
 | `pnpm import:klickypedia:sample` | Importe/reprend le lot représentatif de 200 fiches |
 | `pnpm import:klickypedia:full` | Importe/reprend les 14 466 fiches publiques à cadence prudente |
 | `pnpm import:playmobil -- --limit=20` | Enrichit les références connues depuis PLAYMOBIL DE/FR |
+| `pnpm identities:reclassify` | Prévisualise la reclassification d'identité, sans écrire |
+| `pnpm identities:reclassify -- --apply` | Applique la reclassification et résout les revues attendues |
 | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
 
 ## Documentation

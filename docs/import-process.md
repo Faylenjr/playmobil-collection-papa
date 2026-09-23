@@ -29,21 +29,9 @@ pnpm report
 
 Le job Klickypedia mémorise son index et son curseur dans `ImportRun`. `--resume` reprend un run `RUNNING`, `PARTIAL` ou `FAILED` si la sélection de sitemap n'a pas changé. PLAYMOBIL DE/FR enrichit uniquement des références déjà connues, sauf liste explicite passée avec `--references=`.
 
-## Import nocturne GitHub Actions
+## Exécution complète
 
-Le workflow manuel `Klickypedia full import` propose deux modes :
-
-- `smoke` importe cinq fiches dans une base vierge et publie ses rapports pendant trois jours ;
-- `full` exécute huit jobs strictement chaînés, soit sept lots de 1 900 fiches et un dernier lot de 1 166.
-
-Chaque job restaure le checkpoint PGlite exact produit par son prédécesseur. L'absence du checkpoint fait échouer le lot au lieu de repartir silencieusement d'une base vide. Les caches sont propres au `run_id`, empêchant deux exécutions de mélanger leurs données. Le dernier job publie pendant 30 jours :
-
-- la base PostgreSQL/PGlite complète ;
-- `coverage.json` ;
-- `anomalies.json` ;
-- `catalogue-export.json`, qui contient notamment toutes les URL et tous les journaux d'import.
-
-Une relance d'un lot déjà terminé réutilise `lastmod` et les hashes. Un run `PARTIAL` arrivé au bout est recréé afin de retenter ses URL en erreur ; les fiches réussies et inchangées sont ignorées.
+L'import complet a été exécuté sur le homelab depuis une connexion résidentielle. Les runners GitHub/Azure recevaient des réponses 403 de Klickypedia ; les workflows de crawl correspondants ont donc été retirés. La CI GitHub reste limitée aux tests, au typecheck, au build et à la validation Prisma. Les prochains imports longs doivent utiliser le worker du homelab ou une infrastructure explicitement acceptée par la source.
 
 ## Synchronisation
 

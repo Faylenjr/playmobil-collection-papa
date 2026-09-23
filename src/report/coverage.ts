@@ -7,12 +7,13 @@ export async function buildCoverageReport(db: PrismaClient) {
   const [
     products, variants, sourceRecords, referenceRows, names, namesFr, years, discontinued, themes, mainImages, boxFront, boxBack,
     instructions, figureCounts, pieceCounts, linkedParts, fullPartsInventory, openConflicts, openReviews, sourceStats, yearRows, sourceReferenceValues,
-    productKinds, variantKinds, promotions, exclusives, variantPartRows,
+    productKinds, variantKinds, promotions, exclusives, variantPartRows, referenceIdentityKinds, linkedRecordsByVariant,
+    unlinkedSourceRecords, openReviewsByReason,
   ] = await Promise.all([
     db.product.count(),
     db.productVariant.count(),
     db.sourceRecord.count({ where: { recordType: "collectible" } }),
-    db.productReference.findMany({ select: { normalizedValue: true, variantId: true } }),
+    db.productReference.findMany({ select: { normalizedValue: true, variantId: true, identityClass: true } }),
     db.productVariant.count({ where: { OR: [{ name: { not: null } }, { translations: { some: { name: { not: null } } } }] } }),
     db.productVariant.count({ where: { translations: { some: { locale: "fr", name: { not: null } } } } }),
     db.productVariant.count({ where: { releaseYear: { not: null } } }),
@@ -36,10 +37,24 @@ export async function buildCoverageReport(db: PrismaClient) {
     db.productVariant.count({ where: { isPromotion: true } }),
     db.productVariant.count({ where: { isExclusive: true } }),
     db.variantPart.count(),
+    db.productReference.groupBy({ by: ["identityClass"], _count: { _all: true } }),
+    db.sourceRecord.groupBy({ by: ["variantId"], where: { recordType: "collectible", variantId: { not: null } }, _count: { _all: true } }),
+    db.sourceRecord.count({ where: { recordType: "collectible", variantId: null } }),
+    db.reviewTask.groupBy({ by: ["reason"], where: { status: "OPEN" }, _count: { _all: true } }),
   ]);
 
   const normalizedReferenceCount = new Set(referenceRows.map((row) => row.normalizedValue)).size;
   const referencedVariants = new Set(referenceRows.map((row) => row.variantId)).size;
+  const deduplicatedSourceRecords = linkedRecordsByVariant.reduce((total, row) => total + Math.max(0, row._count._all - 1), 0);
+  const referenceGroups = new Map<string, { variants: Set<string>; classes: Set<string> }>();
+  for (const row of referenceRows) {
+    const group = referenceGroups.get(row.normalizedValue) ?? { variants: new Set<string>(), classes: new Set<string>() };
+    group.variants.add(row.variantId);
+    group.classes.add(row.identityClass);
+    referenceGroups.set(row.normalizedValue, group);
+  }
+  const reusedReferenceGroups = [...referenceGroups.values()].filter((group) => group.variants.size > 1 && group.classes.has("REUSED")).length;
+  const ambiguousReferenceGroups = [...referenceGroups.values()].filter((group) => group.variants.size > 1 && group.classes.has("AMBIGUOUS")).length;
 
   const decadeMap = new Map<number, number>();
   for (const row of yearRows) if (row.releaseYear) decadeMap.set(Math.floor(row.releaseYear / 10) * 10, (decadeMap.get(Math.floor(row.releaseYear / 10) * 10) ?? 0) + 1);
@@ -62,9 +77,17 @@ export async function buildCoverageReport(db: PrismaClient) {
       products,
       variants,
       collectibleObjects: variants,
-      duplicatesMerged: Math.max(0, sourceRecords - variants),
+      // Kept for report compatibility, but now counts only additional source
+      // records explicitly linked to an already represented variant.
+      duplicatesMerged: deduplicatedSourceRecords,
+      deduplicatedSourceRecords,
+      unlinkedSourceRecords,
       openConflicts,
       openReviewTasks: openReviews,
+      openReviewTasksByReason: Object.fromEntries(openReviewsByReason.map((row) => [row.reason, row._count._all])),
+      referenceIdentityClasses: Object.fromEntries(referenceIdentityKinds.map((row) => [row.identityClass, row._count._all])),
+      reusedReferenceGroups,
+      ambiguousReferenceGroups,
       referencesOnlyInOneSource: onlyOneSource,
     },
     coverage: [
