@@ -18,7 +18,7 @@ export class PoliteHttpClient {
       minDelayMs: options.minDelayMs ?? Number(process.env.IMPORT_MIN_DELAY_MS ?? 1500),
       timeoutMs: options.timeoutMs ?? Number(process.env.IMPORT_TIMEOUT_MS ?? 20000),
       maxRetries: options.maxRetries ?? Number(process.env.IMPORT_MAX_RETRIES ?? 3),
-      userAgent: options.userAgent ?? process.env.IMPORT_USER_AGENT ?? "PlaymobilCollectionResearch/0.1",
+      userAgent: options.userAgent ?? process.env.IMPORT_USER_AGENT ?? "PlaymobilCollectionResearch/0.2 (+https://github.com/Faylenjr/playmobil-collection-papa; non-commercial research)",
     };
   }
 
@@ -34,7 +34,11 @@ export class PoliteHttpClient {
       try {
         this.#lastRequest.set(parsed.origin, Date.now());
         const response = await fetch(url, {
-          headers: { accept: "text/html,application/xml,application/json;q=0.9,*/*;q=0.5", "user-agent": this.#options.userAgent },
+          headers: {
+            accept: "text/html,application/xhtml+xml,application/xml,application/json;q=0.9,*/*;q=0.5",
+            "accept-language": "en-US,en;q=0.8",
+            "user-agent": this.#options.userAgent,
+          },
           signal: controller.signal,
         });
         const body = await response.text();

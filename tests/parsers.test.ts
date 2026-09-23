@@ -10,13 +10,18 @@ const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`./fixtures
 describe("source parsers", () => {
   it("parses a Klickypedia variant without downloading its image", () => {
     const item = parseKlickypediaSet(fixture("klickypedia-set.html"), "https://www.klickypedia.com/sets/70733-01-gymnast/");
-    expect(item).toMatchObject({ reference: "70733v1", name: "Gymnast", releaseYear: 2021, discontinuedYear: 2022 });
-    expect(item.images?.[0]?.url).toContain("summary-sets-images");
+    expect(item).toMatchObject({ reference: "70733v1", name: "Gymnast", releaseYear: 2021, discontinuedYear: 2022, theme: "Sports", format: "Figures", figureCount: 1, markets: ["france"] });
+    expect(item.translations).toEqual(expect.arrayContaining([{ locale: "fr", name: "Gymnaste" }]));
+    expect(item.images?.map((image) => image.kind)).toEqual(["main", "box_front", "box_back"]);
+    expect(item.parts).toEqual([{ partNumber: "30200354", name: "Gymnastics ribbon", sourceUrl: "https://www.klickypedia.com/parts/30200354-ribbon/" }]);
+    expect(item.instructions).toEqual([{ url: "https://example.invalid/70733.pdf" }]);
   });
   it("parses official product media and instructions as source URLs", () => {
     const item = parsePlaymobilProduct(fixture("playmobil-product.html"), "https://www.playmobil.com/de-de/example/71733.html");
     expect(item.reference).toBe("71733");
-    expect(item.images?.map((image) => image.kind)).toEqual(["box_front", "box_back"]);
+    expect(item).toMatchObject({ releaseYear: 2024, widthMm: 300, depthMm: 220, heightMm: 135, weightGrams: 707, figureCount: 3, status: "archived", listPrice: 19.99, listPriceCurrency: "EUR" });
+    expect(item.translations).toEqual([{ locale: "de", name: "Starter Pack Polizei Ermittlungszimmer", description: "Official long description" }]);
+    expect(item.images?.map((image) => image.kind)).toEqual(["main", "box_front", "box_back"]);
     expect(item.instructions).toHaveLength(1);
   });
   it("parses measured PlaymoDB headline statistics", () => {

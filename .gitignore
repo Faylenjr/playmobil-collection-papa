@@ -8,5 +8,6 @@ coverage/
 reports/*.json
 reports/*.csv
 data/raw/
+.data/
 *.log
 .DS_Store

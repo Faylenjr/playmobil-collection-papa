@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.19.0",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
@@ -14,9 +16,15 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
-    "source:audit": "pnpm build --silent && node dist/src/cli.js source:audit",
-    "import:klickypedia:index": "pnpm build --silent && node dist/src/cli.js import:klickypedia-index",
-    "report": "pnpm build --silent && node dist/src/cli.js report"
+    "source:audit": "pnpm --silent build && node dist/src/cli.js source:audit",
+    "import:klickypedia:index": "pnpm --silent build && node dist/src/cli.js import:klickypedia-index",
+    "import:klickypedia:sample": "pnpm --silent build && node dist/src/cli.js import:klickypedia --limit=200 --resume",
+    "import:klickypedia:full": "pnpm --silent build && node dist/src/cli.js import:klickypedia --full --resume",
+    "import:klickypedia:sample:embedded": "pnpm --silent build && node dist/src/embedded-cli.js import:klickypedia --limit=200 --resume",
+    "import:playmobil": "pnpm --silent build && node dist/src/cli.js import:playmobil",
+    "import:playmobil:embedded": "pnpm --silent build && node dist/src/embedded-cli.js import:playmobil",
+    "report:embedded": "pnpm --silent build && node dist/src/embedded-cli.js report",
+    "report": "pnpm --silent build && node dist/src/cli.js report"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
@@ -29,8 +37,10 @@
     "zod": "4.1.11"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@types/node": "24.10.0",
     "@types/pg": "8.15.5",
+    "pglite-prisma-adapter": "0.7.2",
     "prisma": "7.10.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
