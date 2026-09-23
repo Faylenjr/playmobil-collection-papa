@@ -1,12 +1,14 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { PGlite } from "@electric-sql/pglite";
 import { createEmbeddedDatabaseClient } from "../src/db/embedded.js";
-import { reclassifyIdentities } from "../src/jobs/reclassify-identities.js";
+import { applyReferenceAssignments, reclassifyIdentities } from "../src/jobs/reclassify-identities.js";
+import { qualifiedIdentityKeys } from "../src/pipeline/canonical-identity.js";
 import { importRecord } from "../src/pipeline/import-record.js";
 import type { RawCollectible } from "../src/importers/types.js";
+import type { Prisma } from "../generated/prisma/client.js";
 
 const directories: string[] = [];
 afterEach(async () => {
@@ -14,6 +16,23 @@ afterEach(async () => {
 });
 
 describe("identity reclassification", () => {
+  it("bulk-updates a production-sized classification set without per-row updates", async () => {
+    const assignments = new Map<string, { identityClass: "ASSIGNED" | "PLACEHOLDER" | "REUSED" | "AMBIGUOUS"; identityReason: string }>();
+    const add = (count: number, identityClass: "ASSIGNED" | "PLACEHOLDER" | "REUSED" | "AMBIGUOUS", identityReason: string) => {
+      for (let index = 0; index < count; index += 1) assignments.set(`${identityClass}-${index}`, { identityClass, identityReason });
+    };
+    add(13_435, "ASSIGNED", "unique-assigned-reference");
+    add(646, "PLACEHOLDER", "syntactic-placeholder-reference");
+    add(214, "REUSED", "distinct-objects-reuse-reference");
+    add(87, "AMBIGUOUS", "true-identity-conflict");
+
+    const updateMany = vi.fn(async ({ where }: { where: { id: { in: string[] } } }) => ({ count: where.id.in.length }));
+    const tx = { productReference: { updateMany } } as unknown as Pick<Prisma.TransactionClient, "productReference">;
+    expect(await applyReferenceAssignments(tx, assignments)).toBe(14_382);
+    expect(updateMany).toHaveBeenCalledTimes(6);
+    expect(updateMany.mock.calls.every(([argument]) => argument.where.id.in.length <= 5_000)).toBe(true);
+  });
+
   it("resolves expected placeholders and reused references without deleting variants", async () => {
     const directory = await mkdtemp(join(tmpdir(), "playmobil-identity-"));
     directories.push(directory);
@@ -174,6 +193,40 @@ describe("identity reclassification", () => {
       const record = await db.sourceRecord.findFirstOrThrow();
       expect(record.variantId).toBe(first.variantId);
       expect(record.contentHash).not.toBeNull();
+    } finally {
+      await db.$disconnect();
+      await database.close();
+    }
+  });
+
+  it("rolls back every classification when a later canonical rekey fails", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "playmobil-identity-rollback-"));
+    directories.push(directory);
+    const { db, database } = await createEmbeddedDatabaseClient(directory);
+    try {
+      const source = await db.source.create({ data: { key: "test", name: "Test", baseUrl: "https://example.test", kind: "COMMUNITY_DATABASE" } });
+      const createVariant = async (suffix: string, name: string, releaseYear: number) => {
+        const product = await db.product.create({ data: { canonicalKey: `original-product-${suffix}`, baseReference: "7777" } });
+        const variant = await db.productVariant.create({ data: { canonicalKey: `original-variant-${suffix}`, productId: product.id, name, releaseYear } });
+        await db.productReference.create({ data: {
+          variantId: variant.id, displayValue: "7777", normalizedValue: "7777", baseValue: "7777", isPrimary: true, sourceId: source.id,
+        } });
+        await db.sourceRecord.create({ data: {
+          sourceId: source.id, variantId: variant.id, externalId: suffix, sourceUrl: `https://example.test/${suffix}`,
+          recordType: "collectible", contentHash: suffix,
+        } });
+        return variant;
+      };
+      const first = await createVariant("first", "Old object", 1980);
+      await createVariant("second", "Different modern object", 2020);
+      const blocked = qualifiedIdentityKeys("7777", "7777", [{ sourceKey: "test", externalId: "first" }]);
+      const blockerProduct = await db.product.create({ data: { canonicalKey: "unrelated-blocker-product" } });
+      await db.productVariant.create({ data: { productId: blockerProduct.id, canonicalKey: blocked.variantKey } });
+
+      await expect(reclassifyIdentities(db, true)).rejects.toThrow(/Canonical variant key collision/);
+      expect(await db.productReference.count({ where: { identityClass: "ASSIGNED", identityReason: null } })).toBe(2);
+      expect((await db.productVariant.findUniqueOrThrow({ where: { id: first.id } })).canonicalKey).toBe("original-variant-first");
+      expect(await db.reviewTask.count()).toBe(0);
     } finally {
       await db.$disconnect();
       await database.close();

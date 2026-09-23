@@ -24,6 +24,12 @@ pnpm identities:reclassify
 pnpm identities:reclassify -- --apply
 ```
 
+L'application est atomique et relançable. Les classifications de références et
+les clôtures de revues attendues sont écrites par lots bornés, tandis que les
+rekeys canoniques restent dans la même transaction. Une erreur (collision,
+contrainte ou timeout) annule donc l'ensemble de la reclassification ; après
+correction, la même commande `--apply` peut être relancée sans nettoyage manuel.
+
 Elle ne fusionne et ne supprime aucun produit ou variant. Lorsqu'une référence est confirmée comme réutilisée, elle remplace atomiquement les anciennes clés dépendantes de l'ordre par des clés qualifiées déterministes. L'ancrage est le plus petit couple `(source, externalId)` parmi tous les `SourceRecord` représentant le variant ; plusieurs sources reconnues `MATCH` restent donc dédupliquées sur le même variant. Elle classe ensuite les références, résout avec une note les anciennes revues de placeholders/réutilisations attendues et ne conserve qu'une tâche active par groupe réellement ambigu.
 
 Avant la première migration d'identité, ce préflight doit retourner zéro ligne :

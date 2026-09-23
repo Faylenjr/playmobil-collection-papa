@@ -3,6 +3,44 @@ import { compareIdentitySignals, isPlaceholderReference, type IdentitySnapshot, 
 import { qualifiedIdentityKeys, rekeyVariantIdentity } from "../pipeline/canonical-identity.js";
 
 const json = (value: unknown) => value as Prisma.InputJsonValue;
+const WRITE_BATCH_SIZE = 5_000;
+const RECLASSIFICATION_TRANSACTION_TIMEOUT_MS = 120_000;
+
+function chunks<T>(values: T[], size = WRITE_BATCH_SIZE): T[][] {
+  const result: T[][] = [];
+  for (let index = 0; index < values.length; index += size) result.push(values.slice(index, index + size));
+  return result;
+}
+
+/**
+ * Applies reference classifications in a bounded number of UPDATE statements.
+ * Keeping this helper exported makes the no-per-row-write invariant directly
+ * testable without needing a database large enough to reproduce a timeout.
+ */
+export async function applyReferenceAssignments(
+  tx: Pick<Prisma.TransactionClient, "productReference">,
+  assignments: ReadonlyMap<string, { identityClass: ReferenceIdentityClass; identityReason: string }>,
+): Promise<number> {
+  const grouped = new Map<string, { identityClass: ReferenceIdentityClass; identityReason: string; ids: string[] }>();
+  for (const [id, assignment] of assignments) {
+    const key = `${assignment.identityClass}\0${assignment.identityReason}`;
+    const group = grouped.get(key) ?? { ...assignment, ids: [] };
+    group.ids.push(id);
+    grouped.set(key, group);
+  }
+
+  let updated = 0;
+  for (const group of grouped.values()) {
+    for (const ids of chunks(group.ids)) {
+      const result = await tx.productReference.updateMany({
+        where: { id: { in: ids } },
+        data: { identityClass: group.identityClass, identityReason: group.identityReason },
+      });
+      updated += result.count;
+    }
+  }
+  return updated;
+}
 
 const precedence: Record<ReferenceIdentityClass, number> = {
   ASSIGNED: 0,
@@ -115,16 +153,20 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
   let reviewsResolved = 0;
   let reviewsCreated = 0;
   if (apply) await db.$transaction(async (tx) => {
-    for (const [id, assignment] of assignments) await tx.productReference.update({ where: { id }, data: assignment });
+    await applyReferenceAssignments(tx, assignments);
     for (const [variantId, keys] of canonicalRekeys) await rekeyVariantIdentity(tx, variantId, keys);
-    for (const [variantId, identityClass] of variantClasses) {
-      if (identityClass === "PLACEHOLDER" || identityClass === "REUSED") {
+    const resolvedAt = new Date();
+    for (const identityClass of ["PLACEHOLDER", "REUSED"] as const) {
+      const variantIds = [...variantClasses]
+        .filter(([, candidateClass]) => candidateClass === identityClass)
+        .map(([variantId]) => variantId);
+      for (const entityIds of chunks(variantIds)) {
         const result = await tx.reviewTask.updateMany({
-          where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, status: { in: ["OPEN", "IN_REVIEW"] } },
+          where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: { in: entityIds }, status: { in: ["OPEN", "IN_REVIEW"] } },
           data: {
             status: "RESOLVED",
             reason: identityClass === "PLACEHOLDER" ? "placeholder-reference" : "reused-reference",
-            resolvedAt: new Date(),
+            resolvedAt,
             resolutionNote: identityClass === "PLACEHOLDER"
               ? "Expected non-unique placeholder; SourceRecord-qualified identity retained."
               : "Reference reuse confirmed by distinct identity signals; variants remain separate.",
@@ -173,7 +215,7 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
       });
       reviewsCreated += 1;
     }
-  });
+  }, { timeout: RECLASSIFICATION_TRANSACTION_TIMEOUT_MS, maxWait: 10_000 });
 
   const [sourceRecordsLinked, sourceRecordsUnlinked, trueIdentityReviewsOpen, trueIdentityReviewsActive] = await Promise.all([
     db.sourceRecord.count({ where: { recordType: "collectible", variantId: { not: null } } }),
