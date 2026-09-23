@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
 import { validateMergedRepairPlan, repairPlanHash, type MergedRepairPlan, type MergedRepairPlanDetail } from "../domain/merged-repair-plan.js";
 import { parseReference } from "../domain/reference.js";
+import { isGenericSourceMedia } from "../domain/source-media.js";
 import { qualifiedIdentityKeys } from "../pipeline/canonical-identity.js";
 import { rebuildCanonicalVariantFromSourceRecords, type RebuildSourceRecord } from "../pipeline/rebuild-canonical-variant.js";
 import { auditMergedIdentities, type MergedIdentityAuditDetail } from "./audit-merged-identities.js";
@@ -67,6 +68,7 @@ export interface MergedRepairReport {
   canonicalRekeysPlanned: number;
   mediaAssetsToMove: number;
   instructionsToMove: number;
+  genericMediaIgnored: number;
   relationAttributionBlockers: RelationAttributionBlocker[];
   groups: MergedRepairGroupReport[];
   applyBlocked: boolean;
@@ -102,6 +104,7 @@ export interface MergedRepairGroupReport {
   applyEligibility: "ELIGIBLE" | "BLOCKED_UNATTRIBUTED_RELATIONS";
   unattributableRelations: UnattributableRelationCounts;
   eligibleNewVariants: number;
+  genericMediaIgnored: number;
 }
 
 interface ExpectedCluster {
@@ -121,6 +124,7 @@ interface ExpectedGroup {
   blockers: RelationAttributionBlocker[];
   mediaAssignments: RelationAssignment[];
   instructionAssignments: RelationAssignment[];
+  genericMediaIgnored: number;
 }
 
 interface CurrentSourceRecord extends RebuildSourceRecord {
@@ -237,7 +241,7 @@ async function inspectRepairState(
       select: {
         id: true, productId: true, canonicalKey: true,
         product: { select: { id: true, canonicalKey: true, _count: { select: { variants: true, figures: true, parts: true } } } },
-        media: { select: { id: true, sourceId: true } },
+        media: { select: { id: true, sourceId: true, sourceUrl: true } },
         instructions: { select: { id: true, sourceId: true } },
         figures: { select: { figureId: true } },
         parts: { select: { partId: true } },
@@ -270,7 +274,7 @@ async function inspectRepairState(
     }).sort((left, right) => compareText(left.stableAnchor, right.stableAnchor));
     clusters[0]!.retainsVariantId = true;
     clusters[0]!.targetVariantId = detail.currentVariantId;
-    return { plan: detail, clusters, state: "PENDING", blockers: [], mediaAssignments: [], instructionAssignments: [] };
+    return { plan: detail, clusters, state: "PENDING", blockers: [], mediaAssignments: [], instructionAssignments: [], genericMediaIgnored: 0 };
   });
 
   const expectedVariantKeys = expectedGroups.flatMap((group) => group.clusters.map((cluster) => cluster.keys.variantKey));
@@ -323,6 +327,10 @@ async function inspectRepairState(
     if (!current) throw new Error(`Drift detected: missing ProductVariant ${group.plan.currentVariantId}`);
     const targetBySource = relationTargetBySource(group.clusters);
     for (const media of current.media) {
+      if (isGenericSourceMedia(media.sourceUrl)) {
+        group.genericMediaIgnored += 1;
+        continue;
+      }
       const clusterId = targetBySource.get(media.sourceId);
       if (clusterId) {
         const assignment = { id: media.id, currentVariantId: current.id, targetClusterId: clusterId };
@@ -402,6 +410,7 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
     applyEligibility: group.blockers.length === 0 ? "ELIGIBLE" : "BLOCKED_UNATTRIBUTED_RELATIONS",
     unattributableRelations: relationCounts(group),
     eligibleNewVariants: group.state === "PENDING" && group.blockers.length === 0 ? group.clusters.length - 1 : 0,
+    genericMediaIgnored: group.genericMediaIgnored,
   }));
   const eligibleClusters = eligibleGroups.reduce((total, group) => total + group.clusters.length, 0);
   const allApplied = appliedGroups.length === details.length;
@@ -429,6 +438,7 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
     canonicalRekeysPlanned: inspection.canonicalRekeysPlanned,
     mediaAssetsToMove: inspection.mediaAssignments.length,
     instructionsToMove: inspection.instructionAssignments.length,
+    genericMediaIgnored: inspection.groups.reduce((total, group) => total + group.genericMediaIgnored, 0),
     relationAttributionBlockers: inspection.blockers,
     groups,
     applyBlocked: eligibleGroups.length === 0 && blockedGroups.length > 0,

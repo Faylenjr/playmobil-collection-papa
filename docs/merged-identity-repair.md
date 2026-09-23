@@ -84,6 +84,19 @@ affecté arbitrairement. `--apply` ignore entièrement les groupes bloqués et a
 les groupes éligibles dans une même transaction. Un échec d'un groupe éligible annule tous les
 groupes éligibles de cette exécution. Les groupes bloqués restent strictement inchangés.
 
+Une exception vérifiée est classée `GENERIC_SOURCE_FALLBACK` :
+
+```text
+https://www.klickypedia.com/wp-content/uploads/2014/08/logo-klickypedia-click.jpg
+```
+
+Cette URL exacte est le fallback générique de Klickypedia, pas un média propre au variant. Elle
+ne bloque donc pas un split et apparaît dans `genericMediaIgnored`, globalement et par groupe.
+La ligne historique n'est ni copiée ni supprimée : elle reste sur le variant conservant l'ancien
+ID. La reconnaissance est une égalité exacte ; aucun motif fondé sur `logo`, le domaine,
+l'extension ou `/wp-content/` n'est utilisé. Le parser et le pipeline d'import empêchent sa
+matérialisation lors des futurs imports, sans nettoyer les lignes historiques.
+
 ### Évolution recommandée des futurs imports
 
 Une future migration additive devrait introduire `MediaAsset.sourceRecordId?` et

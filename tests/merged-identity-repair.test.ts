@@ -9,6 +9,7 @@ import { repairMergedIdentities } from "../src/jobs/repair-merged-identities.js"
 import { reclassifyIdentities } from "../src/jobs/reclassify-identities.js";
 import { qualifiedIdentityKeys } from "../src/pipeline/canonical-identity.js";
 import { repairPlanHash } from "../src/domain/merged-repair-plan.js";
+import { KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL } from "../src/domain/source-media.js";
 
 const directories: string[] = [];
 let fixtureSequence = 0;
@@ -369,6 +370,81 @@ describe("merged identity repair", () => {
       expect(await db.productVariant.count()).toBe(1);
       expect(await db.sourceRecord.count({ where: { variantId: group.variant.id } })).toBe(2);
       expect((await db.productVariant.findUniqueOrThrow({ where: { id: group.variant.id } })).canonicalKey).toBe(group.variant.canonicalKey);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("ignores the exact generic Klickypedia fallback and preserves it only on the historical variant during apply", async () => {
+    const { db, database: embedded } = await database("repair-generic-media");
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const fallback = await db.mediaAsset.create({ data: {
+        variantId: group.variant.id, sourceId: source.id, kind: "main", sourceUrl: KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL,
+      } });
+      const plan = await auditMergedIdentities(db);
+
+      const preview = await repairMergedIdentities(db, plan);
+      expect(preview).toMatchObject({
+        identitySafeSplits: 1, eligibleSplits: 1, blockedSplits: 0,
+        eligibleNewVariants: 1, genericMediaIgnored: 1,
+      });
+      expect(preview.relationAttributionBlockers).toEqual([]);
+      expect(preview.groups[0]).toMatchObject({
+        relationAttribution: "COMPLETE", applyEligibility: "ELIGIBLE", genericMediaIgnored: 1,
+        unattributableRelations: { mediaAssets: 0 },
+      });
+
+      await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(await db.mediaAsset.count({ where: { sourceUrl: KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL } })).toBe(1);
+      expect((await db.mediaAsset.findUniqueOrThrow({ where: { id: fallback.id } })).variantId).toBe(group.variant.id);
+      const variants = await db.sourceRecord.findMany({ where: { id: { in: group.records.map((record) => record.id) } }, select: { variantId: true } });
+      expect(new Set(variants.map((record) => record.variantId)).size).toBe(2);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("ignores the exact fallback while a real unattributable media asset still blocks the group", async () => {
+    const { db, database: embedded } = await database("repair-generic-and-real-media");
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
+      await db.mediaAsset.createMany({ data: [
+        { variantId: group.variant.id, sourceId: source.id, kind: "main", sourceUrl: KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL },
+        { variantId: group.variant.id, sourceId: source.id, kind: "gallery", sourceUrl: "https://images.example/real-unattributed.jpg" },
+      ] });
+      const preview = await repairMergedIdentities(db, await auditMergedIdentities(db));
+
+      expect(preview).toMatchObject({ eligibleSplits: 0, blockedSplits: 1, genericMediaIgnored: 1 });
+      expect(preview.groups[0]).toMatchObject({
+        genericMediaIgnored: 1,
+        applyEligibility: "BLOCKED_UNATTRIBUTED_RELATIONS",
+        unattributableRelations: { mediaAssets: 1 },
+      });
+      expect(preview.relationAttributionBlockers).toEqual([expect.objectContaining({ relation: "MediaAsset", count: 1 })]);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("does not treat a lookalike fallback URL as generic", async () => {
+    const { db, database: embedded } = await database("repair-lookalike-media");
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
+      await db.mediaAsset.create({ data: {
+        variantId: group.variant.id, sourceId: source.id, kind: "main",
+        sourceUrl: `${KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL}?variant=1`,
+      } });
+      const preview = await repairMergedIdentities(db, await auditMergedIdentities(db));
+
+      expect(preview).toMatchObject({ eligibleSplits: 0, blockedSplits: 1, genericMediaIgnored: 0 });
+      expect(preview.groups[0]).toMatchObject({ genericMediaIgnored: 0, unattributableRelations: { mediaAssets: 1 } });
     } finally {
       await db.$disconnect();
       await embedded.close();

@@ -3,6 +3,7 @@ import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
 import { parseReference } from "../domain/reference.js";
 import { resolveIdentityKeys, type IdentitySnapshot } from "../domain/identity.js";
 import { resolveCandidates } from "../domain/resolver.js";
+import { isGenericSourceMedia } from "../domain/source-media.js";
 import { klickypediaThemeSlug } from "../importers/klickypedia.js";
 import type { RawCollectible } from "../importers/types.js";
 import { qualifiedIdentityKeys, rekeyVariantIdentity } from "./canonical-identity.js";
@@ -225,7 +226,7 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
       await tx.variantMarket.upsert({ where: { variantId_marketId: { variantId: variant.id, marketId: market.id } }, create: { variantId: variant.id, marketId: market.id }, update: {} });
     }
 
-    for (const image of item.images ?? []) await tx.mediaAsset.upsert({
+    for (const image of (item.images ?? []).filter((candidate) => !isGenericSourceMedia(candidate.url))) await tx.mediaAsset.upsert({
       where: { variantId_sourceUrl: { variantId: variant.id, sourceUrl: image.url } },
       create: { variantId: variant.id, sourceId: source.id, kind: image.kind, sourceUrl: image.url, author: image.author ?? null, copyrightOwner: image.copyrightOwner ?? null, license: image.license ?? null, canDisplay: image.canDisplay ?? null, canRehost: image.canRehost ?? null, lastVerifiedAt: new Date() },
       update: { kind: image.kind, ...(image.author !== undefined ? { author: image.author } : {}), ...(image.copyrightOwner !== undefined ? { copyrightOwner: image.copyrightOwner } : {}), ...(image.license !== undefined ? { license: image.license } : {}), ...(image.canDisplay !== undefined ? { canDisplay: image.canDisplay } : {}), ...(image.canRehost !== undefined ? { canRehost: image.canRehost } : {}), lastVerifiedAt: new Date() },

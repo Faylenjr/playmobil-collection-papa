@@ -5,6 +5,7 @@ import { parseKlickypediaSet } from "../src/importers/klickypedia.js";
 import { parsePlaymobilProduct } from "../src/importers/playmobil.js";
 import { parsePlaymoDbStats } from "../src/importers/playmodb.js";
 import { selectBatchEntries } from "../src/jobs/import-klickypedia.js";
+import { KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL } from "../src/domain/source-media.js";
 
 const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), "utf8");
 
@@ -16,6 +17,15 @@ describe("source parsers", () => {
     expect(item.images?.map((image) => image.kind)).toEqual(["main", "box_front", "box_back"]);
     expect(item.parts).toEqual([{ partNumber: "30200354", name: "Gymnastics ribbon", sourceUrl: "https://www.klickypedia.com/parts/30200354-ribbon/" }]);
     expect(item.instructions).toEqual([{ url: "https://example.invalid/70733.pdf" }]);
+  });
+  it("does not expose the exact generic Klickypedia fallback as product media", () => {
+    const html = fixture("klickypedia-set.html").replaceAll(
+      "https://www.klickypedia.com/wp-content/uploads/70733-main.jpg",
+      KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL,
+    );
+    const item = parseKlickypediaSet(html, "https://www.klickypedia.com/sets/70733-01-gymnast/");
+    expect(item.images?.some((image) => image.url === KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL)).toBe(false);
+    expect(item.images?.map((image) => image.kind)).toEqual(["box_front", "box_back"]);
   });
   it("parses official product media and instructions as source URLs", () => {
     const item = parsePlaymobilProduct(fixture("playmobil-product.html"), "https://www.playmobil.com/de-de/example/71733.html");

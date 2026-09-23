@@ -3,6 +3,7 @@ import { load, type Cheerio, type CheerioAPI } from "cheerio";
 import type { RawCollectible, SitemapEntry } from "./types.js";
 import { parseSitemapIndex, parseUrlSet } from "./sitemap.js";
 import { PoliteHttpClient } from "./http.js";
+import { isGenericSourceMedia } from "../domain/source-media.js";
 
 export const KLICKYPEDIA = {
   key: "klickypedia",
@@ -118,7 +119,7 @@ export function parseKlickypediaSet(html: string, sourceUrl: string, contentHash
   const addImage = (kind: string, url?: string) => {
     if (!url) return;
     const normalized = absoluteUrl(url, sourceUrl);
-    if (normalized.includes("summary-sets-images") || seenImages.has(normalized)) return;
+    if (normalized.includes("summary-sets-images") || isGenericSourceMedia(normalized) || seenImages.has(normalized)) return;
     seenImages.add(normalized);
     images.push({ kind, url: normalized, copyrightOwner: "unknown — review required", canRehost: false });
   };
