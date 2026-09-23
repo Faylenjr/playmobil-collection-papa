@@ -5,6 +5,7 @@ import { resolveIdentityKeys, type IdentitySnapshot } from "../domain/identity.j
 import { resolveCandidates } from "../domain/resolver.js";
 import { klickypediaThemeSlug } from "../importers/klickypedia.js";
 import type { RawCollectible } from "../importers/types.js";
+import { qualifiedIdentityKeys, rekeyVariantIdentity } from "./canonical-identity.js";
 
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const json = (value: unknown) => value as Prisma.InputJsonValue;
@@ -93,12 +94,14 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
         product: { select: { canonicalKey: true, kind: true } },
         themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
         references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
+        sourceRecords: { select: { externalId: true, source: { select: { key: true } } } },
       } })
       : await tx.productVariant.findMany({ where: { references: { some: { normalizedValue: parsed.normalized } } }, select: {
         id: true, productId: true, canonicalKey: true, name: true, releaseYear: true, format: true,
         product: { select: { canonicalKey: true, kind: true } },
         themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
         references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
+        sourceRecords: { select: { externalId: true, source: { select: { key: true } } } },
       } });
     const candidates: IdentitySnapshot[] = candidateRows.map((candidate) => ({
       id: candidate.id,
@@ -112,7 +115,7 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
       format: candidate.format,
       referenceClass: candidate.references[0]?.identityClass ?? "ASSIGNED",
     }));
-    const identity = record.variantId && candidates[0]
+    let identity = record.variantId && candidates[0]
       ? {
         productKey: candidates[0].productKey!, variantKey: candidates[0].variantKey!, matchedCandidate: candidates[0],
         referenceClass: candidates[0].referenceClass ?? "ASSIGNED", needsReview: false as const,
@@ -122,6 +125,28 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
               : "assigned-reference" as const,
       }
       : resolveIdentityKeys(item, parsed, candidates);
+    if (identity.referenceClass === "REUSED") {
+      if (identity.matchedCandidate?.id) {
+        const matched = candidateRows.find((candidate) => candidate.id === identity.matchedCandidate!.id)!;
+        const keys = qualifiedIdentityKeys(parsed.base, parsed.normalized, [
+          ...matched.sourceRecords.map((sourceRecord) => ({ sourceKey: sourceRecord.source.key, externalId: sourceRecord.externalId })),
+          { sourceKey: item.source, externalId: item.externalId },
+        ]);
+        await rekeyVariantIdentity(tx, matched.id, keys);
+        identity = { ...identity, ...keys };
+      } else {
+        // The collision changes the status of the entire reference group. Move
+        // every pre-existing object to its own deterministic key before the
+        // incoming object is created; the surrounding transaction is atomic.
+        for (const candidate of candidateRows) {
+          const keys = qualifiedIdentityKeys(parsed.base, parsed.normalized, candidate.sourceRecords.map((sourceRecord) => ({
+            sourceKey: sourceRecord.source.key,
+            externalId: sourceRecord.externalId,
+          })));
+          await rekeyVariantIdentity(tx, candidate.id, keys);
+        }
+      }
+    }
     const product = await tx.product.upsert({
       where: { canonicalKey: identity.productKey },
       create: { canonicalKey: identity.productKey, baseReference: parsed.base, kind: inferProductKind(item), name: item.name ?? null, releaseYear: item.releaseYear ?? null, discontinuedYear: item.discontinuedYear ?? null },

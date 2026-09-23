@@ -24,7 +24,23 @@ pnpm identities:reclassify
 pnpm identities:reclassify -- --apply
 ```
 
-Elle ne fusionne, ne supprime et ne renomme aucun produit ou variant. Elle classe les références, résout avec une note les anciennes revues de placeholders/réutilisations attendues et laisse ouvertes les véritables ambiguïtés.
+Elle ne fusionne et ne supprime aucun produit ou variant. Lorsqu'une référence est confirmée comme réutilisée, elle remplace atomiquement les anciennes clés dépendantes de l'ordre par des clés qualifiées déterministes. L'ancrage est le plus petit couple `(source, externalId)` parmi tous les `SourceRecord` représentant le variant ; plusieurs sources reconnues `MATCH` restent donc dédupliquées sur le même variant. Elle classe ensuite les références, résout avec une note les anciennes revues de placeholders/réutilisations attendues et ne conserve qu'une tâche active par groupe réellement ambigu.
+
+Avant la première migration d'identité, ce préflight doit retourner zéro ligne :
+
+```sql
+SELECT sr.id, s.key AS source, sr.external_id,
+       COUNT(DISTINCT sv.entity_id) AS product_variant_ids,
+       ARRAY_AGG(DISTINCT sv.entity_id ORDER BY sv.entity_id) AS conflicting_variant_ids
+FROM source_records sr
+JOIN sources s ON s.id = sr.source_id
+JOIN source_values sv ON sv.source_record_id = sr.id
+WHERE sv.entity_type = 'ProductVariant'
+GROUP BY sr.id, s.key, sr.external_id
+HAVING COUNT(DISTINCT sv.entity_id) > 1;
+```
+
+La migration contient la même garde et s'interrompt intégralement si une incohérence est détectée ; elle ne choisit plus silencieusement le `SourceValue` le plus récent.
 
 ## Rapport
 

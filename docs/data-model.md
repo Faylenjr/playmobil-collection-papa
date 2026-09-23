@@ -17,7 +17,7 @@ Chaque `ProductReference` porte une classe d'identité :
 - `REUSED` : même référence publiée pour plusieurs objets dont les signaux distinctifs sont suffisants ;
 - `AMBIGUOUS` : collision que les données disponibles ne permettent pas de trancher sûrement.
 
-Les placeholders et les réutilisations restent des objets séparés avec une clé qualifiée par le couple stable source/identifiant externe. Ils ne créent pas de revue humaine ouverte. Une `ReviewTask` n'est conservée que pour `AMBIGUOUS`. La détection des placeholders est ancrée sur toute la référence : une référence légitime comme `0001` ou `0104-sch` n'est donc pas capturée.
+Les placeholders et les réutilisations restent des objets séparés avec une clé qualifiée. Pour un variant représenté par plusieurs sources, l'ancrage est choisi de façon déterministe dans l'ensemble de ses couples `(source, externalId)` ; il ne dépend donc ni de la première source importée ni de l'ordre du crawl. Lorsqu'une référence jusque-là unique devient `REUSED`, les clés de tous les objets du groupe sont requalifiées atomiquement. Ils ne créent pas de revue humaine ouverte. Une seule `ReviewTask` active est conservée par groupe `AMBIGUOUS`. La détection des placeholders est ancrée sur toute la référence : une référence légitime comme `0001` ou `0104-sch` n'est donc pas capturée.
 
 ## Provenance
 

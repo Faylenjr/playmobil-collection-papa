@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
 import { compareIdentitySignals, isPlaceholderReference, type IdentitySnapshot, type ReferenceIdentityClass } from "../domain/identity.js";
+import { qualifiedIdentityKeys, rekeyVariantIdentity } from "../pipeline/canonical-identity.js";
 
 const json = (value: unknown) => value as Prisma.InputJsonValue;
 
@@ -21,8 +22,10 @@ export interface IdentityReclassificationResult {
   sourceRecordsUnlinked: number;
   reviewsResolved: number;
   reviewsCreated: number;
+  canonicalRekeysPlanned: number;
   predictedTrueIdentityVariants: number;
   trueIdentityReviewsOpen: number;
+  trueIdentityReviewsActive: number;
 }
 
 export async function reclassifyIdentities(db: PrismaClient, apply = false): Promise<IdentityReclassificationResult> {
@@ -31,8 +34,9 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
       variant: {
         select: {
           id: true, canonicalKey: true, name: true, releaseYear: true, format: true,
-          product: { select: { id: true, canonicalKey: true, kind: true } },
+          product: { select: { id: true, canonicalKey: true, baseReference: true, kind: true } },
           themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
+          sourceRecords: { select: { externalId: true, source: { select: { key: true } } } },
         },
       },
     },
@@ -47,7 +51,8 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
   const classifications: Record<ReferenceIdentityClass, number> = { ASSIGNED: 0, PLACEHOLDER: 0, REUSED: 0, AMBIGUOUS: 0 };
   const assignments = new Map<string, { identityClass: ReferenceIdentityClass; identityReason: string }>();
   const variantClasses = new Map<string, ReferenceIdentityClass>();
-  const ambiguousVariantGroups: string[][] = [];
+  const ambiguousVariantGroups: Array<{ normalizedValue: string; variantIds: string[]; reason: string }> = [];
+  const canonicalRekeys = new Map<string, { productKey: string; variantKey: string }>();
   let reusedReferenceGroups = 0;
   let ambiguousReferenceGroups = 0;
 
@@ -72,15 +77,30 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
       productKind: reference.variant.product.kind,
       format: reference.variant.format,
     }));
-    const safelyReused = snapshots.every((snapshot, index) => snapshots
+    const pairwiseDistinct = snapshots.every((snapshot, index) => snapshots
       .filter((_, otherIndex) => otherIndex !== index)
       .every((other) => compareIdentitySignals(snapshot, other) === "DISTINCT"));
+    const hasStableAnchors = distinctVariants.every((reference) => reference.variant.sourceRecords.length > 0);
+    const safelyReused = pairwiseDistinct && hasStableAnchors;
     const identityClass: ReferenceIdentityClass = safelyReused ? "REUSED" : "AMBIGUOUS";
-    const identityReason = safelyReused ? "distinct-objects-reuse-reference" : "true-identity-conflict";
-    if (safelyReused) reusedReferenceGroups += 1;
+    const identityReason = safelyReused ? "distinct-objects-reuse-reference"
+      : pairwiseDistinct ? "missing-source-record-identity" : "true-identity-conflict";
+    if (safelyReused) {
+      reusedReferenceGroups += 1;
+      for (const reference of distinctVariants) {
+        const keys = qualifiedIdentityKeys(
+          reference.baseValue ?? reference.variant.product.baseReference ?? reference.variant.product.canonicalKey.replace(/^ref:|:record:.*$/g, ""),
+          normalizedValue,
+          reference.variant.sourceRecords.map((sourceRecord) => ({ sourceKey: sourceRecord.source.key, externalId: sourceRecord.externalId })),
+        );
+        if (reference.variant.canonicalKey !== keys.variantKey || reference.variant.product.canonicalKey !== keys.productKey) {
+          canonicalRekeys.set(reference.variant.id, keys);
+        }
+      }
+    }
     else {
       ambiguousReferenceGroups += 1;
-      ambiguousVariantGroups.push(distinctVariants.map((reference) => reference.variant.id));
+      ambiguousVariantGroups.push({ normalizedValue, variantIds: distinctVariants.map((reference) => reference.variant.id), reason: identityReason });
     }
     for (const reference of group) assignments.set(reference.id, { identityClass, identityReason });
   }
@@ -96,6 +116,7 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
   let reviewsCreated = 0;
   if (apply) await db.$transaction(async (tx) => {
     for (const [id, assignment] of assignments) await tx.productReference.update({ where: { id }, data: assignment });
+    for (const [variantId, keys] of canonicalRekeys) await rekeyVariantIdentity(tx, variantId, keys);
     for (const [variantId, identityClass] of variantClasses) {
       if (identityClass === "PLACEHOLDER" || identityClass === "REUSED") {
         const result = await tx.reviewTask.updateMany({
@@ -110,36 +131,55 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
           },
         });
         reviewsResolved += result.count;
-      } else if (identityClass === "AMBIGUOUS") {
-        await tx.reviewTask.updateMany({
-          where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, status: { in: ["OPEN", "IN_REVIEW"] } },
-          data: { reason: "true-identity-conflict", resolutionNote: null },
-        });
       }
     }
-    // One task represents one ambiguous reference group. Existing tasks are
-    // retained; a missing task is attached to a stable representative variant.
-    for (const variantIds of ambiguousVariantGroups) {
-      const existing = await tx.reviewTask.findFirst({
-        where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: { in: variantIds }, status: { in: ["OPEN", "IN_REVIEW"] } },
+    for (const group of ambiguousVariantGroups) {
+      const active = await tx.reviewTask.findMany({
+        where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: { in: group.variantIds }, status: { in: ["OPEN", "IN_REVIEW"] } },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       });
-      if (existing) continue;
-      const variantId = [...variantIds].sort()[0]!;
+      // Prefer work already in progress, then the oldest task and UUID. This is
+      // deterministic and leaves exactly one active task for the whole group.
+      active.sort((left, right) => {
+        const status = Number(left.status !== "IN_REVIEW") - Number(right.status !== "IN_REVIEW");
+        if (status !== 0) return status;
+        const created = left.createdAt.getTime() - right.createdAt.getTime();
+        return created !== 0 ? created : left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+      });
+      const representative = active[0];
+      if (representative) {
+        await tx.reviewTask.update({ where: { id: representative.id }, data: { reason: group.reason } });
+        for (const redundant of active.slice(1)) {
+          await tx.reviewTask.update({
+            where: { id: redundant.id },
+            data: {
+              status: "RESOLVED",
+              reason: "duplicate-identity-review",
+              resolvedAt: new Date(),
+              resolutionNote: `Consolidated into ReviewTask ${representative.id} for ambiguous reference ${group.normalizedValue}.`,
+            },
+          });
+          reviewsResolved += 1;
+        }
+        continue;
+      }
+      const variantId = [...group.variantIds].sort()[0]!;
       const reference = references.find((row) => row.variantId === variantId);
       await tx.reviewTask.create({
         data: {
-          kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, reason: "true-identity-conflict",
-          payload: json({ reference: reference?.displayValue, normalizedReference: reference?.normalizedValue, classification: "AMBIGUOUS", relatedVariantIds: variantIds }),
+          kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, reason: group.reason,
+          payload: json({ reference: reference?.displayValue, normalizedReference: reference?.normalizedValue, classification: "AMBIGUOUS", relatedVariantIds: group.variantIds }),
         },
       });
       reviewsCreated += 1;
     }
   });
 
-  const [sourceRecordsLinked, sourceRecordsUnlinked, trueIdentityReviewsOpen] = await Promise.all([
+  const [sourceRecordsLinked, sourceRecordsUnlinked, trueIdentityReviewsOpen, trueIdentityReviewsActive] = await Promise.all([
     db.sourceRecord.count({ where: { recordType: "collectible", variantId: { not: null } } }),
     db.sourceRecord.count({ where: { recordType: "collectible", variantId: null } }),
     db.reviewTask.count({ where: { status: "OPEN", kind: "ambiguous-reference", reason: "true-identity-conflict" } }),
+    db.reviewTask.count({ where: { status: { in: ["OPEN", "IN_REVIEW"] }, kind: "ambiguous-reference", reason: "true-identity-conflict" } }),
   ]);
   return {
     dryRun: !apply,
@@ -152,7 +192,9 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
     sourceRecordsUnlinked,
     reviewsResolved,
     reviewsCreated,
+    canonicalRekeysPlanned: canonicalRekeys.size,
     predictedTrueIdentityVariants: [...variantClasses.values()].filter((identityClass) => identityClass === "AMBIGUOUS").length,
     trueIdentityReviewsOpen,
+    trueIdentityReviewsActive,
   };
 }

@@ -8,7 +8,7 @@ export async function buildCoverageReport(db: PrismaClient) {
     products, variants, sourceRecords, referenceRows, names, namesFr, years, discontinued, themes, mainImages, boxFront, boxBack,
     instructions, figureCounts, pieceCounts, linkedParts, fullPartsInventory, openConflicts, openReviews, sourceStats, yearRows, sourceReferenceValues,
     productKinds, variantKinds, promotions, exclusives, variantPartRows, referenceIdentityKinds, linkedRecordsByVariant,
-    unlinkedSourceRecords, openReviewsByReason,
+    unlinkedSourceRecords, openReviewsByReason, activeReviews, activeReviewsByReason,
   ] = await Promise.all([
     db.product.count(),
     db.productVariant.count(),
@@ -41,6 +41,8 @@ export async function buildCoverageReport(db: PrismaClient) {
     db.sourceRecord.groupBy({ by: ["variantId"], where: { recordType: "collectible", variantId: { not: null } }, _count: { _all: true } }),
     db.sourceRecord.count({ where: { recordType: "collectible", variantId: null } }),
     db.reviewTask.groupBy({ by: ["reason"], where: { status: "OPEN" }, _count: { _all: true } }),
+    db.reviewTask.count({ where: { status: { in: ["OPEN", "IN_REVIEW"] } } }),
+    db.reviewTask.groupBy({ by: ["reason"], where: { status: { in: ["OPEN", "IN_REVIEW"] } }, _count: { _all: true } }),
   ]);
 
   const normalizedReferenceCount = new Set(referenceRows.map((row) => row.normalizedValue)).size;
@@ -85,6 +87,8 @@ export async function buildCoverageReport(db: PrismaClient) {
       openConflicts,
       openReviewTasks: openReviews,
       openReviewTasksByReason: Object.fromEntries(openReviewsByReason.map((row) => [row.reason, row._count._all])),
+      activeReviewTasks: activeReviews,
+      activeReviewTasksByReason: Object.fromEntries(activeReviewsByReason.map((row) => [row.reason, row._count._all])),
       referenceIdentityClasses: Object.fromEntries(referenceIdentityKinds.map((row) => [row.identityClass, row._count._all])),
       reusedReferenceGroups,
       ambiguousReferenceGroups,
