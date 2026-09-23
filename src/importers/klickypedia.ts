@@ -89,8 +89,8 @@ export function parseKlickypediaSet(html: string, sourceUrl: string, contentHash
   const $ = load(html);
   const article = $("article.type-sets").first();
   const heading = clean(article.find("h1.entry-title").first().text() || $("h1").first().text());
-  const match = heading.match(/^Playmobil\s+(.+?)\s+-\s+(.+)$/i);
-  if (!match?.[1] || !match[2]) throw new Error(`Missing reference in Klickypedia page: ${sourceUrl}`);
+  const match = heading.match(/^Playmobil\s+(.+?)\s*-\s*(.*)$/i);
+  if (!match?.[1]) throw new Error(`Missing reference in Klickypedia page: ${sourceUrl}`);
 
   const info = article.find(".caja_set_info").first();
   const translations = info.find("img[alt]").map((_, element) => {
@@ -140,7 +140,13 @@ export function parseKlickypediaSet(html: string, sourceUrl: string, contentHash
   const figureEntities = parseLinkedEntities($, "FIGURES IN THIS SET", "figures");
   const sourceUpdatedAt = article.find(".post-date.updated").first().text().trim() || $("meta[property='article:modified_time']").attr("content");
   const tags = info.find(".settags a").map((_, element) => clean($(element).text())).get().filter(Boolean);
-  const primaryName = translations.find((translation) => translation.locale === "en")?.name ?? match[2];
+  const primaryName =
+    translations.find((translation) => translation.locale === "en")?.name
+    ?? meaningful(match[2] ?? "")
+    ?? new URL(sourceUrl).pathname
+      .replace(/^\/sets\/|\/$/g, "")
+      .replace(/^[^-]+-/, "")
+      .replace(/-/g, " ");
   const promotionSignal = [format, exclusive, ...tags].filter(Boolean).join(" ");
   const releaseYear = parseYear(releaseField.text);
   const discontinuedYear = parseYear(discontinuedField.text);
