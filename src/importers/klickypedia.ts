@@ -89,7 +89,7 @@ export function parseKlickypediaSet(html: string, sourceUrl: string, contentHash
   const $ = load(html);
   const article = $("article.type-sets").first();
   const heading = clean(article.find("h1.entry-title").first().text() || $("h1").first().text());
-  const match = heading.match(/^Playmobil\s+([^\s]+)\s+-\s+(.+)$/i);
+  const match = heading.match(/^Playmobil\s+(.+?)\s+-\s+(.+)$/i);
   if (!match?.[1] || !match[2]) throw new Error(`Missing reference in Klickypedia page: ${sourceUrl}`);
 
   const info = article.find(".caja_set_info").first();
