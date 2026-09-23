@@ -1,0 +1,697 @@
+From 02ab4f41e673408c42994573489c1a7dc0c4f698 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 23 Sep 2026 07:46:21 +0500
+Subject: [PATCH 1/3] feat: model variant-level catalogue data
+
+---
+ .../migration.sql                             |  61 +++
+ prisma/schema.prisma                          | 456 ++++++++++--------
+ 2 files changed, 326 insertions(+), 191 deletions(-)
+ create mode 100644 prisma/migrations/20260922204500_variant_metadata/migration.sql
+
+diff --git a/prisma/migrations/20260922204500_variant_metadata/migration.sql b/prisma/migrations/20260922204500_variant_metadata/migration.sql
+new file mode 100644
+index 0000000..369238c
+--- /dev/null
++++ b/prisma/migrations/20260922204500_variant_metadata/migration.sql
+@@ -0,0 +1,61 @@
++-- Variant-level facts are additive. Product-level columns and joins remain available
++-- for canonical/aggregated values and backwards compatibility.
++ALTER TABLE "product_variants"
++  ADD COLUMN "name" TEXT,
++  ADD COLUMN "description" TEXT,
++  ADD COLUMN "release_year" INTEGER,
++  ADD COLUMN "discontinued_year" INTEGER,
++  ADD COLUMN "format" TEXT,
++  ADD COLUMN "width_mm" DECIMAL(10,2),
++  ADD COLUMN "height_mm" DECIMAL(10,2),
++  ADD COLUMN "depth_mm" DECIMAL(10,2),
++  ADD COLUMN "weight_grams" DECIMAL(10,2),
++  ADD COLUMN "parts_inventory_complete" BOOLEAN;
++
++CREATE INDEX "product_variants_release_year_idx" ON "product_variants"("release_year");
++
++CREATE TABLE "variant_translations" (
++  "id" UUID NOT NULL,
++  "variant_id" UUID NOT NULL,
++  "locale" VARCHAR(12) NOT NULL,
++  "name" TEXT,
++  "description" TEXT,
++  CONSTRAINT "variant_translations_pkey" PRIMARY KEY ("id"),
++  CONSTRAINT "variant_translations_variant_id_fkey"
++    FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE
++);
++CREATE UNIQUE INDEX "variant_translations_variant_id_locale_key"
++  ON "variant_translations"("variant_id", "locale");
++
++CREATE TABLE "variant_themes" (
++  "variant_id" UUID NOT NULL,
++  "theme_id" UUID NOT NULL,
++  "is_primary" BOOLEAN NOT NULL DEFAULT false,
++  CONSTRAINT "variant_themes_pkey" PRIMARY KEY ("variant_id", "theme_id"),
++  CONSTRAINT "variant_themes_variant_id_fkey"
++    FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE,
++  CONSTRAINT "variant_themes_theme_id_fkey"
++    FOREIGN KEY ("theme_id") REFERENCES "themes"("id") ON DELETE CASCADE ON UPDATE CASCADE
++);
++
++CREATE TABLE "variant_figures" (
++  "variant_id" UUID NOT NULL,
++  "figure_id" UUID NOT NULL,
++  "quantity" INTEGER,
++  CONSTRAINT "variant_figures_pkey" PRIMARY KEY ("variant_id", "figure_id"),
++  CONSTRAINT "variant_figures_variant_id_fkey"
++    FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE,
++  CONSTRAINT "variant_figures_figure_id_fkey"
++    FOREIGN KEY ("figure_id") REFERENCES "figures"("id") ON DELETE CASCADE ON UPDATE CASCADE
++);
++
++CREATE TABLE "variant_parts" (
++  "variant_id" UUID NOT NULL,
++  "part_id" UUID NOT NULL,
++  "quantity" INTEGER,
++  CONSTRAINT "variant_parts_pkey" PRIMARY KEY ("variant_id", "part_id"),
++  CONSTRAINT "variant_parts_variant_id_fkey"
++    FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE CASCADE ON UPDATE CASCADE,
++  CONSTRAINT "variant_parts_part_id_fkey"
++    FOREIGN KEY ("part_id") REFERENCES "parts"("id") ON DELETE CASCADE ON UPDATE CASCADE
++);
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 587a7f0..a64eae2 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -70,21 +70,21 @@ enum CollectionCondition {
+ }
+ 
+ model Product {
+-  id                String           @id @default(uuid()) @db.Uuid
+-  canonicalKey      String           @unique @map("canonical_key")
+-  baseReference     String?          @map("base_reference")
+-  kind              ProductKind      @default(UNKNOWN)
+-  releaseYear       Int?             @map("release_year")
+-  discontinuedYear  Int?             @map("discontinued_year")
+-  name              String?
+-  description       String?
+-  createdAt         DateTime         @default(now()) @map("created_at")
+-  updatedAt         DateTime         @updatedAt @map("updated_at")
+-  variants          ProductVariant[]
+-  translations      Translation[]
+-  themes            ProductTheme[]
+-  figures           ProductFigure[]
+-  parts             ProductPart[]
++  id               String           @id @default(uuid()) @db.Uuid
++  canonicalKey     String           @unique @map("canonical_key")
++  baseReference    String?          @map("base_reference")
++  kind             ProductKind      @default(UNKNOWN)
++  releaseYear      Int?             @map("release_year")
++  discontinuedYear Int?             @map("discontinued_year")
++  name             String?
++  description      String?
++  createdAt        DateTime         @default(now()) @map("created_at")
++  updatedAt        DateTime         @updatedAt @map("updated_at")
++  variants         ProductVariant[]
++  translations     Translation[]
++  themes           ProductTheme[]
++  figures          ProductFigure[]
++  parts            ProductPart[]
+ 
+   @@index([baseReference])
+   @@index([releaseYear])
+@@ -92,51 +92,66 @@ model Product {
+ }
+ 
+ model ProductVariant {
+-  id               String           @id @default(uuid()) @db.Uuid
+-  productId        String           @db.Uuid @map("product_id")
+-  canonicalKey     String           @unique @map("canonical_key")
+-  variantKind      VariantKind      @default(STANDARD) @map("variant_kind")
+-  variantLabel     String?          @map("variant_label")
+-  editionNumber    Int?             @map("edition_number")
+-  isCollectible    Boolean          @default(true) @map("is_collectible")
+-  isExclusive      Boolean?         @map("is_exclusive")
+-  isPromotion      Boolean?         @map("is_promotion")
+-  releaseDate      DateTime?        @db.Date @map("release_date")
+-  status           String?
+-  ageMin           Int?             @map("age_min")
+-  ageMax           Int?             @map("age_max")
+-  pieceCount       Int?             @map("piece_count")
+-  figureCount      Int?             @map("figure_count")
+-  listPrice        Decimal?         @db.Decimal(12, 2) @map("list_price")
+-  listPriceCurrency String?          @db.VarChar(3) @map("list_price_currency")
+-  firstSeenAt      DateTime         @default(now()) @map("first_seen_at")
+-  lastSeenAt       DateTime         @default(now()) @map("last_seen_at")
+-  lastCheckedAt    DateTime?        @map("last_checked_at")
+-  createdAt        DateTime         @default(now()) @map("created_at")
+-  updatedAt        DateTime         @updatedAt @map("updated_at")
+-  product          Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+-  references       ProductReference[]
+-  markets          VariantMarket[]
+-  media            MediaAsset[]
+-  instructions     Instruction[]
+-  collectionItems  CollectionItem[]
+-  wishlistItems    WishlistItem[]
++  id                     String               @id @default(uuid()) @db.Uuid
++  productId              String               @map("product_id") @db.Uuid
++  canonicalKey           String               @unique @map("canonical_key")
++  variantKind            VariantKind          @default(STANDARD) @map("variant_kind")
++  variantLabel           String?              @map("variant_label")
++  editionNumber          Int?                 @map("edition_number")
++  name                   String?
++  description            String?
++  releaseYear            Int?                 @map("release_year")
++  discontinuedYear       Int?                 @map("discontinued_year")
++  format                 String?
++  isCollectible          Boolean              @default(true) @map("is_collectible")
++  isExclusive            Boolean?             @map("is_exclusive")
++  isPromotion            Boolean?             @map("is_promotion")
++  releaseDate            DateTime?            @map("release_date") @db.Date
++  status                 String?
++  ageMin                 Int?                 @map("age_min")
++  ageMax                 Int?                 @map("age_max")
++  pieceCount             Int?                 @map("piece_count")
++  figureCount            Int?                 @map("figure_count")
++  widthMm                Decimal?             @map("width_mm") @db.Decimal(10, 2)
++  heightMm               Decimal?             @map("height_mm") @db.Decimal(10, 2)
++  depthMm                Decimal?             @map("depth_mm") @db.Decimal(10, 2)
++  weightGrams            Decimal?             @map("weight_grams") @db.Decimal(10, 2)
++  partsInventoryComplete Boolean?             @map("parts_inventory_complete")
++  listPrice              Decimal?             @map("list_price") @db.Decimal(12, 2)
++  listPriceCurrency      String?              @map("list_price_currency") @db.VarChar(3)
++  firstSeenAt            DateTime             @default(now()) @map("first_seen_at")
++  lastSeenAt             DateTime             @default(now()) @map("last_seen_at")
++  lastCheckedAt          DateTime?            @map("last_checked_at")
++  createdAt              DateTime             @default(now()) @map("created_at")
++  updatedAt              DateTime             @updatedAt @map("updated_at")
++  product                Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
++  references             ProductReference[]
++  translations           VariantTranslation[]
++  themes                 VariantTheme[]
++  markets                VariantMarket[]
++  media                  MediaAsset[]
++  instructions           Instruction[]
++  figures                VariantFigure[]
++  parts                  VariantPart[]
++  collectionItems        CollectionItem[]
++  wishlistItems          WishlistItem[]
+ 
+   @@index([productId])
++  @@index([releaseYear])
+   @@map("product_variants")
+ }
+ 
+ model ProductReference {
+-  id               String          @id @default(uuid()) @db.Uuid
+-  variantId        String          @db.Uuid @map("variant_id")
+-  displayValue     String          @map("display_value")
+-  normalizedValue  String          @map("normalized_value")
+-  baseValue        String?         @map("base_value")
+-  suffix           String?
+-  isPrimary        Boolean         @default(false) @map("is_primary")
+-  sourceId         String?         @db.Uuid @map("source_id")
+-  variant          ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+-  source           Source?         @relation(fields: [sourceId], references: [id], onDelete: SetNull)
++  id              String         @id @default(uuid()) @db.Uuid
++  variantId       String         @map("variant_id") @db.Uuid
++  displayValue    String         @map("display_value")
++  normalizedValue String         @map("normalized_value")
++  baseValue       String?        @map("base_value")
++  suffix          String?
++  isPrimary       Boolean        @default(false) @map("is_primary")
++  sourceId        String?        @map("source_id") @db.Uuid
++  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
++  source          Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+ 
+   @@unique([variantId, normalizedValue])
+   @@index([normalizedValue])
+@@ -145,32 +160,56 @@ model ProductReference {
+ }
+ 
+ model Translation {
+-  id          String   @id @default(uuid()) @db.Uuid
+-  productId   String   @db.Uuid @map("product_id")
+-  locale      String   @db.VarChar(12)
++  id          String  @id @default(uuid()) @db.Uuid
++  productId   String  @map("product_id") @db.Uuid
++  locale      String  @db.VarChar(12)
+   name        String?
+   description String?
+-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
++  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+ 
+   @@unique([productId, locale])
+   @@map("translations")
+ }
+ 
++model VariantTranslation {
++  id          String         @id @default(uuid()) @db.Uuid
++  variantId   String         @map("variant_id") @db.Uuid
++  locale      String         @db.VarChar(12)
++  name        String?
++  description String?
++  variant     ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
++
++  @@unique([variantId, locale])
++  @@map("variant_translations")
++}
++
+ model Theme {
+-  id        String         @id @default(uuid()) @db.Uuid
+-  parentId  String?        @db.Uuid @map("parent_id")
+-  slug      String         @unique
+-  name      String
+-  parent    Theme?         @relation("ThemeTree", fields: [parentId], references: [id])
+-  children  Theme[]        @relation("ThemeTree")
+-  products  ProductTheme[]
++  id       String         @id @default(uuid()) @db.Uuid
++  parentId String?        @map("parent_id") @db.Uuid
++  slug     String         @unique
++  name     String
++  parent   Theme?         @relation("ThemeTree", fields: [parentId], references: [id])
++  children Theme[]        @relation("ThemeTree")
++  products ProductTheme[]
++  variants VariantTheme[]
+ 
+   @@map("themes")
+ }
+ 
++model VariantTheme {
++  variantId String         @map("variant_id") @db.Uuid
++  themeId   String         @map("theme_id") @db.Uuid
++  isPrimary Boolean        @default(false) @map("is_primary")
++  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
++  theme     Theme          @relation(fields: [themeId], references: [id], onDelete: Cascade)
++
++  @@id([variantId, themeId])
++  @@map("variant_themes")
++}
++
+ model ProductTheme {
+-  productId String  @db.Uuid @map("product_id")
+-  themeId   String  @db.Uuid @map("theme_id")
++  productId String  @map("product_id") @db.Uuid
++  themeId   String  @map("theme_id") @db.Uuid
+   isPrimary Boolean @default(false) @map("is_primary")
+   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+   theme     Theme   @relation(fields: [themeId], references: [id], onDelete: Cascade)
+@@ -189,8 +228,8 @@ model Market {
+ }
+ 
+ model VariantMarket {
+-  variantId String         @db.Uuid @map("variant_id")
+-  marketId  String         @db.Uuid @map("market_id")
++  variantId String         @map("variant_id") @db.Uuid
++  marketId  String         @map("market_id") @db.Uuid
+   variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+   market    Market         @relation(fields: [marketId], references: [id], onDelete: Cascade)
+ 
+@@ -199,75 +238,103 @@ model VariantMarket {
+ }
+ 
+ model MediaAsset {
+-  id              String          @id @default(uuid()) @db.Uuid
+-  variantId       String          @db.Uuid @map("variant_id")
+-  sourceId        String          @db.Uuid @map("source_id")
+-  kind            String
+-  sourceUrl       String          @map("source_url")
+-  author          String?
+-  copyrightOwner  String?         @map("copyright_owner")
+-  license         String?
+-  canRehost       Boolean?        @map("can_rehost")
+-  canDisplay      Boolean?        @map("can_display")
+-  lastVerifiedAt  DateTime?       @map("last_verified_at")
+-  contentHash     String?         @map("content_hash")
+-  variant         ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+-  source          Source          @relation(fields: [sourceId], references: [id], onDelete: Restrict)
++  id             String         @id @default(uuid()) @db.Uuid
++  variantId      String         @map("variant_id") @db.Uuid
++  sourceId       String         @map("source_id") @db.Uuid
++  kind           String
++  sourceUrl      String         @map("source_url")
++  author         String?
++  copyrightOwner String?        @map("copyright_owner")
++  license        String?
++  canRehost      Boolean?       @map("can_rehost")
++  canDisplay     Boolean?       @map("can_display")
++  lastVerifiedAt DateTime?      @map("last_verified_at")
++  contentHash    String?        @map("content_hash")
++  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
++  source         Source         @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+ 
+   @@unique([variantId, sourceUrl])
+   @@map("media_assets")
+ }
+ 
+ model Instruction {
+-  id              String          @id @default(uuid()) @db.Uuid
+-  variantId       String          @db.Uuid @map("variant_id")
+-  sourceId        String          @db.Uuid @map("source_id")
+-  locale          String?         @db.VarChar(12)
+-  documentUrl     String          @map("document_url")
+-  pageCount       Int?            @map("page_count")
+-  canRehost       Boolean?        @map("can_rehost")
+-  lastVerifiedAt  DateTime?       @map("last_verified_at")
+-  variant         ProductVariant  @relation(fields: [variantId], references: [id], onDelete: Cascade)
+-  source          Source          @relation(fields: [sourceId], references: [id], onDelete: Restrict)
++  id             String         @id @default(uuid()) @db.Uuid
++  variantId      String         @map("variant_id") @db.Uuid
++  sourceId       String         @map("source_id") @db.Uuid
++  locale         String?        @db.VarChar(12)
++  documentUrl    String         @map("document_url")
++  pageCount      Int?           @map("page_count")
++  canRehost      Boolean?       @map("can_rehost")
++  lastVerifiedAt DateTime?      @map("last_verified_at")
++  variant        ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
++  source         Source         @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+ 
+   @@unique([variantId, documentUrl])
+   @@map("instructions")
+ }
+ 
+ model Figure {
+-  id          String          @id @default(uuid()) @db.Uuid
+-  canonicalKey String         @unique @map("canonical_key")
+-  name        String?
+-  products    ProductFigure[]
++  id           String          @id @default(uuid()) @db.Uuid
++  canonicalKey String          @unique @map("canonical_key")
++  name         String?
++  products     ProductFigure[]
++  variants     VariantFigure[]
++
+   @@map("figures")
+ }
+ 
++model VariantFigure {
++  variantId String         @map("variant_id") @db.Uuid
++  figureId  String         @map("figure_id") @db.Uuid
++  quantity  Int?
++  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
++  figure    Figure         @relation(fields: [figureId], references: [id], onDelete: Cascade)
++
++  @@id([variantId, figureId])
++  @@map("variant_figures")
++}
++
+ model ProductFigure {
+-  productId String  @db.Uuid @map("product_id")
+-  figureId  String  @db.Uuid @map("figure_id")
++  productId String  @map("product_id") @db.Uuid
++  figureId  String  @map("figure_id") @db.Uuid
+   quantity  Int     @default(1)
+   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+   figure    Figure  @relation(fields: [figureId], references: [id], onDelete: Cascade)
++
+   @@id([productId, figureId])
+   @@map("product_figures")
+ }
+ 
+ model Part {
+-  id           String        @id @default(uuid()) @db.Uuid
+-  partNumber   String        @unique @map("part_number")
+-  name         String?
+-  category     String?
+-  colour       String?
+-  products     ProductPart[]
++  id         String        @id @default(uuid()) @db.Uuid
++  partNumber String        @unique @map("part_number")
++  name       String?
++  category   String?
++  colour     String?
++  products   ProductPart[]
++  variants   VariantPart[]
++
+   @@map("parts")
+ }
+ 
++model VariantPart {
++  variantId String         @map("variant_id") @db.Uuid
++  partId    String         @map("part_id") @db.Uuid
++  quantity  Int?
++  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
++  part      Part           @relation(fields: [partId], references: [id], onDelete: Cascade)
++
++  @@id([variantId, partId])
++  @@map("variant_parts")
++}
++
+ model ProductPart {
+-  productId String  @db.Uuid @map("product_id")
+-  partId    String  @db.Uuid @map("part_id")
++  productId String  @map("product_id") @db.Uuid
++  partId    String  @map("part_id") @db.Uuid
+   quantity  Int
+   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+   part      Part    @relation(fields: [partId], references: [id], onDelete: Cascade)
++
+   @@id([productId, partId])
+   @@map("product_parts")
+ }
+@@ -294,18 +361,18 @@ model Source {
+ }
+ 
+ model SourceRecord {
+-  id              String         @id @default(uuid()) @db.Uuid
+-  sourceId        String         @db.Uuid @map("source_id")
+-  externalId      String         @map("external_id")
+-  sourceUrl       String         @map("source_url")
+-  recordType      String         @map("record_type")
+-  rawPayload      Json?          @map("raw_payload")
+-  contentHash     String         @map("content_hash")
+-  sourceUpdatedAt DateTime?      @map("source_updated_at")
+-  firstSeenAt     DateTime       @default(now()) @map("first_seen_at")
+-  lastSeenAt      DateTime       @default(now()) @map("last_seen_at")
+-  lastCheckedAt   DateTime       @default(now()) @map("last_checked_at")
+-  source          Source         @relation(fields: [sourceId], references: [id], onDelete: Cascade)
++  id              String        @id @default(uuid()) @db.Uuid
++  sourceId        String        @map("source_id") @db.Uuid
++  externalId      String        @map("external_id")
++  sourceUrl       String        @map("source_url")
++  recordType      String        @map("record_type")
++  rawPayload      Json?         @map("raw_payload")
++  contentHash     String        @map("content_hash")
++  sourceUpdatedAt DateTime?     @map("source_updated_at")
++  firstSeenAt     DateTime      @default(now()) @map("first_seen_at")
++  lastSeenAt      DateTime      @default(now()) @map("last_seen_at")
++  lastCheckedAt   DateTime      @default(now()) @map("last_checked_at")
++  source          Source        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+   values          SourceValue[]
+ 
+   @@unique([sourceId, externalId])
+@@ -314,20 +381,20 @@ model SourceRecord {
+ }
+ 
+ model SourceValue {
+-  id              String       @id @default(uuid()) @db.Uuid
+-  sourceId        String       @db.Uuid @map("source_id")
+-  sourceRecordId  String       @db.Uuid @map("source_record_id")
+-  entityType      String       @map("entity_type")
+-  entityId        String       @db.Uuid @map("entity_id")
++  id              String          @id @default(uuid()) @db.Uuid
++  sourceId        String          @map("source_id") @db.Uuid
++  sourceRecordId  String          @map("source_record_id") @db.Uuid
++  entityType      String          @map("entity_type")
++  entityId        String          @map("entity_id") @db.Uuid
+   field           String
+-  rawValue        Json         @map("raw_value")
+-  normalizedValue Json?        @map("normalized_value")
+-  confidence      Decimal      @default(0.5) @db.Decimal(4, 3)
++  rawValue        Json            @map("raw_value")
++  normalizedValue Json?           @map("normalized_value")
++  confidence      Decimal         @default(0.5) @db.Decimal(4, 3)
+   priority        Int
+-  isSelected      Boolean      @default(false) @map("is_selected")
+-  retrievedAt     DateTime     @default(now()) @map("retrieved_at")
+-  source          Source       @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+-  sourceRecord    SourceRecord @relation(fields: [sourceRecordId], references: [id], onDelete: Cascade)
++  isSelected      Boolean         @default(false) @map("is_selected")
++  retrievedAt     DateTime        @default(now()) @map("retrieved_at")
++  source          Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
++  sourceRecord    SourceRecord    @relation(fields: [sourceRecordId], references: [id], onDelete: Cascade)
+   conflictValues  ConflictValue[]
+ 
+   @@index([entityType, entityId, field])
+@@ -337,10 +404,10 @@ model SourceValue {
+ model Conflict {
+   id              String          @id @default(uuid()) @db.Uuid
+   entityType      String          @map("entity_type")
+-  entityId        String          @db.Uuid @map("entity_id")
++  entityId        String          @map("entity_id") @db.Uuid
+   field           String
+   status          ConflictStatus  @default(OPEN)
+-  selectedValueId String?         @db.Uuid @map("selected_value_id")
++  selectedValueId String?         @map("selected_value_id") @db.Uuid
+   resolutionNote  String?         @map("resolution_note")
+   createdAt       DateTime        @default(now()) @map("created_at")
+   resolvedAt      DateTime?       @map("resolved_at")
+@@ -351,45 +418,47 @@ model Conflict {
+ }
+ 
+ model ConflictValue {
+-  conflictId  String      @db.Uuid @map("conflict_id")
+-  sourceValueId String    @db.Uuid @map("source_value_id")
+-  conflict    Conflict    @relation(fields: [conflictId], references: [id], onDelete: Cascade)
+-  sourceValue SourceValue @relation(fields: [sourceValueId], references: [id], onDelete: Cascade)
++  conflictId    String      @map("conflict_id") @db.Uuid
++  sourceValueId String      @map("source_value_id") @db.Uuid
++  conflict      Conflict    @relation(fields: [conflictId], references: [id], onDelete: Cascade)
++  sourceValue   SourceValue @relation(fields: [sourceValueId], references: [id], onDelete: Cascade)
++
+   @@id([conflictId, sourceValueId])
+   @@map("conflict_values")
+ }
+ 
+ model ReviewTask {
+-  id          String       @id @default(uuid()) @db.Uuid
+-  kind        String
+-  entityType  String       @map("entity_type")
+-  entityId    String?      @db.Uuid @map("entity_id")
+-  reason      String
+-  payload     Json?
+-  status      ReviewStatus @default(OPEN)
+-  createdAt   DateTime     @default(now()) @map("created_at")
+-  resolvedAt  DateTime?    @map("resolved_at")
++  id         String       @id @default(uuid()) @db.Uuid
++  kind       String
++  entityType String       @map("entity_type")
++  entityId   String?      @map("entity_id") @db.Uuid
++  reason     String
++  payload    Json?
++  status     ReviewStatus @default(OPEN)
++  createdAt  DateTime     @default(now()) @map("created_at")
++  resolvedAt DateTime?    @map("resolved_at")
++
+   @@index([status, kind])
+   @@map("review_tasks")
+ }
+ 
+ model ImportRun {
+-  id             String       @id @default(uuid()) @db.Uuid
+-  sourceId       String       @db.Uuid @map("source_id")
+-  mode           String
+-  status         ImportStatus @default(RUNNING)
+-  startedAt      DateTime     @default(now()) @map("started_at")
+-  finishedAt     DateTime?    @map("finished_at")
+-  scanned        Int          @default(0)
+-  created        Int          @default(0)
+-  updated        Int          @default(0)
+-  unchanged      Int          @default(0)
+-  errors         Int          @default(0)
+-  conflicts      Int          @default(0)
+-  inaccessible   Int          @default(0)
+-  cursor         Json?
+-  errorSummary   Json?        @map("error_summary")
+-  source         Source       @relation(fields: [sourceId], references: [id], onDelete: Restrict)
++  id           String       @id @default(uuid()) @db.Uuid
++  sourceId     String       @map("source_id") @db.Uuid
++  mode         String
++  status       ImportStatus @default(RUNNING)
++  startedAt    DateTime     @default(now()) @map("started_at")
++  finishedAt   DateTime?    @map("finished_at")
++  scanned      Int          @default(0)
++  created      Int          @default(0)
++  updated      Int          @default(0)
++  unchanged    Int          @default(0)
++  errors       Int          @default(0)
++  conflicts    Int          @default(0)
++  inaccessible Int          @default(0)
++  cursor       Json?
++  errorSummary Json?        @map("error_summary")
++  source       Source       @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+ 
+   @@index([sourceId, startedAt])
+   @@map("import_runs")
+@@ -401,57 +470,62 @@ model User {
+   displayName String?      @map("display_name")
+   createdAt   DateTime     @default(now()) @map("created_at")
+   collections Collection[]
+-  wishlists    Wishlist[]
++  wishlists   Wishlist[]
++
+   @@map("users")
+ }
+ 
+ model Collection {
+-  id        String           @id @default(uuid()) @db.Uuid
+-  userId    String           @db.Uuid @map("user_id")
+-  name      String
+-  isPublic  Boolean          @default(false) @map("is_public")
+-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+-  items     CollectionItem[]
++  id       String           @id @default(uuid()) @db.Uuid
++  userId   String           @map("user_id") @db.Uuid
++  name     String
++  isPublic Boolean          @default(false) @map("is_public")
++  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
++  items    CollectionItem[]
++
+   @@map("collections")
+ }
+ 
+ model CollectionItem {
+-  id             String              @id @default(uuid()) @db.Uuid
+-  collectionId   String              @db.Uuid @map("collection_id")
+-  variantId      String              @db.Uuid @map("variant_id")
+-  quantity       Int                 @default(1)
+-  condition      CollectionCondition @default(UNKNOWN)
+-  isComplete     Boolean?            @map("is_complete")
+-  hasBox         Boolean?            @map("has_box")
+-  boxCondition   CollectionCondition? @map("box_condition")
+-  hasInstructions Boolean?           @map("has_instructions")
+-  purchaseDate   DateTime?           @db.Date @map("purchase_date")
+-  purchasePrice  Decimal?            @db.Decimal(12, 2) @map("purchase_price")
+-  currency       String?             @db.VarChar(3)
+-  notes          String?
+-  collection     Collection          @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+-  variant        ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Restrict)
++  id              String               @id @default(uuid()) @db.Uuid
++  collectionId    String               @map("collection_id") @db.Uuid
++  variantId       String               @map("variant_id") @db.Uuid
++  quantity        Int                  @default(1)
++  condition       CollectionCondition  @default(UNKNOWN)
++  isComplete      Boolean?             @map("is_complete")
++  hasBox          Boolean?             @map("has_box")
++  boxCondition    CollectionCondition? @map("box_condition")
++  hasInstructions Boolean?             @map("has_instructions")
++  purchaseDate    DateTime?            @map("purchase_date") @db.Date
++  purchasePrice   Decimal?             @map("purchase_price") @db.Decimal(12, 2)
++  currency        String?              @db.VarChar(3)
++  notes           String?
++  collection      Collection           @relation(fields: [collectionId], references: [id], onDelete: Cascade)
++  variant         ProductVariant       @relation(fields: [variantId], references: [id], onDelete: Restrict)
++
+   @@unique([collectionId, variantId])
+   @@map("collection_items")
+ }
+ 
+ model Wishlist {
+-  id        String         @id @default(uuid()) @db.Uuid
+-  userId    String         @db.Uuid @map("user_id")
+-  name      String
+-  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+-  items     WishlistItem[]
++  id     String         @id @default(uuid()) @db.Uuid
++  userId String         @map("user_id") @db.Uuid
++  name   String
++  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
++  items  WishlistItem[]
++
+   @@map("wishlists")
+ }
+ 
+ model WishlistItem {
+   id         String         @id @default(uuid()) @db.Uuid
+-  wishlistId String         @db.Uuid @map("wishlist_id")
+-  variantId  String         @db.Uuid @map("variant_id")
++  wishlistId String         @map("wishlist_id") @db.Uuid
++  variantId  String         @map("variant_id") @db.Uuid
+   priority   Int            @default(0)
+   notes      String?
+   wishlist   Wishlist       @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+   variant    ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
++
+   @@unique([wishlistId, variantId])
+   @@map("wishlist_items")
+ }
+-- 
+2.51.1
+

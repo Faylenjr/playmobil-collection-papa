@@ -1,0 +1,435 @@
+From cdec8f619f249ed0149b910d443edaf4bc263a60 Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 23 Sep 2026 07:46:33 +0500
+Subject: [PATCH 3/3] docs: publish measured phase zero sample
+
+---
+ README.md              |  15 ++++-
+ docs/data-model.md     |   6 +-
+ docs/data-quality.md   |   2 +
+ docs/data-sources.md   |   6 +-
+ docs/import-process.md |  15 ++++-
+ docs/phase-0-report.md | 150 +++++++++++++++++++++++++++++++----------
+ src/report/coverage.ts |  85 ++++++++++++++++++-----
+ 7 files changed, 218 insertions(+), 61 deletions(-)
+
+diff --git a/README.md b/README.md
+index 331b922..166eef1 100644
+--- a/README.md
++++ b/README.md
+@@ -7,10 +7,11 @@ Catalogue non commercial, traçable et reproductible destiné aux collectionneur
+ - PostgreSQL + Prisma 7 ;
+ - distinction `Product` / `ProductVariant` / `ProductReference` ;
+ - provenance champ par champ, conflits et file de revue ;
+-- parseurs testés pour références, sitemaps, PLAYMOBIL, Klickypedia et statistiques PlaymoDB ;
++- importeurs réels et reprenables pour Klickypedia et l'enrichissement PLAYMOBIL DE/FR ;
+ - audit respectueux de `robots.txt`, avec délais, timeouts et retries ;
+ - rapport de couverture calculé depuis la base ;
+-- 16 tests automatisés.
++- 22 tests automatisés ;
++- échantillon mesuré : 200 fiches Klickypedia, 0 erreur, 192 références distinctes, 197 produits et 200 objets collectionnables.
+ 
+ L'audit du 22 septembre 2026 mesure 14 467 URL de fiches réparties sur 15 sitemaps `sets` de Klickypedia. Ce nombre n'est **pas** présenté comme un nombre de références uniques. Voir [`docs/phase-0-report.md`](docs/phase-0-report.md).
+ 
+@@ -40,6 +41,13 @@ Rapport de couverture de la base :
+ pnpm report
+ ```
+ 
++Sans daemon PostgreSQL local, le fallback de validation PGlite (PostgreSQL WASM) est disponible :
++
++```bash
++PGLITE_DIR=./.data/pglite pnpm import:klickypedia:sample:embedded
++PGLITE_DIR=./.data/pglite pnpm report:embedded
++```
++
+ `docker compose up` lance PostgreSQL puis applique le schéma. Le conteneur d'application est volontairement un worker ponctuel pendant la phase données ; le service web sera ajouté quand le seuil qualité du catalogue sera atteint.
+ 
+ ## Règles de collecte
+@@ -60,6 +68,9 @@ pnpm report
+ | `pnpm build` | Compilation du worker |
+ | `pnpm source:audit` | Audit live des robots/sitemaps et métriques accessibles |
+ | `pnpm import:klickypedia:index` | Indexe les URL publiques des sitemaps, sans aspirer les fiches |
++| `pnpm import:klickypedia:sample` | Importe/reprend le lot représentatif de 200 fiches |
++| `pnpm import:klickypedia:full` | Importe/reprend les 14 466 fiches publiques à cadence prudente |
++| `pnpm import:playmobil -- --limit=20` | Enrichit les références connues depuis PLAYMOBIL DE/FR |
+ | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
+ 
+ ## Documentation
+diff --git a/docs/data-model.md b/docs/data-model.md
+index e872972..8aadb76 100644
+--- a/docs/data-model.md
++++ b/docs/data-model.md
+@@ -8,11 +8,15 @@
+ 
+ Le parseur est volontairement conservateur : `70733v1` est reconnu comme variante de `70733`, mais `PM2305D` reste entier. Une lettre finale n'est jamais retirée sans convention explicite.
+ 
++Les noms, traductions, thèmes, dates, format, dimensions, poids, âge, compteurs, médias, notices, figurines et pièces peuvent être portés par `ProductVariant`. Les tables au niveau `Product` restent disponibles pour la consolidation du concept de base. Une variante peut donc posséder un contenu ou un nom différent sans contaminer ses voisines.
++
++Les références-placeholder (`0`, `0000`, `00000`) ne sont pas considérées uniques. Leur clé canonique est qualifiée par l'identité stable de la fiche source et une `ReviewTask` est ouverte.
++
+ ## Provenance
+ 
+ `source_records` conserve l'identité externe, l'URL, le hash et éventuellement la charge brute. `source_values` conserve chaque affirmation champ par champ, sa valeur brute, sa valeur normalisée, sa confiance, sa priorité et sa date. `conflicts` relie les affirmations contradictoires ; `review_tasks` contient les cas ambigus.
+ 
+-La valeur canonique peut donc être recalculée sans perdre l'opinion d'une source.
++La valeur canonique est recalculée par priorité de source sans perdre l'opinion d'une source. Les traductions utilisent des champs de provenance localisés (`name.fr`, `name.de`, etc.) afin de ne pas traiter deux langues comme une contradiction.
+ 
+ ## Médias
+ 
+diff --git a/docs/data-quality.md b/docs/data-quality.md
+index abcbc71..b9610c1 100644
+--- a/docs/data-quality.md
++++ b/docs/data-quality.md
+@@ -19,6 +19,8 @@ La priorité est : officiel pertinent, base communautaire structurée, source é
+ 
+ `src/report/coverage.ts` calcule la couverture depuis PostgreSQL. Un catalogue vide retourne 0 %, jamais une constante. Les métriques sont séparées entre produits et variantes afin de ne pas gonfler artificiellement les résultats.
+ 
++Le rapport expose aussi les répartitions par source, année, décennie et taxonomie. Il distingue le nombre total de variantes du nombre de valeurs de référence distinctes : plusieurs objets légitimes peuvent publier `0000` ou `00000`.
++
+ ## Seuil avant MVP
+ 
+ Le MVP ne devrait commencer qu'après : taux d'erreur d'extraction inférieur à 1 % sur le corpus de validation, références présentes à 100 %, absence de fusion silencieuse connue, provenance à 100 % et revue manuelle des règles de variantes.
+diff --git a/docs/data-sources.md b/docs/data-sources.md
+index b7dd4ed..4060121 100644
+--- a/docs/data-sources.md
++++ b/docs/data-sources.md
+@@ -4,7 +4,7 @@
+ 
+ | Source | Type | Accès mesuré | Volume observé | Décision actuelle |
+ |---|---|---|---:|---|
+-| Klickypedia | WordPress communautaire | `robots.txt` 200, sitemap autorisé ; REST `/wp-json/` explicitement interdit | 15 sitemaps, 14 467 URL `sets` | index sitemap activé, fiches à cadence lente |
++| Klickypedia | WordPress communautaire | `robots.txt` 200, sitemap autorisé ; REST `/wp-json/` explicitement interdit | 15 sitemaps, 14 467 URL dont 14 466 fiches | import reprenable, fiches à cadence lente |
+ | PLAYMOBIL DE | officiel Salesforce Commerce Cloud | robots et sitemap 200 | 546 URL dans le sitemap produits courant | source prioritaire pour produits présents |
+ | PLAYMOBIL FR | officiel Salesforce Commerce Cloud | robots et sitemap 200 | 327 URL dans le sitemap produits courant | noms FR et produits présents |
+ | PlaymoDB | base communautaire | page publique indexée ; client automatisé refusé 403 | 7 718 sets, 68 711 pièces, 6 023 sets avec pièces, 7 706 klickies annoncés | parseur prêt, import désactivé |
+@@ -15,11 +15,11 @@
+ 
+ Le site expose un index Yoast `sitemap_index.xml` et 15 fichiers `sets-sitemap*.xml`. Son `robots.txt` daté de juillet 2026 interdit `/wp-json/`, les recherches paramétrées et plusieurs vues. L'endpoint WordPress techniquement imaginable n'est donc pas utilisé. Les URL de sitemap contiennent des slugs utiles, mais aucun nombre de références uniques n'est dérivé du slug sans lecture/validation de la fiche.
+ 
+-Les pages observées peuvent exposer titre, référence avec variante, années, traductions et URL d'image. Le droit de réhéberger ces images n'est pas établi.
++L'import réel de 200 pages a confirmé l'extraction du titre, de la référence/variante, des années, thèmes, formats, traductions, marchés, exclusivités/promotions, images, notices, compteurs de figurines et liens de pièces. Le droit de réhéberger les images n'est pas établi.
+ 
+ ## PLAYMOBIL
+ 
+-Les sitemaps actuels contiennent trois enfants par marché : produits, catégories et contenu. Une fiche produit officielle expose référence, nom localisé, description, médias structurés (`product_detail`, `product_box_front`, `product_box_back`), dimensions, poids, âge, figures/accessoires et un lien de notice. Le sitemap courant n'est pas une archive historique exhaustive.
++Les sitemaps actuels contiennent trois enfants par marché : produits, catégories et contenu. Une fiche produit officielle expose référence, nom localisé, description, médias structurés (`product_detail`, `product_box_front`, `product_box_back`), dimensions, poids, âge, figures/accessoires et un lien de notice. Le parseur et l'import DE/FR ont été vérifiés sur de vraies pages. Le sitemap courant n'est pas une archive historique exhaustive et les archives DE/FR ne sont pas symétriques.
+ 
+ ## PlaymoDB
+ 
+diff --git a/docs/import-process.md b/docs/import-process.md
+index 0749f11..2b13303 100644
+--- a/docs/import-process.md
++++ b/docs/import-process.md
+@@ -12,11 +12,22 @@
+ 
+ ## Résilience
+ 
+-Le client applique délai minimum par origine, timeout, backoff exponentiel et trois retries au maximum. Les statuts 429/5xx sont réessayés ; une erreur de fiche ne doit pas annuler un lot. La concurrence par défaut est limitée à deux et ne doit pas être augmentée sans justification.
++Le client applique délai minimum par origine, timeout, backoff exponentiel et trois retries au maximum. Les statuts 429/5xx sont réessayés ; une erreur de fiche ne doit pas annuler un lot. L'import de fiches est séquentiel et applique par défaut au moins 1,5 seconde entre requêtes d'une même origine. Cette cadence ne doit pas être augmentée sans justification.
+ 
+ ## Échantillon requis avant import complet
+ 
+-Le jeu de validation doit couvrir 1970, 1980, 1990, 2000, 2010, 2020 et l'année courante, plus : suffixes `vN`, lettre, marchés, promotions, exclusivités, Direkt Service, merchandising et rééditions. Les fixtures du dépôt ne sont que des tests techniques minimaux ; elles ne constituent pas encore ce corpus métier.
++Le lot déterministe de 200 fiches couvre 1970, 1980, 1990, 2000, 2010, 2020 et l'année courante, plus : suffixes `vN`, marchés, promotions, exclusivités, merchandising et rééditions. Il a permis de détecter puis corriger la collision des références `0000`/`00000`. Les fixtures restent des tests hors réseau minimaux.
++
++## Commandes d'import
++
++```bash
++pnpm import:klickypedia:sample
++pnpm import:klickypedia:full
++pnpm import:playmobil -- --limit=20
++pnpm report
++```
++
++Le job Klickypedia mémorise son index et son curseur dans `ImportRun`. `--resume` reprend un run `RUNNING`, `PARTIAL` ou `FAILED` si la sélection de sitemap n'a pas changé. PLAYMOBIL DE/FR enrichit uniquement des références déjà connues, sauf liste explicite passée avec `--references=`.
+ 
+ ## Synchronisation
+ 
+diff --git a/docs/phase-0-report.md b/docs/phase-0-report.md
+index 3ae625c..7e3481a 100644
+--- a/docs/phase-0-report.md
++++ b/docs/phase-0-report.md
+@@ -1,55 +1,135 @@
+-# Rapport de phase 0 — état intermédiaire
++# Rapport de phase 0 — mesures reproductibles
+ 
+-Date de mesure : 22 septembre 2026.
++Date de mesure : 23 septembre 2026. Statut : **échantillon validé, catalogue complet non encore importé**.
+ 
+ ## Sources
+ 
+-Six familles ont été analysées : Klickypedia, PLAYMOBIL Allemagne, PLAYMOBIL France, PlaymoDB, Mundobil et Playmofanatic. L'audit automatisé est reproductible avec `pnpm source:audit`.
++Six familles ont été analysées : Klickypedia, PLAYMOBIL Allemagne, PLAYMOBIL France, PlaymoDB, Mundobil et Playmofanatic. L'audit est reproductible avec `pnpm source:audit`.
+ 
+-## Résultats mesurés
+-
+-| Source | Mesure | Résultat |
++| Source | Mesure directe | Résultat |
+ |---|---|---:|
+-| Klickypedia | URL dans les 15 sitemaps de sets | 14 467 |
+-| PLAYMOBIL DE | URL du sitemap produits courant | 546 |
+-| PLAYMOBIL FR | URL du sitemap produits courant | 327 |
++| Klickypedia | URL indexées dans les 15 sitemaps `sets` | 14 467 |
++| Klickypedia | URL de fiches après retrait de `/sets/` | **14 466** |
++| PLAYMOBIL DE | URL du sitemap produits courant (audit du 22/09) | 546 |
++| PLAYMOBIL FR | URL du sitemap produits courant (audit du 22/09) | 327 |
+ | PlaymoDB | sets annoncés par sa page de statistiques | 7 718 |
+-| PlaymoDB | pièces annoncées | 68 711 |
+-| PlaymoDB | sets avec inventaire de pièces | 6 023 |
+-| PlaymoDB | klickies annotés | 7 706 |
+-| Mundobil | URL totales des deux sitemaps | 48 789 |
+-
+-Ces unités ne sont pas additionnables. Les 14 467 URL Klickypedia incluent des variantes ; les 48 789 URL Mundobil mélangent plusieurs types ; les sitemaps officiels décrivent surtout le catalogue courant.
+-
+-## Déduplication et taxonomie
+-
+-Le schéma et les tests distinguent produits, variantes et références. Le corpus complet n'a pas encore été importé ; les nombres avant/après déduplication sont donc **non mesurés** et restent `NULL`, plutôt que d'être estimés à partir des slugs. La taxonomie classique/variante/exclusivité/promotion/merchandising sera calculée après validation du corpus échantillon.
+-
+-## Couverture
+-
+-Le rapport SQL est implémenté, mais aucune base complète n'a été chargée dans cet environnement. Les pourcentages de catalogue sont donc non disponibles à ce stade. Ils ne seront publiés qu'à partir de vraies lignes PostgreSQL.
++| PlaymoDB | pièces annoncées / sets inventoriés | 68 711 / 6 023 |
++| Mundobil | URL totales des deux sitemaps, tous types confondus | 48 789 |
++
++Ces unités ne sont pas additionnables. PlaymoDB reste désactivé car l'accès automatisé est refusé ; aucun contournement n'est utilisé. L'API WordPress de Klickypedia n'est pas appelée car `/wp-json/` est interdit par son `robots.txt`.
++
++## Résultats importés
++
++### Validation Klickypedia (200 fiches)
++
++L'échantillon déterministe couvre 1974–2026, toutes les décennies demandées, les variantes `vN`, marchés, promotions, exclusivités, catalogues, merchandising et références atypiques.
++
++| Mesure | Résultat |
++|---|---:|
++| fiches parcourues / créées | **200 / 200** |
++| erreurs HTTP / fiches inaccessibles | **0 / 0** |
++| valeurs de référence distinctes | **192** |
++| produits de base | **197** |
++| objets/variantes collectionnables | **200** |
++| doublons effectivement fusionnés | **0** |
++| conflits ouverts | **0** |
++| tâches de revue d'identité | **12** |
++| lignes de liens variante–pièce | **848** |
++
++Une seconde exécution incrémentale a classé les **200 fiches comme inchangées**, sans les retélécharger ni créer de doublon.
++
++Les 12 revues concernent des références génériques (`0`, `0000`, `00000`) qui ne sont pas des identifiants uniques. La première exécution les fusionnait à tort et produisait 25 conflits. La règle corrigée conserve leur référence affichée mais attribue à chaque fiche une identité stable dérivée de la source. Une seconde importation vierge a produit 200 objets distincts et zéro conflit artificiel.
++
++### Enrichissement officiel mesuré
++
++Deux petits lots réels ont testé huit références dans les deux marchés. PLAYMOBIL DE a fourni 5 fiches exploitables ; PLAYMOBIL FR en a fourni 1. Les autres URL ont répondu 404 et sont comptées comme inaccessibles, pas comme fiches absentes de toute l'histoire PLAYMOBIL.
++
++Après enrichissement, la base de mesure contient :
++
++| Mesure globale | Résultat |
++|---|---:|
++| enregistrements source persistés | **206** |
++| références normalisées distinctes | **197** |
++| produits de base | **200** |
++| variantes/objets collectionnables | **205** |
++| doublons fusionnés entre sources | **1** |
++| conflits ouverts | **2** |
++| références présentes dans une seule source | **196** |
++
++Les deux conflits sont réels et conservés : pour la même référence, DE et FR divergent sur le statut (`archived`/`current`) et le prix catalogue (19,99/22,99). Ces valeurs sont dépendantes du marché ; elles devront à terme être matérialisées dans une table d'offres par marché, tout en restant déjà traçables dans `SourceValue`.
++
++## Déduplication
++
++- `Product` représente le produit de base ; `ProductVariant` représente l'objet collectionnable.
++- Les références ne sont jamais converties en nombres.
++- Les suffixes `vN`, éditions et marchés sont interprétés de façon conservatrice.
++- Les références-placeholder sont disambiguïsées par l'identité du `SourceRecord` et placées en revue.
++- Une fusion n'est acceptée que lorsque les signaux d'identité ne se contredisent pas.
++- Les hashes HTML et `lastmod` évitent de retraiter une fiche inchangée ; le curseur d'`ImportRun` permet la reprise.
++
++## Taxonomie mesurée (base enrichie, 205 objets)
++
++| Produits | Nombre |
++|---|---:|
++| sets | 167 |
++| figurines | 15 |
++| catalogues | 8 |
++| merchandising | 7 |
++| objets promotionnels | 3 |
++
++| Variantes | Nombre |
++|---|---:|
++| standard | 107 |
++| marché | 52 |
++| édition/version | 27 |
++| exclusive (type) | 18 |
++| promotion (type) | 1 |
++
++Les drapeaux transversaux recensent 47 exclusivités et 4 promotions ; ils ne s'excluent pas des types structurels marché/édition.
++
++## Couverture mesurée
++
++Pourcentages calculés depuis PostgreSQL/PGlite sur les 205 objets après enrichissement officiel :
++
++| Champ | Présent | Couverture |
++|---|---:|---:|
++| référence | 205 | **100 %** |
++| nom | 205 | **100 %** |
++| nom français | 134 | **65,37 %** |
++| année de sortie | 177 | **86,34 %** |
++| année de retrait | 75 | **36,59 %** |
++| thème | 200 | **97,56 %** |
++| image principale | 203 | **99,02 %** |
++| boîte avant | 113 | **55,12 %** |
++| boîte arrière | 83 | **40,49 %** |
++| notice | 71 | **34,63 %** |
++| nombre de figurines | 101 | **49,27 %** |
++| nombre total de pièces | 0 | **0 %** |
++| au moins une pièce liée | 69 | **33,66 %** |
++| inventaire de pièces déclaré complet | 0 | **0 %** |
++
++La répartition des années Klickypedia contient 12 objets des années 1970, 10 des années 1980, 16 des années 1990, 20 des années 2000, 66 des années 2010 et 50 des années 2020, dont 8 datés 2026.
+ 
+ ## Images
+ 
+-PLAYMOBIL fournit des URL de médias structurées ; Klickypedia fournit ses propres résumés/images. Aucune permission générale de réhébergement n'a été établie. Le modèle conserve URL, source, auteur, titulaire, licence, `can_rehost`, `can_display` et date de vérification. Aucun téléchargement massif n'a été effectué.
++Les importeurs ne téléchargent aucun média. Ils conservent l'URL, la source, le titulaire connu, la licence éventuelle, `can_rehost`, `can_display` et la date de vérification. Les images officielles sont marquées `can_rehost = false`. Aucune permission générale de réhébergement n'a été établie pour Klickypedia ou PLAYMOBIL.
+ 
+ ## Notices
+ 
+-Les fiches officielles observées lient le service de notices sur `playmobil.a.bigcontent.io`. Le parseur conserve l'URL et la locale. La couverture historique reste à mesurer.
++Les pages officielles exposent des liens vers `playmobil.a.bigcontent.io`. Les URL et locales sont persistées avec `can_rehost = false`. La couverture actuelle de 34,63 % est celle du corpus de mesure, pas du catalogue historique complet.
+ 
+-## Pièces
++## Pièces et figurines
+ 
+-PlaymoDB annonce 68 711 pièces et des inventaires dans 6 023 sets. C'est la source structurée la plus prometteuse pour les pièces, mais l'accès automatisé est actuellement refusé. Mundobil annonce près de 50 000 pièces sur ses pages publiques, sans que les 48 789 URL de sitemap puissent être assimilées à autant de pièces uniques.
++Les relations existent aux niveaux produit **et variante**. L'import Klickypedia a créé 848 liens variante–pièce sur 69 variantes, sans inventer les quantités ni déclarer les inventaires complets. Le total de pièces reste donc `NULL` et la couverture `parts_count` reste honnêtement à 0 %. PlaymoDB pourrait améliorer ce point, mais son import demeure désactivé.
+ 
+-## Problèmes et limites
++## Problèmes restant ouverts
+ 
+-- GitHub ne donne actuellement aucun accès au dépôt privé demandé ; le travail existe dans un dépôt Git local non synchronisé.
+-- Docker n'est pas installé dans l'environnement, donc Compose n'a pas été exécuté ici.
+-- Klickypedia interdit `/wp-json/` dans `robots.txt` ; cet endpoint n'est pas utilisé.
+-- PlaymoDB refuse le client automatisé ; aucun contournement n'est tenté.
+-- licences de bases et droits des médias à clarifier avant publication.
+-- il manque encore un corpus métier représentatif validé par un collectionneur.
++- L'import complet de 14 466 fiches n'a pas été exécuté dans cette session : à la cadence validée (1,5–2 s minimum, séquentielle), il nécessite environ 6 à 9 heures. Le job est prêt, reprenable et journalisé avec `pnpm import:klickypedia:full`.
++- La disponibilité des archives officielles diffère fortement entre DE et FR ; un 404 n'est pas une preuve d'inexistence historique.
++- Les prix et statuts officiels sont dépendants du marché ; une table d'offres par marché est recommandée avant un import officiel large.
++- Les licences de base et droits d'affichage des médias doivent être clarifiés avant publication publique ou usage commercial.
++- Les règles d'identité ambiguë doivent être contrôlées sur un lot plus large avant de déclarer la phase 0 terminée.
+ 
+ ## Recommandation
+ 
+-Conserver PostgreSQL et le modèle de provenance actuel. Continuer d'abord par un échantillon de 100 à 300 fiches équilibrées, faire valider les règles de variantes, puis élargir Klickypedia par sitemap et le catalogue officiel courant. N'intégrer PlaymoDB/Mundobil en masse qu'après accord ou conditions suffisamment claires. Différer le MVP jusqu'à des métriques de qualité réelles.
++Conserver PostgreSQL, Prisma et le modèle de provenance actuel. Exécuter ensuite le job Klickypedia complet sur un worker durable avec PostgreSQL managé, sans augmenter la cadence, puis générer ce rapport depuis la base complète. L'enrichissement officiel doit suivre par lots et par marché. Le MVP utilisateur reste différé jusqu'à obtention des métriques complètes.
+diff --git a/src/report/coverage.ts b/src/report/coverage.ts
+index 6489172..f58d3bf 100644
+--- a/src/report/coverage.ts
++++ b/src/report/coverage.ts
+@@ -1,38 +1,87 @@
+ import type { PrismaClient } from "../../generated/prisma/client.js";
+ 
+ export interface CoverageMetric { field: string; present: number; total: number; percent: number }
+-
+-const metric = (field: string, present: number, total: number): CoverageMetric => ({
+-  field,
+-  present,
+-  total,
+-  percent: total === 0 ? 0 : Math.round((present / total) * 10_000) / 100,
+-});
++const metric = (field: string, present: number, total: number): CoverageMetric => ({ field, present, total, percent: total === 0 ? 0 : Math.round((present / total) * 10_000) / 100 });
+ 
+ export async function buildCoverageReport(db: PrismaClient) {
+-  const [products, variants, names, years, discontinued, themes, images, boxFront, boxBack, instructions, figureCounts, pieceCounts, conflicts] = await Promise.all([
++  const [
++    products, variants, sourceRecords, referenceRows, names, namesFr, years, discontinued, themes, mainImages, boxFront, boxBack,
++    instructions, figureCounts, pieceCounts, linkedParts, fullPartsInventory, openConflicts, openReviews, sourceStats, yearRows, sourceReferenceValues,
++    productKinds, variantKinds, promotions, exclusives, variantPartRows,
++  ] = await Promise.all([
+     db.product.count(),
+     db.productVariant.count(),
+-    db.product.count({ where: { name: { not: null } } }),
+-    db.product.count({ where: { releaseYear: { not: null } } }),
+-    db.product.count({ where: { discontinuedYear: { not: null } } }),
+-    db.product.count({ where: { themes: { some: {} } } }),
+-    db.productVariant.count({ where: { media: { some: {} } } }),
++    db.sourceRecord.count({ where: { recordType: "collectible" } }),
++    db.productReference.findMany({ select: { normalizedValue: true, variantId: true } }),
++    db.productVariant.count({ where: { OR: [{ name: { not: null } }, { translations: { some: { name: { not: null } } } }] } }),
++    db.productVariant.count({ where: { translations: { some: { locale: "fr", name: { not: null } } } } }),
++    db.productVariant.count({ where: { releaseYear: { not: null } } }),
++    db.productVariant.count({ where: { discontinuedYear: { not: null } } }),
++    db.productVariant.count({ where: { themes: { some: {} } } }),
++    db.productVariant.count({ where: { media: { some: { kind: "main" } } } }),
+     db.productVariant.count({ where: { media: { some: { kind: "box_front" } } } }),
+     db.productVariant.count({ where: { media: { some: { kind: "box_back" } } } }),
+     db.productVariant.count({ where: { instructions: { some: {} } } }),
+     db.productVariant.count({ where: { figureCount: { not: null } } }),
+     db.productVariant.count({ where: { pieceCount: { not: null } } }),
++    db.productVariant.count({ where: { parts: { some: {} } } }),
++    db.productVariant.count({ where: { partsInventoryComplete: true } }),
+     db.conflict.count({ where: { status: "OPEN" } }),
++    db.reviewTask.count({ where: { status: "OPEN" } }),
++    db.source.findMany({ select: { key: true, name: true, records: { select: { id: true } }, importRuns: { orderBy: { startedAt: "desc" }, take: 1, select: { status: true, scanned: true, created: true, updated: true, unchanged: true, errors: true, inaccessible: true, startedAt: true, finishedAt: true } } } }),
++    db.productVariant.findMany({ where: { releaseYear: { not: null } }, select: { releaseYear: true } }),
++    db.sourceValue.findMany({ where: { field: "reference" }, select: { source: { select: { key: true } }, normalizedValue: true } }),
++    db.product.groupBy({ by: ["kind"], _count: { _all: true } }),
++    db.productVariant.groupBy({ by: ["variantKind"], _count: { _all: true } }),
++    db.productVariant.count({ where: { isPromotion: true } }),
++    db.productVariant.count({ where: { isExclusive: true } }),
++    db.variantPart.count(),
+   ]);
++
++  const normalizedReferenceCount = new Set(referenceRows.map((row) => row.normalizedValue)).size;
++  const referencedVariants = new Set(referenceRows.map((row) => row.variantId)).size;
++
++  const decadeMap = new Map<number, number>();
++  for (const row of yearRows) if (row.releaseYear) decadeMap.set(Math.floor(row.releaseYear / 10) * 10, (decadeMap.get(Math.floor(row.releaseYear / 10) * 10) ?? 0) + 1);
++  const referencesBySource = new Map<string, Set<string>>();
++  const sourcesByReference = new Map<string, Set<string>>();
++  for (const row of sourceReferenceValues) {
++    const value = JSON.stringify(row.normalizedValue);
++    if (!referencesBySource.has(row.source.key)) referencesBySource.set(row.source.key, new Set());
++    referencesBySource.get(row.source.key)!.add(value);
++    if (!sourcesByReference.has(value)) sourcesByReference.set(value, new Set());
++    sourcesByReference.get(value)!.add(row.source.key);
++  }
++  const onlyOneSource = [...sourcesByReference.values()].filter((sources) => sources.size === 1).length;
++
+   return {
+     generatedAt: new Date().toISOString(),
+-    totals: { products, variants, conflicts },
++    totals: {
++      rawSourceRecords: sourceRecords,
++      normalizedReferences: normalizedReferenceCount,
++      products,
++      variants,
++      collectibleObjects: variants,
++      duplicatesMerged: Math.max(0, sourceRecords - variants),
++      openConflicts,
++      openReviewTasks: openReviews,
++      referencesOnlyInOneSource: onlyOneSource,
++    },
+     coverage: [
+-      metric("reference", variants, variants), metric("name", names, products), metric("release_year", years, products),
+-      metric("discontinued_year", discontinued, products), metric("theme", themes, products), metric("main_image", images, variants),
+-      metric("box_front", boxFront, variants), metric("box_back", boxBack, variants), metric("instructions", instructions, variants),
+-      metric("figures_count", figureCounts, variants), metric("parts_count", pieceCounts, variants),
++      metric("reference", referencedVariants, variants), metric("name", names, variants), metric("name_fr", namesFr, variants),
++      metric("release_year", years, variants), metric("discontinued_year", discontinued, variants), metric("theme", themes, variants),
++      metric("main_image", mainImages, variants), metric("box_front", boxFront, variants), metric("box_back", boxBack, variants),
++      metric("instructions", instructions, variants), metric("figures_count", figureCounts, variants), metric("parts_count", pieceCounts, variants),
++      metric("linked_parts", linkedParts, variants),
++      metric("full_parts_inventory", fullPartsInventory, variants),
+     ],
++    taxonomy: {
++      products: Object.fromEntries(productKinds.map((row) => [row.kind, row._count._all])),
++      variants: Object.fromEntries(variantKinds.map((row) => [row.variantKind, row._count._all])),
++      promotions, exclusives, linkedVariantPartRows: variantPartRows,
++    },
++    byYear: [...new Map(yearRows.filter((row) => row.releaseYear).map((row) => [row.releaseYear!, 0])).keys()].sort((a, b) => a - b).map((year) => ({ year, count: yearRows.filter((row) => row.releaseYear === year).length })),
++    byDecade: [...decadeMap.entries()].sort(([a], [b]) => a - b).map(([decade, count]) => ({ decade, count })),
++    bySource: sourceStats.map((source) => ({ key: source.key, name: source.name, rawRecords: source.records.length, uniqueReferences: referencesBySource.get(source.key)?.size ?? 0, latestImport: source.importRuns[0] ?? null })),
+   };
+ }
+-- 
+2.51.1
+
