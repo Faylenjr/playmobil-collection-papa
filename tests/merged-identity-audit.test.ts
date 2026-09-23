@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  classifyUrlReferenceEvidence,
   clusterMergedSourceRecords,
-  isSourceReferenceConsistent,
   referenceCandidateFromSource,
   type MergedRecordEvidence,
 } from "../src/domain/merged-record-audit.js";
@@ -14,7 +14,7 @@ const record = (id: string, name: string, overrides: Partial<MergedRecordEvidenc
   contentHash: `hash-${id}`,
   declaredReference: "80146",
   urlReferenceCandidate: "80146",
-  sourceReferenceConsistent: true,
+  urlReferenceEvidence: "EXACT",
   names: { "name.en": name },
   name,
   releaseYear: 2024,
@@ -31,7 +31,9 @@ describe("merged SourceRecord identity audit", () => {
       record("v2", "Example figure"),
       record("v3", "Example figure"),
     ]);
-    expect(result.classification).toBe("MATCH");
+    expect(result.identityClassification).toBe("MATCH");
+    expect(result.sourceConsistency).toBe("CONSISTENT");
+    expect(result.safeAction).toBe("KEEP_MERGED");
     expect(result.clusters).toEqual([{ id: "cluster-1", recordIds: ["v1", "v2", "v3"], relationship: "MATCH" }]);
     expect(result.relations.every((relation) => relation.relationship === "MATCH")).toBe(true);
   });
@@ -41,7 +43,7 @@ describe("merged SourceRecord identity audit", () => {
       record("page-2", "Playmobil 80146"),
       record("page-1", "Playmobil 80146"),
     ]);
-    expect(result.classification).toBe("MATCH");
+    expect(result.identityClassification).toBe("MATCH");
     expect(result.clusters).toHaveLength(1);
   });
 
@@ -52,21 +54,48 @@ describe("merged SourceRecord identity audit", () => {
       `Playmobil Share the Smile 40º (${color})`,
       { declaredReference: "30825013-GER", urlReferenceCandidate: "30825013-GER", format: "Promotional item", productKind: "PROMOTIONAL_ITEM" },
     )));
-    expect(result.classification).toBe("DISTINCT");
+    expect(result.identityClassification).toBe("DISTINCT");
     expect(result.clusters).toHaveLength(6);
     expect(result.relations.every((relation) => relation.relationship === "DISTINCT")).toBe(true);
   });
 
-  it.each([
-    ["Genie", "Mermaid", "30883802-GER"],
-    ["Archer", "Gladiator", "70752V7"],
-  ])("classifies %s and %s as DISTINCT figure characters", (left, right, reference) => {
+  it("classifies production-shaped Genie/Mermaid translations as DISTINCT despite identical secondary signals", () => {
     const result = clusterMergedSourceRecords([
-      record("left", left, { declaredReference: reference, urlReferenceCandidate: reference }),
-      record("right", right, { declaredReference: reference, urlReferenceCandidate: reference }),
+      record("genie", "Genie", {
+        declaredReference: "30883802-GER", urlReferenceCandidate: "30883802-GER",
+        names: { "name.de": "Flaschengeist", "name.en": "Genie", "name.es": "Genio de la lámpara", "name.fr": "Génie de la lampe" },
+        releaseYear: 2005, themes: ["Waterworld"], format: "Blister", productKind: null,
+      }),
+      record("mermaid", "Mermaid", {
+        declaredReference: "30883802-GER", urlReferenceCandidate: "30883802-GER",
+        names: { "name.de": "Meerjungfrau", "name.en": "Mermaid", "name.es": "Sirena", "name.fr": "Sirène" },
+        releaseYear: 2005, themes: ["Waterworld"], format: "Blister", productKind: null,
+      }),
     ]);
-    expect(result.classification).toBe("DISTINCT");
-    expect(result.relations[0]).toMatchObject({ relationship: "DISTINCT" });
+    expect(result.identityClassification).toBe("DISTINCT");
+    expect(result.relations[0]).toMatchObject({ relationship: "DISTINCT", reason: "strong-multilingual-name-divergence" });
+    expect(result.safeAction).toBe("SPLIT");
+  });
+
+  it("keeps Archer/Gladiator semantically DISTINCT while flagging both contradictory URL references", () => {
+    const result = clusterMergedSourceRecords([
+      record("archer", "Archer", {
+        externalId: "sets/70752-02-archer", sourceUrl: "https://www.klickypedia.com/sets/70752-02-archer/",
+        declaredReference: "70752v7", urlReferenceCandidate: "70752-02", urlReferenceEvidence: "STRONG_MISMATCH",
+        names: { "name.de": "Bogenschütze", "name.en": "Archer", "name.es": "Arquero", "name.fr": "Archer" },
+        format: "Blister", productKind: null,
+      }),
+      record("gladiator", "Gladiator", {
+        externalId: "sets/70752-07-gladiator", sourceUrl: "https://www.klickypedia.com/sets/70752-07-gladiator/",
+        declaredReference: "70752v7", urlReferenceCandidate: "70752-07", urlReferenceEvidence: "STRONG_MISMATCH",
+        names: { "name.de": "Gladiator", "name.en": "Gladiator", "name.es": "Gladiador", "name.fr": "Gladiateur" },
+        format: "Blister", productKind: null,
+      }),
+    ]);
+    expect(result).toMatchObject({
+      identityClassification: "DISTINCT", sourceConsistency: "INCONSISTENT", safeAction: "REVIEW",
+    });
+    expect(result.relations[0]).toMatchObject({ relationship: "DISTINCT", reason: "strong-multilingual-name-divergence" });
   });
 
   it.each([
@@ -78,7 +107,7 @@ describe("merged SourceRecord identity audit", () => {
       record("left", left, { format: "Leaflet", productKind: "CATALOGUE" }),
       record("right", right, { format: "Leaflet", productKind: "CATALOGUE" }),
     ]);
-    expect(result.classification).toBe("DISTINCT");
+    expect(result.identityClassification).toBe("DISTINCT");
     expect(result.relations[0]).toMatchObject({ relationship: "DISTINCT", reason });
   });
 
@@ -87,27 +116,37 @@ describe("merged SourceRecord identity audit", () => {
       record("one", "Police car", { format: "Set", productKind: "SET" }),
       record("two", "Police car set", { format: "Set", productKind: "SET" }),
     ]);
-    expect(result.classification).toBe("AMBIGUOUS");
+    expect(result.identityClassification).toBe("AMBIGUOUS");
   });
 
-  it("quarantines Patrick Pentz V13 declared as V12 as a source inconsistency", () => {
+  it("keeps Patrick/Konrad identity DISTINCT while separately flagging Patrick's source inconsistency", () => {
     const patrickUrl = "https://www.klickypedia.com/sets/72306v13-patrick-pentz/";
     const candidate = referenceCandidateFromSource("klickypedia", "sets/72306v13-patrick-pentz", patrickUrl);
     expect(candidate).toBe("72306V13");
-    expect(isSourceReferenceConsistent("72306v12", candidate)).toBe(false);
+    expect(classifyUrlReferenceEvidence("72306v12", candidate)).toBe("STRONG_MISMATCH");
 
     const result = clusterMergedSourceRecords([
-      record("konrad", "Konrad Laimer", { declaredReference: "72306v12", urlReferenceCandidate: "72306V12" }),
+      record("konrad", "Konrad Laimer", {
+        declaredReference: "72306v12", urlReferenceCandidate: "72306V12",
+        names: { "name.de": "Konrad Laimer", "name.en": "Konrad Laimer" },
+        format: "Blister", productKind: null,
+      }),
       record("patrick", "Patrick Pentz", {
         externalId: "sets/72306v13-patrick-pentz",
         sourceUrl: patrickUrl,
         declaredReference: "72306v12",
         urlReferenceCandidate: candidate,
-        sourceReferenceConsistent: false,
+        urlReferenceEvidence: "STRONG_MISMATCH",
+        names: { "name.en": "Patrick Pentz", "name.de": "Patrick Pentz" },
+        format: "Blister", productKind: null,
       }),
     ]);
-    expect(result.classification).toBe("SOURCE_INCONSISTENCY");
-    expect(result.relations[0]).toMatchObject({ relationship: "AMBIGUOUS", reason: "source-reference-mismatch" });
+    expect(result).toMatchObject({
+      identityClassification: "DISTINCT",
+      sourceConsistency: "INCONSISTENT",
+      safeAction: "REVIEW",
+    });
+    expect(result.relations[0]).toMatchObject({ relationship: "DISTINCT", reason: "strong-multilingual-name-divergence" });
   });
 
   it("produces identical clusters and relations regardless of input order", () => {
@@ -119,19 +158,48 @@ describe("merged SourceRecord identity audit", () => {
     const forward = clusterMergedSourceRecords(records);
     const reverse = clusterMergedSourceRecords([...records].reverse());
     expect(reverse).toEqual(forward);
-    expect(forward.classification).toBe("DISTINCT");
+    expect(forward.identityClassification).toBe("DISTINCT");
     expect(forward.clusters.map((cluster) => cluster.recordIds)).toEqual([["green-1", "green-2"], ["red"]]);
   });
 
   it("normalizes dotted references when checking URL evidence", () => {
     const candidate = referenceCandidateFromSource("klickypedia", "sets/23-40-8-example", "https://www.klickypedia.com/sets/23-40-8-example/");
     expect(candidate).toBe("23-40-8");
-    expect(isSourceReferenceConsistent("23.40.8", candidate)).toBe(true);
+    expect(classifyUrlReferenceEvidence("23.40.8", candidate)).toBe("EXACT");
+  });
+
+  it.each([
+    ["N/A-ITA", "N-A", "WEAK"],
+    ["5793-USA", "5793", "COMPATIBLE_BASE"],
+    ["23.24.3-TROL", "23-24-3", "COMPATIBLE_BASE"],
+    ["3600-FAM", "3600", "COMPATIBLE_BASE"],
+    ["80316-GER", "80315-GER", "STRONG_MISMATCH"],
+    ["71260", "71620", "STRONG_MISMATCH"],
+  ] as const)("grades declared %s versus URL candidate %s as %s", (declared, candidate, expected) => {
+    expect(classifyUrlReferenceEvidence(declared, candidate)).toBe(expected);
+  });
+
+  it("keeps true 23.40.8 duplicates as MATCH with compatible dotted URL evidence", () => {
+    const result = clusterMergedSourceRecords([
+      record("v1", "Construction worker", {
+        declaredReference: "23.40.8", urlReferenceCandidate: "23-40-8", urlReferenceEvidence: "EXACT",
+        names: { "name.en": "Construction worker", "name.fr": "Ouvrier du bâtiment" },
+      }),
+      record("v2", "Construction worker", {
+        declaredReference: "23.40.8", urlReferenceCandidate: "23-40-8", urlReferenceEvidence: "EXACT",
+        names: { "name.en": "Construction worker", "name.fr": "Ouvrier du bâtiment" },
+      }),
+      record("v3", "Construction worker", {
+        declaredReference: "23.40.8", urlReferenceCandidate: "23-40-8", urlReferenceEvidence: "EXACT",
+        names: { "name.en": "Construction worker", "name.fr": "Ouvrier du bâtiment" },
+      }),
+    ]);
+    expect(result).toMatchObject({ identityClassification: "MATCH", sourceConsistency: "CONSISTENT", safeAction: "KEEP_MERGED" });
   });
 
   it("does not mistake Klickypedia duplicate-page suffixes for distinct references", () => {
     const candidate = referenceCandidateFromSource("klickypedia", "sets/80146-2-example", "https://www.klickypedia.com/sets/80146-2-example/");
     expect(candidate).toBe("80146-2");
-    expect(isSourceReferenceConsistent("80146", candidate)).toBe(true);
+    expect(classifyUrlReferenceEvidence("80146", candidate)).toBe("COMPATIBLE_BASE");
   });
 });

@@ -1,10 +1,12 @@
 import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
 import {
+  classifyUrlReferenceEvidence,
   clusterMergedSourceRecords,
-  isSourceReferenceConsistent,
   referenceCandidateFromSource,
   type MergedRecordEvidence,
-  type MergedVariantClassification,
+  type MergedIdentityClassification,
+  type MergedSafeAction,
+  type SourceConsistency,
 } from "../domain/merged-record-audit.js";
 
 type Scalar = string | number | boolean | null;
@@ -41,8 +43,11 @@ export interface MergedIdentityAuditDetail {
   canonicalKey: string;
   reference: string | null;
   references: string[];
-  classification: MergedVariantClassification;
+  identityClassification: MergedIdentityClassification;
+  sourceConsistency: SourceConsistency;
+  safeAction: MergedSafeAction;
   decisionReason: string;
+  sourceConsistencyReason: string;
   proposedClusters: Array<{ id: string; relationship: "MATCH" | "SINGLETON" | "AMBIGUOUS"; recordIds: string[] }>;
   relations: Array<{ leftRecordId: string; rightRecordId: string; relationship: "MATCH" | "DISTINCT" | "AMBIGUOUS"; reason: string }>;
   sourceRecords: Array<MergedRecordEvidence & { proposedCluster: string }>;
@@ -53,10 +58,12 @@ export interface MergedIdentityAuditReport {
   variantsScanned: number;
   sourceRecordsScanned: number;
   variantsWithMultipleSourceRecords: number;
-  exactMatchGroups: number;
-  distinctGroups: number;
-  ambiguousGroups: number;
-  sourceInconsistencyGroups: number;
+  identityMatchGroups: number;
+  identityDistinctGroups: number;
+  identityAmbiguousGroups: number;
+  sourceConsistentGroups: number;
+  sourceInconsistentGroups: number;
+  sourceUndeterminedGroups: number;
   variantsSafeToKeepMerged: number;
   variantsSafeToSplit: number;
   variantsNeedingReview: number;
@@ -125,7 +132,7 @@ export async function auditMergedIdentities(db: PrismaClient): Promise<MergedIde
           contentHash: record.contentHash,
           declaredReference,
           urlReferenceCandidate,
-          sourceReferenceConsistent: isSourceReferenceConsistent(declaredReference, urlReferenceCandidate),
+          urlReferenceEvidence: classifyUrlReferenceEvidence(declaredReference, urlReferenceCandidate),
           names,
           name,
           releaseYear: typeof releaseYear === "number" ? releaseYear : null,
@@ -142,21 +149,30 @@ export async function auditMergedIdentities(db: PrismaClient): Promise<MergedIde
       canonicalKey: variant.canonicalKey,
       reference: references[0] ?? variant.references.find((reference) => reference.isPrimary)?.displayValue ?? variant.references[0]?.displayValue ?? null,
       references,
-      classification: clustered.classification,
-      decisionReason: clustered.reason,
+      identityClassification: clustered.identityClassification,
+      sourceConsistency: clustered.sourceConsistency,
+      safeAction: clustered.safeAction,
+      decisionReason: clustered.decisionReason,
+      sourceConsistencyReason: clustered.sourceConsistencyReason,
       proposedClusters: clustered.clusters,
       relations: clustered.relations,
       sourceRecords: evidence.map((record) => ({ ...record, proposedCluster: clusterByRecord.get(record.id)! })),
     };
   });
 
-  const count = (classification: MergedVariantClassification) => details.filter((detail) => detail.classification === classification).length;
-  const exactMatchGroups = count("MATCH");
-  const distinctGroups = count("DISTINCT");
-  const ambiguousGroups = count("AMBIGUOUS");
-  const sourceInconsistencyGroups = count("SOURCE_INCONSISTENCY");
+  const identityCount = (classification: MergedIdentityClassification) => details
+    .filter((detail) => detail.identityClassification === classification).length;
+  const consistencyCount = (classification: SourceConsistency) => details
+    .filter((detail) => detail.sourceConsistency === classification).length;
+  const actionCount = (action: MergedSafeAction) => details.filter((detail) => detail.safeAction === action).length;
+  const identityMatchGroups = identityCount("MATCH");
+  const identityDistinctGroups = identityCount("DISTINCT");
+  const identityAmbiguousGroups = identityCount("AMBIGUOUS");
+  const sourceConsistentGroups = consistencyCount("CONSISTENT");
+  const sourceInconsistentGroups = consistencyCount("INCONSISTENT");
+  const sourceUndeterminedGroups = consistencyCount("UNDETERMINED");
   const predictedNewVariants = details
-    .filter((detail) => detail.classification === "DISTINCT")
+    .filter((detail) => detail.safeAction === "SPLIT")
     .reduce((total, detail) => total + detail.proposedClusters.length - 1, 0);
 
   return {
@@ -164,13 +180,15 @@ export async function auditMergedIdentities(db: PrismaClient): Promise<MergedIde
     variantsScanned: variants.length,
     sourceRecordsScanned: variants.reduce((total, variant) => total + variant.sourceRecords.length, 0),
     variantsWithMultipleSourceRecords: variants.length,
-    exactMatchGroups,
-    distinctGroups,
-    ambiguousGroups,
-    sourceInconsistencyGroups,
-    variantsSafeToKeepMerged: exactMatchGroups,
-    variantsSafeToSplit: distinctGroups,
-    variantsNeedingReview: ambiguousGroups + sourceInconsistencyGroups,
+    identityMatchGroups,
+    identityDistinctGroups,
+    identityAmbiguousGroups,
+    sourceConsistentGroups,
+    sourceInconsistentGroups,
+    sourceUndeterminedGroups,
+    variantsSafeToKeepMerged: actionCount("KEEP_MERGED"),
+    variantsSafeToSplit: actionCount("SPLIT"),
+    variantsNeedingReview: actionCount("REVIEW"),
     currentVariantCount,
     predictedVariantCountAfterSafeSplits: currentVariantCount + predictedNewVariants,
     predictedNewVariants,

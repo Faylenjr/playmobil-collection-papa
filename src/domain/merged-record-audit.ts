@@ -1,4 +1,9 @@
-import { compareIdentitySignals, type IdentityRelationship, type IdentitySnapshot } from "./identity.js";
+import { compareIdentitySignals, isPlaceholderReference, type IdentityRelationship, type IdentitySnapshot } from "./identity.js";
+
+export type UrlReferenceEvidence = "EXACT" | "COMPATIBLE_BASE" | "STRONG_MISMATCH" | "WEAK" | "NONE";
+export type SourceConsistency = "CONSISTENT" | "INCONSISTENT" | "UNDETERMINED";
+export type MergedIdentityClassification = "MATCH" | "DISTINCT" | "AMBIGUOUS";
+export type MergedSafeAction = "KEEP_MERGED" | "SPLIT" | "REVIEW";
 
 export interface MergedRecordEvidence {
   id: string;
@@ -8,7 +13,7 @@ export interface MergedRecordEvidence {
   contentHash: string;
   declaredReference: string | null;
   urlReferenceCandidate: string | null;
-  sourceReferenceConsistent: boolean;
+  urlReferenceEvidence: UrlReferenceEvidence;
   names: Record<string, string>;
   name: string | null;
   releaseYear: number | null;
@@ -24,8 +29,6 @@ export interface MergedRecordRelation {
   reason: string;
 }
 
-export type MergedVariantClassification = "MATCH" | "DISTINCT" | "AMBIGUOUS" | "SOURCE_INCONSISTENCY";
-
 export interface MergedRecordCluster {
   id: string;
   recordIds: string[];
@@ -33,10 +36,13 @@ export interface MergedRecordCluster {
 }
 
 export interface MergedVariantClusterResult {
-  classification: MergedVariantClassification;
+  identityClassification: MergedIdentityClassification;
+  sourceConsistency: SourceConsistency;
+  safeAction: MergedSafeAction;
   clusters: MergedRecordCluster[];
   relations: MergedRecordRelation[];
-  reason: string;
+  decisionReason: string;
+  sourceConsistencyReason: string;
 }
 
 const normalizeText = (value: string | null | undefined) => value
@@ -46,12 +52,11 @@ const normalizeText = (value: string | null | undefined) => value
   .replace(/[^a-z0-9]+/g, " ")
   .trim() || null;
 
-const normalizeReferenceSlug = (value: string) => value
+const normalizeReference = (value: string) => value
   .normalize("NFKD")
   .replace(/\p{Diacritic}/gu, "")
-  .toLowerCase()
-  .replace(/[^a-z0-9]+/g, "-")
-  .replace(/^-+|-+$/g, "");
+  .toUpperCase()
+  .replace(/[^A-Z0-9]+/g, "");
 
 const MARKET_SEGMENTS = new Set([
   "ant", "aus", "bel", "can", "deu", "esp", "fra", "ger", "gre", "ita", "lyr", "mex", "ned", "sch", "swi", "uk", "usa",
@@ -78,14 +83,35 @@ export function referenceCandidateFromSource(sourceKey: string, externalId: stri
   return candidate.join("-").toUpperCase();
 }
 
+/**
+ * Grades URL evidence without changing the page-declared reference. Missing
+ * market/family suffixes and duplicate-page suffixes are compatible, not
+ * contradictions. Placeholder slugs are too weak to judge.
+ */
+export function classifyUrlReferenceEvidence(declaredReference: string | null, candidate: string | null): UrlReferenceEvidence {
+  if (!declaredReference || !candidate) return "NONE";
+  if (isPlaceholderReference(declaredReference) || /^N-?A(?:-|$)/i.test(candidate)) return "WEAK";
+  const declared = normalizeReference(declaredReference);
+  const observed = normalizeReference(candidate);
+  if (!declared || !observed) return "WEAK";
+  if (declared === observed) return "EXACT";
+
+  // Slugs often omit a market/family suffix (5793-USA, 3600-FAM,
+  // 23.24.3-TROL) or add a numeric duplicate-page suffix (80146-2).
+  if (declared.startsWith(observed)) {
+    const remainder = declared.slice(observed.length);
+    if (/^[A-Z][A-Z0-9]*$/.test(remainder)) return "COMPATIBLE_BASE";
+  }
+  if (observed.startsWith(declared)) {
+    const remainder = observed.slice(declared.length);
+    if (/^[2-9]$/.test(remainder)) return "COMPATIBLE_BASE";
+  }
+  return "STRONG_MISMATCH";
+}
+
+/** Backwards-compatible convenience predicate for callers outside the report. */
 export function isSourceReferenceConsistent(declaredReference: string | null, candidate: string | null): boolean {
-  if (!declaredReference || !candidate) return true;
-  const declared = normalizeReferenceSlug(declaredReference);
-  const observed = normalizeReferenceSlug(candidate);
-  if (declared === observed) return true;
-  // Klickypedia commonly appends -2/-3 to duplicate page slugs. That suffix is
-  // not sufficient evidence of a different PLAYMOBIL reference.
-  return new RegExp(`^${declared}-[2-9]$`).test(observed);
+  return classifyUrlReferenceEvidence(declaredReference, candidate) !== "STRONG_MISMATCH";
 }
 
 const COLORS = new Set([
@@ -125,6 +151,36 @@ function isFigureEvidence(record: MergedRecordEvidence): boolean {
   return /figure|character/i.test(`${record.productKind ?? ""} ${record.format ?? ""}`);
 }
 
+function textTokenSimilarity(left: string, right: string): number {
+  const a = new Set(left.split(" ").filter((token) => token.length > 1));
+  const b = new Set(right.split(" ").filter((token) => token.length > 1));
+  if (a.size === 0 || b.size === 0) return left === right ? 1 : 0;
+  const intersection = [...a].filter((token) => b.has(token)).length;
+  return intersection / new Set([...a, ...b]).size;
+}
+
+/**
+ * Multiple independently translated labels can establish semantic divergence
+ * even when the format is only "Blister". A single spelling difference never
+ * triggers this rule: at least two shared language fields must all disagree,
+ * with consistently low lexical overlap.
+ */
+function hasStrongMultilingualNameDivergence(left: MergedRecordEvidence, right: MergedRecordEvidence): boolean {
+  const leftNames = new Map(Object.entries(left.names)
+    .filter(([field]) => /^name\.[a-z]{2,3}(?:[-_][a-z]{2})?$/i.test(field))
+    .map(([field, value]) => [field.toLowerCase(), normalizeText(value)] as const)
+    .filter((entry): entry is readonly [string, string] => Boolean(entry[1])));
+  const rightNames = new Map(Object.entries(right.names).map(([field, value]) => [field.toLowerCase(), value]));
+  const pairs = [...leftNames]
+    .filter(([field]) => rightNames.has(field))
+    .map(([field, leftName]) => [leftName, normalizeText(rightNames.get(field))] as const)
+    .filter((entry): entry is readonly [string, string] => Boolean(entry[1]));
+  if (pairs.length < 2 || pairs.some(([a, b]) => a === b)) return false;
+  const similarities = pairs.map(([a, b]) => textTokenSimilarity(a, b));
+  return similarities.every((similarity) => similarity <= 0.5)
+    && similarities.filter((similarity) => similarity < 0.5).length >= 2;
+}
+
 function snapshot(record: MergedRecordEvidence): IdentitySnapshot {
   return {
     id: record.id,
@@ -137,10 +193,6 @@ function snapshot(record: MergedRecordEvidence): IdentitySnapshot {
 }
 
 export function compareMergedRecordEvidence(left: MergedRecordEvidence, right: MergedRecordEvidence): { relationship: IdentityRelationship; reason: string } {
-  if (!left.sourceReferenceConsistent || !right.sourceReferenceConsistent) {
-    return { relationship: "AMBIGUOUS", reason: "source-reference-mismatch" };
-  }
-
   const base = compareIdentitySignals(snapshot(left), snapshot(right));
   if (base === "MATCH") return { relationship: "MATCH", reason: "aligned-name-and-secondary-signals" };
 
@@ -168,15 +220,17 @@ export function compareMergedRecordEvidence(left: MergedRecordEvidence, right: M
     return { relationship: "DISTINCT", reason: "explicit-numbered-qualifier-difference" };
   }
 
+  if (hasStrongMultilingualNameDivergence(left, right)) {
+    return { relationship: "DISTINCT", reason: "strong-multilingual-name-divergence" };
+  }
+
   const leftName = normalizeText(left.name);
   const rightName = normalizeText(right.name);
   if (leftName && rightName && leftName !== rightName && isFigureEvidence(left) && isFigureEvidence(right)) {
     return { relationship: "DISTINCT", reason: "different-figure-character-names" };
   }
 
-
   if (base === "DISTINCT") return { relationship: "DISTINCT", reason: "existing-identity-signals-distinct" };
-
   return { relationship: "AMBIGUOUS", reason: "insufficient-non-conflicting-signals" };
 }
 
@@ -186,10 +240,27 @@ const compareStable = (left: MergedRecordEvidence, right: MergedRecordEvidence) 
   return leftKey < rightKey ? -1 : leftKey > rightKey ? 1 : 0;
 };
 
+function groupSourceConsistency(records: MergedRecordEvidence[]): { sourceConsistency: SourceConsistency; reason: string } {
+  const strong = records.filter((record) => record.urlReferenceEvidence === "STRONG_MISMATCH");
+  if (strong.length > 0) return {
+    sourceConsistency: "INCONSISTENT",
+    reason: `${strong.length} SourceRecord(s) have strong URL/reference mismatches.`,
+  };
+  const uncertain = records.filter((record) => record.urlReferenceEvidence === "WEAK" || record.urlReferenceEvidence === "NONE");
+  if (uncertain.length > 0) return {
+    sourceConsistency: "UNDETERMINED",
+    reason: `${uncertain.length} SourceRecord(s) have weak or absent URL reference evidence.`,
+  };
+  return {
+    sourceConsistency: "CONSISTENT",
+    reason: "Every SourceRecord has exact or base-compatible URL reference evidence.",
+  };
+}
+
 /**
  * Builds MATCH connected components, then accepts them only when every member
- * is pairwise MATCH and every cross-cluster relation is DISTINCT. This avoids
- * unsafe transitive merges while remaining independent from input order.
+ * is pairwise MATCH and every cross-cluster relation is DISTINCT. Source URL
+ * consistency is evaluated independently and only affects the safe action.
  */
 export function clusterMergedSourceRecords(input: MergedRecordEvidence[]): MergedVariantClusterResult {
   const records = [...input].sort(compareStable);
@@ -218,7 +289,6 @@ export function clusterMergedSourceRecords(input: MergedRecordEvidence[]): Merge
     components.set(root, values);
   });
   const componentRows = [...components.values()].sort((left, right) => left[0]! - right[0]!);
-  const hasInconsistency = records.some((record) => !record.sourceReferenceConsistent);
   const componentIsClique = componentRows.map((indices) => indices.every((left, position) => indices
     .slice(position + 1)
     .every((right) => relationByPair.get(`${Math.min(left, right)}:${Math.max(left, right)}`) === "MATCH")));
@@ -228,29 +298,45 @@ export function clusterMergedSourceRecords(input: MergedRecordEvidence[]): Merge
     recordIds: indices.map((recordIndex) => records[recordIndex]!.id),
     relationship: indices.length === 1 ? "SINGLETON" : componentIsClique[index] ? "MATCH" : "AMBIGUOUS",
   }));
+  const componentByRecordIndex = new Map<number, number>();
+  componentRows.forEach((indices, componentIndex) => indices.forEach((recordIndex) => componentByRecordIndex.set(recordIndex, componentIndex)));
   const crossRelations = relations.filter((relation) => {
     const leftIndex = records.findIndex((record) => record.id === relation.leftRecordId);
     const rightIndex = records.findIndex((record) => record.id === relation.rightRecordId);
-    return find(leftIndex) !== find(rightIndex);
+    return componentByRecordIndex.get(leftIndex) !== componentByRecordIndex.get(rightIndex);
   });
   const allCrossDistinct = crossRelations.every((relation) => relation.relationship === "DISTINCT");
 
-  if (hasInconsistency) return {
-    classification: "SOURCE_INCONSISTENCY", clusters, relations,
-    reason: "At least one page URL/externalId suggests a different reference than the page-declared reference.",
-  };
-  if (clusters.length === 1 && sameComponentIsClique) return {
-    classification: "MATCH", clusters, relations,
-    reason: "Every SourceRecord is connected by complete, pairwise MATCH evidence.",
-  };
-  if (clusters.length > 1 && sameComponentIsClique && allCrossDistinct) return {
-    classification: "DISTINCT", clusters, relations,
-    reason: "Every proposed cluster is internally MATCH and every cross-cluster relation is DISTINCT.",
-  };
-  return {
-    classification: "AMBIGUOUS", clusters, relations,
-    reason: sameComponentIsClique
+  let identityClassification: MergedIdentityClassification;
+  let decisionReason: string;
+  if (clusters.length === 1 && sameComponentIsClique) {
+    identityClassification = "MATCH";
+    decisionReason = "Every SourceRecord is connected by complete, pairwise MATCH evidence.";
+  } else if (clusters.length > 1 && sameComponentIsClique && allCrossDistinct) {
+    identityClassification = "DISTINCT";
+    decisionReason = "Every proposed cluster is internally MATCH and every cross-cluster relation is DISTINCT.";
+  } else {
+    identityClassification = "AMBIGUOUS";
+    decisionReason = sameComponentIsClique
       ? "At least one cross-cluster relationship lacks sufficient evidence."
-      : "MATCH transitivity produced a component that is not pairwise safe.",
+      : "MATCH transitivity produced a component that is not pairwise safe.";
+  }
+
+  const consistency = groupSourceConsistency(records);
+  const safeAction: MergedSafeAction = consistency.sourceConsistency !== "CONSISTENT"
+    ? "REVIEW"
+    : identityClassification === "MATCH"
+      ? "KEEP_MERGED"
+      : identityClassification === "DISTINCT"
+        ? "SPLIT"
+        : "REVIEW";
+  return {
+    identityClassification,
+    sourceConsistency: consistency.sourceConsistency,
+    safeAction,
+    clusters,
+    relations,
+    decisionReason,
+    sourceConsistencyReason: consistency.reason,
   };
 }

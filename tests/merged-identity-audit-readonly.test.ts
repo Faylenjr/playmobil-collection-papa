@@ -44,9 +44,69 @@ describe("merged identity audit job", () => {
 
       expect(report).toMatchObject({
         dryRun: true, variantsScanned: 1, sourceRecordsScanned: 2, variantsWithMultipleSourceRecords: 1,
-        exactMatchGroups: 1, variantsSafeToKeepMerged: 1, predictedNewVariants: 0,
+        identityMatchGroups: 1, identityDistinctGroups: 0, identityAmbiguousGroups: 0,
+        sourceConsistentGroups: 1, sourceInconsistentGroups: 0, sourceUndeterminedGroups: 0,
+        variantsSafeToKeepMerged: 1, predictedNewVariants: 0,
       });
       expect(after).toEqual(before);
+    } finally {
+      await db.$disconnect();
+      await database.close();
+    }
+  });
+
+  it("classifies production-shaped Genie/Mermaid SourceValues as DISTINCT", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "playmobil-merged-audit-translations-"));
+    directories.push(directory);
+    const { db, database } = await createEmbeddedDatabaseClient(directory);
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const product = await db.product.create({ data: { canonicalKey: "ref:30883802", baseReference: "30883802", kind: "SET" } });
+      const variant = await db.productVariant.create({ data: {
+        productId: product.id, canonicalKey: "ref:30883802-GER", name: "Genie", releaseYear: 2005, format: "Blister",
+      } });
+      await db.productReference.create({ data: {
+        variantId: variant.id, displayValue: "30883802-GER", normalizedValue: "30883802-GER",
+        baseValue: "30883802", isPrimary: true, sourceId: source.id,
+      } });
+      const fixtures = [
+        { slug: "genie", names: { de: "Flaschengeist", en: "Genie", es: "Genio de la lámpara", fr: "Génie de la lampe" } },
+        { slug: "mermaid", names: { de: "Meerjungfrau", en: "Mermaid", es: "Sirena", fr: "Sirène" } },
+      ];
+      for (const fixture of fixtures) {
+        const sourceRecord = await db.sourceRecord.create({ data: {
+          sourceId: source.id, variantId: variant.id, externalId: `sets/30883802-ger-${fixture.slug}`,
+          sourceUrl: `https://www.klickypedia.com/sets/30883802-ger-${fixture.slug}/`,
+          recordType: "collectible", contentHash: `hash-${fixture.slug}`,
+        } });
+        await db.sourceValue.createMany({ data: [
+          { sourceId: source.id, sourceRecordId: sourceRecord.id, entityType: "ProductVariant", entityId: variant.id, field: "reference", rawValue: "30883802-GER", normalizedValue: "30883802-GER", priority: 30 },
+          ...Object.entries(fixture.names).map(([locale, name]) => ({
+            sourceId: source.id, sourceRecordId: sourceRecord.id, entityType: "ProductVariant", entityId: variant.id,
+            field: `name.${locale}`, rawValue: name, normalizedValue: name, priority: 30,
+          })),
+          { sourceId: source.id, sourceRecordId: sourceRecord.id, entityType: "ProductVariant", entityId: variant.id, field: "releaseYear", rawValue: 2005, normalizedValue: 2005, priority: 30 },
+          { sourceId: source.id, sourceRecordId: sourceRecord.id, entityType: "ProductVariant", entityId: variant.id, field: "theme", rawValue: "Waterworld", normalizedValue: "Waterworld", priority: 30 },
+          { sourceId: source.id, sourceRecordId: sourceRecord.id, entityType: "ProductVariant", entityId: variant.id, field: "format", rawValue: "Blister", normalizedValue: "Blister", priority: 30 },
+        ] });
+      }
+
+      const report = await auditMergedIdentities(db);
+      expect(report).toMatchObject({
+        variantsScanned: 1,
+        identityMatchGroups: 0,
+        identityDistinctGroups: 1,
+        identityAmbiguousGroups: 0,
+        sourceConsistentGroups: 1,
+        variantsSafeToSplit: 1,
+        predictedNewVariants: 1,
+      });
+      expect(report.details[0]).toMatchObject({
+        identityClassification: "DISTINCT", sourceConsistency: "CONSISTENT", safeAction: "SPLIT",
+      });
+      expect(report.details[0]?.relations[0]).toMatchObject({
+        relationship: "DISTINCT", reason: "strong-multilingual-name-divergence",
+      });
     } finally {
       await db.$disconnect();
       await database.close();
