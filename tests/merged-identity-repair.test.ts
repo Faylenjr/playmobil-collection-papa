@@ -297,21 +297,78 @@ describe("merged identity repair", () => {
     }
   });
 
-  it("blocks unattributable legacy relations instead of copying them to every cluster", async () => {
-    const { db, database: embedded } = await database("repair-relation-blocker");
+  it("applies only eligible groups and leaves a blocked group byte-for-byte attached to its original variant", async () => {
+    const { db, database: embedded } = await database("repair-partial-eligibility");
     try {
       const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
-      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
-      await db.mediaAsset.create({ data: {
-        variantId: group.variant.id, sourceId: source.id, kind: "main", sourceUrl: "https://images.example/unknown-owner.jpg",
+      const blocked = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const eligible = await seedGroup(db, source.id, approvedFixtures[6]!);
+      const media = await db.mediaAsset.create({ data: {
+        variantId: blocked.variant.id, sourceId: source.id, kind: "main", sourceUrl: "https://images.example/unknown-owner.jpg",
       } });
       const plan = await auditMergedIdentities(db);
       const preview = await repairMergedIdentities(db, plan);
-      expect(preview).toMatchObject({ applyBlocked: true, variantsCreated: 0 });
+      expect(preview).toMatchObject({
+        identitySafeSplits: 2, eligibleSplits: 1, blockedSplits: 1, eligibleNewVariants: 1,
+        currentVariantCount: 2, predictedVariantCountAfterApply: 3, applyBlocked: false,
+      });
       expect(preview.relationAttributionBlockers).toEqual([expect.objectContaining({ relation: "MediaAsset", count: 1 })]);
-      await expect(repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true })).rejects.toThrow(/lack defensible SourceRecord attribution/);
+      expect(preview.groups.find((group) => group.currentVariantId === blocked.variant.id)).toMatchObject({
+        identityClassification: "DISTINCT", sourceConsistency: "CONSISTENT", safeAction: "SPLIT",
+        relationAttribution: "INCOMPLETE", applyEligibility: "BLOCKED_UNATTRIBUTED_RELATIONS",
+        unattributableRelations: { mediaAssets: 1, instructions: 0, variantFigures: 0, variantParts: 0 },
+      });
+
+      const applied = await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(applied).toMatchObject({ variantsCreated: 1, resultingVariantCount: 3, eligibleSplits: 1, blockedSplits: 1 });
+      expect(await db.productVariant.count()).toBe(3);
+      expect(await db.sourceRecord.count({ where: { variantId: blocked.variant.id } })).toBe(2);
+      expect((await db.productVariant.findUniqueOrThrow({ where: { id: blocked.variant.id } })).canonicalKey).toBe(blocked.variant.canonicalKey);
+      expect((await db.mediaAsset.findUniqueOrThrow({ where: { id: media.id } })).variantId).toBe(blocked.variant.id);
+      expect(new Set((await db.sourceRecord.findMany({ where: { id: { in: eligible.records.map((record) => record.id) } } })).map((record) => record.variantId)).size).toBe(2);
+
+      const second = await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(second).toMatchObject({ eligibleSplits: 0, blockedSplits: 1, appliedSplits: 1, eligibleNewVariants: 0, variantsCreated: 0, resultingVariantCount: 3 });
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it.each([
+    ["MediaAsset", async (db: PrismaClient, sourceId: string, variantId: string) => {
+      await db.mediaAsset.create({ data: { variantId, sourceId, kind: "main", sourceUrl: "https://images.example/unattributed.jpg" } });
+    }, "mediaAssets"],
+    ["Instruction", async (db: PrismaClient, sourceId: string, variantId: string) => {
+      await db.instruction.create({ data: { variantId, sourceId, documentUrl: "https://docs.example/unattributed.pdf" } });
+    }, "instructions"],
+    ["VariantFigure", async (db: PrismaClient, _sourceId: string, variantId: string) => {
+      const figure = await db.figure.create({ data: { canonicalKey: `figure:${fixtureSequence}` } });
+      await db.variantFigure.create({ data: { variantId, figureId: figure.id, quantity: 1 } });
+    }, "variantFigures"],
+    ["VariantPart", async (db: PrismaClient, _sourceId: string, variantId: string) => {
+      const part = await db.part.create({ data: { partNumber: `part:${fixtureSequence}` } });
+      await db.variantPart.create({ data: { variantId, partId: part.id, quantity: 1 } });
+    }, "variantParts"],
+  ] as const)("marks an unattributable %s as blocked and performs no mutation", async (relation, seedRelation, countField) => {
+    const { db, database: embedded } = await database(`repair-block-${relation}`);
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
+      await seedRelation(db, source.id, group.variant.id);
+      const plan = await auditMergedIdentities(db);
+
+      const preview = await repairMergedIdentities(db, plan);
+      const detail = preview.groups[0]!;
+      expect(preview).toMatchObject({ identitySafeSplits: 1, eligibleSplits: 0, blockedSplits: 1, eligibleNewVariants: 0, predictedVariantCountAfterApply: 1, applyBlocked: true });
+      expect(detail).toMatchObject({ relationAttribution: "INCOMPLETE", applyEligibility: "BLOCKED_UNATTRIBUTED_RELATIONS" });
+      expect(detail.unattributableRelations[countField]).toBe(1);
+
+      const applied = await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(applied).toMatchObject({ variantsCreated: 0, sourceRecordsMoved: 0, resultingVariantCount: 1 });
       expect(await db.productVariant.count()).toBe(1);
-      expect(await db.mediaAsset.count({ where: { variantId: group.variant.id } })).toBe(1);
+      expect(await db.sourceRecord.count({ where: { variantId: group.variant.id } })).toBe(2);
+      expect((await db.productVariant.findUniqueOrThrow({ where: { id: group.variant.id } })).canonicalKey).toBe(group.variant.canonicalKey);
     } finally {
       await db.$disconnect();
       await embedded.close();

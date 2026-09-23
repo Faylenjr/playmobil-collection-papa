@@ -48,11 +48,17 @@ export interface MergedRepairReport {
   planValidated: true;
   planHash: string;
   alreadyApplied: boolean;
+  identitySafeSplits: number;
+  eligibleSplits: number;
+  blockedSplits: number;
+  appliedSplits: number;
+  eligibleNewVariants: number;
   variantsToSplit: number;
   clustersToMaterialize: number;
   newVariantsPlanned: number;
   currentVariantCount: number;
   predictedVariantCount: number;
+  predictedVariantCountAfterApply: number;
   resultingVariantCount: number | null;
   sourceRecordsToMove: number;
   sourceValuesToReassign: number;
@@ -62,6 +68,7 @@ export interface MergedRepairReport {
   mediaAssetsToMove: number;
   instructionsToMove: number;
   relationAttributionBlockers: RelationAttributionBlocker[];
+  groups: MergedRepairGroupReport[];
   applyBlocked: boolean;
   variantsCreated: number;
   productsCreated: number;
@@ -70,6 +77,31 @@ export interface MergedRepairReport {
   conflictsResolved: number;
   conflictsCreated: number;
   canonicalRekeysApplied: number;
+}
+
+export interface UnattributableRelationCounts {
+  mediaAssets: number;
+  instructions: number;
+  variantFigures: number;
+  variantParts: number;
+  productFigures: number;
+  productParts: number;
+  collectionItems: number;
+  wishlistItems: number;
+}
+
+export interface MergedRepairGroupReport {
+  currentVariantId: string;
+  canonicalKey: string;
+  clusters: number;
+  state: "PENDING" | "APPLIED";
+  identityClassification: "DISTINCT";
+  sourceConsistency: "CONSISTENT";
+  safeAction: "SPLIT";
+  relationAttribution: "COMPLETE" | "INCOMPLETE";
+  applyEligibility: "ELIGIBLE" | "BLOCKED_UNATTRIBUTED_RELATIONS";
+  unattributableRelations: UnattributableRelationCounts;
+  eligibleNewVariants: number;
 }
 
 interface ExpectedCluster {
@@ -85,6 +117,10 @@ interface ExpectedCluster {
 interface ExpectedGroup {
   plan: MergedRepairPlanDetail;
   clusters: ExpectedCluster[];
+  state: "PENDING" | "APPLIED";
+  blockers: RelationAttributionBlocker[];
+  mediaAssignments: RelationAssignment[];
+  instructionAssignments: RelationAssignment[];
 }
 
 interface CurrentSourceRecord extends RebuildSourceRecord {
@@ -100,7 +136,6 @@ interface RelationAssignment {
 }
 
 interface RepairInspection {
-  state: "PENDING" | "APPLIED";
   currentVariantCount: number;
   groups: ExpectedGroup[];
   blockers: RelationAttributionBlocker[];
@@ -110,6 +145,7 @@ interface RepairInspection {
   sourceValuesToReassign: number;
   conflictsExpectedToResolve: number;
   canonicalRekeysPlanned: number;
+  eligibleNewVariants: number;
 }
 
 const compareText = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
@@ -234,7 +270,7 @@ async function inspectRepairState(
     }).sort((left, right) => compareText(left.stableAnchor, right.stableAnchor));
     clusters[0]!.retainsVariantId = true;
     clusters[0]!.targetVariantId = detail.currentVariantId;
-    return { plan: detail, clusters };
+    return { plan: detail, clusters, state: "PENDING", blockers: [], mediaAssignments: [], instructionAssignments: [] };
   });
 
   const expectedVariantKeys = expectedGroups.flatMap((group) => group.clusters.map((cluster) => cluster.keys.variantKey));
@@ -247,50 +283,58 @@ async function inspectRepairState(
     if (!cluster.retainsVariantId) cluster.targetVariantId = targetByKey.get(cluster.keys.variantKey) ?? null;
   }
 
-  const pending = expectedGroups.every((group) => group.clusters.every((cluster) => cluster.records.every((record) => record.variantId === group.plan.currentVariantId)));
-  const applied = expectedGroups.every((group) => group.clusters.every((cluster) => {
-    const expectedId = cluster.retainsVariantId ? group.plan.currentVariantId : cluster.targetVariantId;
-    return Boolean(expectedId) && cluster.records.every((record) => record.variantId === expectedId);
-  }));
-  if (!pending && !applied) throw new Error("Drift detected: repair plan is partially applied or SourceRecords moved unexpectedly");
-  if (applied) {
-    for (const group of expectedGroups) for (const cluster of group.clusters) {
+  for (const group of expectedGroups) {
+    const pending = group.clusters.every((cluster) => cluster.records.every((record) => record.variantId === group.plan.currentVariantId));
+    const applied = group.clusters.every((cluster) => {
+      const expectedId = cluster.retainsVariantId ? group.plan.currentVariantId : cluster.targetVariantId;
+      return Boolean(expectedId) && cluster.records.every((record) => record.variantId === expectedId);
+    });
+    if (!pending && !applied) throw new Error(`Drift detected: group ${group.plan.currentVariantId} is partially applied or its SourceRecords moved unexpectedly`);
+    group.state = applied ? "APPLIED" : "PENDING";
+    if (applied) for (const cluster of group.clusters) {
       const targetId = cluster.retainsVariantId ? group.plan.currentVariantId : cluster.targetVariantId;
       const target = targetVariants.find((variant) => variant.id === targetId)
         ?? (cluster.retainsVariantId ? variants.find((variant) => variant.id === targetId) : undefined);
       if (!target || target.canonicalKey !== cluster.keys.variantKey) throw new Error(`Drift detected: repaired canonical key missing for cluster ${cluster.id}`);
     }
-    return {
-      state: "APPLIED", currentVariantCount, groups: expectedGroups, blockers: [], mediaAssignments: [], instructionAssignments: [],
-      sourceRecordsToMove: 0, sourceValuesToReassign: 0, conflictsExpectedToResolve: 0, canonicalRekeysPlanned: 0,
-    };
+    if (pending) for (const cluster of group.clusters) {
+      if (!cluster.retainsVariantId && cluster.targetVariantId) throw new Error(`Canonical variant key collision: ${cluster.keys.variantKey}`);
+    }
   }
 
-  if (currentVariantCount !== plan.currentVariantCount) {
-    throw new Error(`Drift detected: current ProductVariant count ${currentVariantCount}, plan expected ${plan.currentVariantCount}`);
+  const appliedNewVariants = expectedGroups
+    .filter((group) => group.state === "APPLIED")
+    .reduce((total, group) => total + group.clusters.length - 1, 0);
+  const expectedCurrentVariantCount = plan.currentVariantCount + appliedNewVariants;
+  if (currentVariantCount !== expectedCurrentVariantCount) {
+    throw new Error(`Drift detected: current ProductVariant count ${currentVariantCount}, expected ${expectedCurrentVariantCount} for this plan state`);
   }
   if (requireAuditMatch && currentAudit) {
     const detailsById = new Map(currentAudit.details.map((detail) => [detail.currentVariantId, detail]));
-    for (const detail of details) assertCurrentAuditMatchesPlan(detail, detailsById.get(detail.currentVariantId));
+    for (const group of expectedGroups.filter((candidate) => candidate.state === "PENDING")) {
+      assertCurrentAuditMatchesPlan(group.plan, detailsById.get(group.plan.currentVariantId));
+    }
   }
 
   const variantsById = new Map(variants.map((variant) => [variant.id, variant]));
   const blockers: RelationAttributionBlocker[] = [];
-  const mediaAssignments: RelationAssignment[] = [];
-  const instructionAssignments: RelationAssignment[] = [];
-  for (const group of expectedGroups) {
+  for (const group of expectedGroups.filter((candidate) => candidate.state === "PENDING")) {
     const current = variantsById.get(group.plan.currentVariantId);
     if (!current) throw new Error(`Drift detected: missing ProductVariant ${group.plan.currentVariantId}`);
     const targetBySource = relationTargetBySource(group.clusters);
     for (const media of current.media) {
       const clusterId = targetBySource.get(media.sourceId);
-      if (clusterId) mediaAssignments.push({ id: media.id, currentVariantId: current.id, targetClusterId: clusterId });
-      else blockers.push({ currentVariantId: current.id, relation: "MediaAsset", count: 1, reason: "Its Source is represented in multiple clusters; no SourceRecord provenance exists." });
+      if (clusterId) {
+        const assignment = { id: media.id, currentVariantId: current.id, targetClusterId: clusterId };
+        group.mediaAssignments.push(assignment);
+      } else group.blockers.push({ currentVariantId: current.id, relation: "MediaAsset", count: 1, reason: "Its Source is represented in multiple clusters; no SourceRecord provenance exists." });
     }
     for (const instruction of current.instructions) {
       const clusterId = targetBySource.get(instruction.sourceId);
-      if (clusterId) instructionAssignments.push({ id: instruction.id, currentVariantId: current.id, targetClusterId: clusterId });
-      else blockers.push({ currentVariantId: current.id, relation: "Instruction", count: 1, reason: "Its Source is represented in multiple clusters; no SourceRecord provenance exists." });
+      if (clusterId) {
+        const assignment = { id: instruction.id, currentVariantId: current.id, targetClusterId: clusterId };
+        group.instructionAssignments.push(assignment);
+      } else group.blockers.push({ currentVariantId: current.id, relation: "Instruction", count: 1, reason: "Its Source is represented in multiple clusters; no SourceRecord provenance exists." });
     }
     const unscoped: Array<[RelationAttributionBlocker["relation"], number, string]> = [
       ["VariantFigure", current.figures.length, "VariantFigure has no SourceRecord provenance."],
@@ -300,7 +344,8 @@ async function inspectRepairState(
       ["CollectionItem", current.collectionItems.length, "A collection item cannot be assigned to a split object automatically."],
       ["WishlistItem", current.wishlistItems.length, "A wishlist item cannot be assigned to a split object automatically."],
     ];
-    for (const [relation, count, reason] of unscoped) if (count > 0) blockers.push({ currentVariantId: current.id, relation, count, reason });
+    for (const [relation, count, reason] of unscoped) if (count > 0) group.blockers.push({ currentVariantId: current.id, relation, count, reason });
+    blockers.push(...group.blockers);
   }
 
   const compactBlockers = [...new Map(blockers.map((blocker) => [`${blocker.currentVariantId}\0${blocker.relation}`, blocker])).values()]
@@ -310,38 +355,73 @@ async function inspectRepairState(
         .reduce((total, candidate) => total + candidate.count, 0),
     }))
     .sort((left, right) => compareText(`${left.currentVariantId}\0${left.relation}`, `${right.currentVariantId}\0${right.relation}`));
-  const nonAnchorRecords = expectedGroups.flatMap((group) => group.clusters.filter((cluster) => !cluster.retainsVariantId).flatMap((cluster) => cluster.records));
+  const eligibleGroups = expectedGroups.filter((group) => group.state === "PENDING" && group.blockers.length === 0);
+  const nonAnchorRecords = eligibleGroups.flatMap((group) => group.clusters.filter((cluster) => !cluster.retainsVariantId).flatMap((cluster) => cluster.records));
   const conflictsExpectedToResolve = await db.conflict.count({
-    where: { entityType: "ProductVariant", entityId: { in: details.map((detail) => detail.currentVariantId) }, status: "OPEN" },
+    where: { entityType: "ProductVariant", entityId: { in: eligibleGroups.map((group) => group.plan.currentVariantId) }, status: "OPEN" },
   });
   return {
-    state: "PENDING",
     currentVariantCount,
     groups: expectedGroups,
     blockers: compactBlockers,
-    mediaAssignments,
-    instructionAssignments,
+    mediaAssignments: eligibleGroups.flatMap((group) => group.mediaAssignments),
+    instructionAssignments: eligibleGroups.flatMap((group) => group.instructionAssignments),
     sourceRecordsToMove: nonAnchorRecords.length,
     sourceValuesToReassign: nonAnchorRecords.reduce((total, record) => total + record.values.length, 0),
     conflictsExpectedToResolve,
-    canonicalRekeysPlanned: expectedGroups.reduce((total, group) => total + group.clusters.length, 0),
+    canonicalRekeysPlanned: eligibleGroups.reduce((total, group) => total + group.clusters.length, 0),
+    eligibleNewVariants: eligibleGroups.reduce((total, group) => total + group.clusters.length - 1, 0),
   };
 }
 
 function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply: boolean): MergedRepairReport {
   const details = splitDetails(plan);
-  const clusters = details.reduce((total, detail) => total + detail.proposedClusters.length, 0);
+  const eligibleGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length === 0);
+  const blockedGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length > 0);
+  const appliedGroups = inspection.groups.filter((group) => group.state === "APPLIED");
+  const relationCounts = (group: ExpectedGroup): UnattributableRelationCounts => {
+    const count = (relation: RelationAttributionBlocker["relation"]) => group.blockers
+      .filter((blocker) => blocker.relation === relation)
+      .reduce((total, blocker) => total + blocker.count, 0);
+    return {
+      mediaAssets: count("MediaAsset"), instructions: count("Instruction"),
+      variantFigures: count("VariantFigure"), variantParts: count("VariantPart"),
+      productFigures: count("ProductFigure"), productParts: count("ProductPart"),
+      collectionItems: count("CollectionItem"), wishlistItems: count("WishlistItem"),
+    };
+  };
+  const groups: MergedRepairGroupReport[] = inspection.groups.map((group) => ({
+    currentVariantId: group.plan.currentVariantId,
+    canonicalKey: group.plan.canonicalKey,
+    clusters: group.clusters.length,
+    state: group.state,
+    identityClassification: "DISTINCT",
+    sourceConsistency: "CONSISTENT",
+    safeAction: "SPLIT",
+    relationAttribution: group.blockers.length === 0 ? "COMPLETE" : "INCOMPLETE",
+    applyEligibility: group.blockers.length === 0 ? "ELIGIBLE" : "BLOCKED_UNATTRIBUTED_RELATIONS",
+    unattributableRelations: relationCounts(group),
+    eligibleNewVariants: group.state === "PENDING" && group.blockers.length === 0 ? group.clusters.length - 1 : 0,
+  }));
+  const eligibleClusters = eligibleGroups.reduce((total, group) => total + group.clusters.length, 0);
+  const allApplied = appliedGroups.length === details.length;
   return {
     dryRun: !apply,
     planValidated: true,
     planHash: repairPlanHash(plan),
-    alreadyApplied: inspection.state === "APPLIED",
-    variantsToSplit: inspection.state === "APPLIED" ? 0 : details.length,
-    clustersToMaterialize: inspection.state === "APPLIED" ? 0 : clusters,
-    newVariantsPlanned: inspection.state === "APPLIED" ? 0 : plan.predictedNewVariants,
+    alreadyApplied: allApplied,
+    identitySafeSplits: details.length,
+    eligibleSplits: eligibleGroups.length,
+    blockedSplits: blockedGroups.length,
+    appliedSplits: appliedGroups.length,
+    eligibleNewVariants: inspection.eligibleNewVariants,
+    variantsToSplit: eligibleGroups.length,
+    clustersToMaterialize: eligibleClusters,
+    newVariantsPlanned: inspection.eligibleNewVariants,
     currentVariantCount: inspection.currentVariantCount,
-    predictedVariantCount: inspection.state === "APPLIED" ? inspection.currentVariantCount : inspection.currentVariantCount + plan.predictedNewVariants,
-    resultingVariantCount: inspection.state === "APPLIED" ? inspection.currentVariantCount : null,
+    predictedVariantCount: inspection.currentVariantCount + inspection.eligibleNewVariants,
+    predictedVariantCountAfterApply: inspection.currentVariantCount + inspection.eligibleNewVariants,
+    resultingVariantCount: allApplied ? inspection.currentVariantCount : null,
     sourceRecordsToMove: inspection.sourceRecordsToMove,
     sourceValuesToReassign: inspection.sourceValuesToReassign,
     conflictsExpectedToResolve: inspection.conflictsExpectedToResolve,
@@ -350,7 +430,8 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
     mediaAssetsToMove: inspection.mediaAssignments.length,
     instructionsToMove: inspection.instructionAssignments.length,
     relationAttributionBlockers: inspection.blockers,
-    applyBlocked: inspection.blockers.length > 0,
+    groups,
+    applyBlocked: eligibleGroups.length === 0 && blockedGroups.length > 0,
     variantsCreated: 0,
     productsCreated: 0,
     sourceRecordsMoved: 0,
@@ -388,10 +469,8 @@ export async function repairMergedIdentities(
   assertExpectedCounts(plan, options.expected);
   const initial = await inspectRepairState(db, plan, true);
   const preview = baseReport(plan, initial, Boolean(options.apply));
-  if (!options.apply || initial.state === "APPLIED") return preview;
-  if (initial.blockers.length > 0) {
-    throw new Error(`Repair blocked: ${initial.blockers.reduce((total, blocker) => total + blocker.count, 0)} derived relation(s) lack defensible SourceRecord attribution`);
-  }
+  if (!options.apply || initial.groups.every((group) => group.state === "APPLIED")) return preview;
+  if (initial.eligibleNewVariants === 0) return { ...preview, resultingVariantCount: initial.currentVariantCount };
 
   const performed = await db.$transaction(async (tx) => {
     if (!options.skipAdvisoryLock) {
@@ -401,8 +480,8 @@ export async function repairMergedIdentities(
       await tx.$executeRawUnsafe(`LOCK TABLE ${REPAIR_LOCKED_TABLES} IN SHARE ROW EXCLUSIVE MODE`);
     }
     const inspection = await inspectRepairState(tx, plan, true);
-    if (inspection.state === "APPLIED") return { report: baseReport(plan, inspection, true) };
-    if (inspection.blockers.length > 0) throw new Error("Repair blocked after lock: derived relation attribution changed");
+    const eligibleGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length === 0);
+    if (eligibleGroups.length === 0) return { report: { ...baseReport(plan, inspection, true), resultingVariantCount: inspection.currentVariantCount } };
 
     const targetVariantByCluster = new Map<string, string>();
     let variantsCreated = 0;
@@ -414,7 +493,7 @@ export async function repairMergedIdentities(
     let canonicalRekeysApplied = 0;
     let completedGroups = 0;
 
-    for (const group of inspection.groups) {
+    for (const group of eligibleGroups) {
       const current = await tx.productVariant.findUniqueOrThrow({
         where: { id: group.plan.currentVariantId },
         select: { productId: true, product: { select: { id: true, canonicalKey: true, _count: { select: { variants: true } } } } },
@@ -474,13 +553,11 @@ export async function repairMergedIdentities(
         canonicalRekeysApplied += 1;
       }
 
-      for (const assignment of inspection.mediaAssignments) {
-        if (assignment.currentVariantId !== group.plan.currentVariantId) continue;
+      for (const assignment of group.mediaAssignments) {
         const variantId = targetVariantByCluster.get(`${group.plan.currentVariantId}\0${assignment.targetClusterId}`);
         if (variantId) await tx.mediaAsset.update({ where: { id: assignment.id }, data: { variantId } });
       }
-      for (const assignment of inspection.instructionAssignments) {
-        if (assignment.currentVariantId !== group.plan.currentVariantId) continue;
+      for (const assignment of group.instructionAssignments) {
         const variantId = targetVariantByCluster.get(`${group.plan.currentVariantId}\0${assignment.targetClusterId}`);
         if (variantId) await tx.instruction.update({ where: { id: assignment.id }, data: { variantId } });
       }
@@ -489,13 +566,15 @@ export async function repairMergedIdentities(
     }
 
     const finalCount = await tx.productVariant.count();
-    if (finalCount !== plan.predictedVariantCountAfterSafeSplits) {
-      throw new Error(`Post-repair ProductVariant count ${finalCount}, expected ${plan.predictedVariantCountAfterSafeSplits}`);
+    const expectedFinalCount = inspection.currentVariantCount + inspection.eligibleNewVariants;
+    if (finalCount !== expectedFinalCount) {
+      throw new Error(`Post-repair ProductVariant count ${finalCount}, expected ${expectedFinalCount}`);
     }
     return {
       report: {
         ...baseReport(plan, inspection, true),
         predictedVariantCount: finalCount,
+        predictedVariantCountAfterApply: finalCount,
         resultingVariantCount: finalCount,
         variantsCreated,
         productsCreated,

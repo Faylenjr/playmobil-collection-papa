@@ -33,8 +33,10 @@ Le dry-run affiche `planHash`. Il est recommandé de le recopier dans l'apply av
 `--expect-plan-hash=<sha256>` afin de garantir que le fichier validé n'a pas été modifié entre
 les deux commandes.
 
-Un état partiellement appliqué est traité comme un drift. Un état complètement appliqué est
-reconnu comme tel et rend une seconde exécution idempotente, sans création ni déplacement.
+Chaque groupe possède son propre état `PENDING` ou `APPLIED`. Une relance reconnaît donc une
+application partielle légitime (certains groupes éligibles déjà traités, d'autres bloqués) sans
+la confondre avec un déplacement imprévu de `SourceRecord`. Un groupe partiellement déplacé
+reste en revanche un drift bloquant. Une seconde exécution est idempotente.
 
 ## Reconstruction
 
@@ -68,16 +70,32 @@ les listes d'URL ou d'entités. Le job refuse donc d'inventer une attribution :
 - un média ou une notice est déplaçable seulement si son `sourceId` n'apparaît que dans un seul
   cluster du groupe ;
 - toute figurine, pièce, relation Product correspondante, collection ou wishlist ambiguë bloque
-  l'apply ;
-- le dry-run expose chaque blocage dans `relationAttributionBlockers` et positionne
-  `applyBlocked: true`.
+  le groupe concerné ;
+- le dry-run conserve `DISTINCT / CONSISTENT / SPLIT`, mais ajoute par groupe
+  `relationAttribution: COMPLETE | INCOMPLETE`,
+  `applyEligibility: ELIGIBLE | BLOCKED_UNATTRIBUTED_RELATIONS` et les compteurs précis dans
+  `unattributableRelations` ;
+- les agrégats `identitySafeSplits`, `eligibleSplits`, `blockedSplits` et
+  `eligibleNewVariants` séparent la validité sémantique de la possibilité matérielle de réparer ;
+- `predictedVariantCountAfterApply` ne compte que les groupes éligibles.
 
 Cette politique est volontairement non destructive : aucun asset n'est copié, supprimé ou
-affecté arbitrairement. Si le dry-run réel trouve des bloqueurs, il faut ajouter une provenance
-explicite ou un mapping humain validé avant le split.
+affecté arbitrairement. `--apply` ignore entièrement les groupes bloqués et applique seulement
+les groupes éligibles dans une même transaction. Un échec d'un groupe éligible annule tous les
+groupes éligibles de cette exécution. Les groupes bloqués restent strictement inchangés.
+
+### Évolution recommandée des futurs imports
+
+Une future migration additive devrait introduire `MediaAsset.sourceRecordId?` et
+`Instruction.sourceRecordId?`, ainsi qu'une provenance équivalente (colonne ou table de lien)
+pour `VariantFigure` et `VariantPart`. Les importeurs devront renseigner ces liens au moment de
+l'ingestion. Aucun backfill historique ne doit inventer un `sourceRecordId` : les anciennes
+lignes restent bloquantes tant qu'une provenance certaine n'a pas été collectée ou validée
+humainement.
 
 ## Transaction
 
-Les huit groupes sont appliqués dans une transaction unique avec un timeout de 120 secondes et
-un verrou `pg_advisory_xact_lock`. Une collision ou une erreur sur le dernier groupe annule les
-sept premiers. Aucune migration de schéma n'est requise par cette version conservatrice.
+Tous les groupes éligibles sont appliqués dans une transaction unique avec un timeout de 120
+secondes et un verrou `pg_advisory_xact_lock`. Une collision ou une erreur sur le dernier groupe
+éligible annule les précédents. Aucune migration de schéma n'est requise par cette version
+conservatrice.
