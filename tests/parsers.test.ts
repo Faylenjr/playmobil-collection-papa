@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { parseKlickypediaSet } from "../src/importers/klickypedia.js";
 import { parsePlaymobilProduct } from "../src/importers/playmobil.js";
 import { parsePlaymoDbStats } from "../src/importers/playmodb.js";
+import { selectBatchEntries } from "../src/jobs/import-klickypedia.js";
 
 const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), "utf8");
 
@@ -26,5 +27,21 @@ describe("source parsers", () => {
   });
   it("parses measured PlaymoDB headline statistics", () => {
     expect(parsePlaymoDbStats(`<body>Sets: now 7718 sets in the database Parts: now 68711 parts in the database, appearing in 6023 sets Who's that Klicky? now 7706 klickies annotated</body>`)).toEqual({ sets: 7718, parts: 68711, inventoriedSets: 6023, figures: 7706 });
+  });
+});
+
+describe("sequential import batches", () => {
+  const entries = Array.from({ length: 14_466 }, (_, index) => ({ loc: `https://example.test/sets/${index}/` }));
+
+  it("covers the complete sitemap exactly once in eight 1,900-entry batches", () => {
+    const batches = Array.from({ length: 8 }, (_, index) => selectBatchEntries(entries, index * 1_900, 1_900));
+    const urls = batches.flat().map((entry) => entry.loc);
+    expect(urls).toHaveLength(14_466);
+    expect(new Set(urls).size).toBe(14_466);
+    expect(batches.map((batch) => batch.length)).toEqual([1_900, 1_900, 1_900, 1_900, 1_900, 1_900, 1_900, 1_166]);
+  });
+
+  it("caps an accidental oversized batch at 2,000 pages", () => {
+    expect(selectBatchEntries(entries, 0, 9_000)).toHaveLength(2_000);
   });
 });
