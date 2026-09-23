@@ -1,0 +1,658 @@
+From 9911400e7e1708f1d97ec5176be5f2fb40eff82f Mon Sep 17 00:00:00 2001
+From: Codex <codex@openai.com>
+Date: Wed, 23 Sep 2026 14:20:48 +0000
+Subject: [PATCH] fix: make reused identities order independent
+
+---
+ docs/data-model.md                            |   2 +-
+ docs/data-quality.md                          |  18 ++-
+ .../migration.sql                             |  24 +++-
+ src/jobs/reclassify-identities.ts             |  84 ++++++++---
+ src/pipeline/canonical-identity.ts            |  96 +++++++++++++
+ src/pipeline/import-record.ts                 |  27 +++-
+ src/report/coverage.ts                        |   6 +-
+ tests/identity-reclassification.test.ts       | 133 ++++++++++++++++--
+ 8 files changed, 353 insertions(+), 37 deletions(-)
+ create mode 100644 src/pipeline/canonical-identity.ts
+
+diff --git a/docs/data-model.md b/docs/data-model.md
+index f3bf3d0..d3fba74 100644
+--- a/docs/data-model.md
++++ b/docs/data-model.md
+@@ -17,7 +17,7 @@ Chaque `ProductReference` porte une classe d'identité :
+ - `REUSED` : même référence publiée pour plusieurs objets dont les signaux distinctifs sont suffisants ;
+ - `AMBIGUOUS` : collision que les données disponibles ne permettent pas de trancher sûrement.
+ 
+-Les placeholders et les réutilisations restent des objets séparés avec une clé qualifiée par le couple stable source/identifiant externe. Ils ne créent pas de revue humaine ouverte. Une `ReviewTask` n'est conservée que pour `AMBIGUOUS`. La détection des placeholders est ancrée sur toute la référence : une référence légitime comme `0001` ou `0104-sch` n'est donc pas capturée.
++Les placeholders et les réutilisations restent des objets séparés avec une clé qualifiée. Pour un variant représenté par plusieurs sources, l'ancrage est choisi de façon déterministe dans l'ensemble de ses couples `(source, externalId)` ; il ne dépend donc ni de la première source importée ni de l'ordre du crawl. Lorsqu'une référence jusque-là unique devient `REUSED`, les clés de tous les objets du groupe sont requalifiées atomiquement. Ils ne créent pas de revue humaine ouverte. Une seule `ReviewTask` active est conservée par groupe `AMBIGUOUS`. La détection des placeholders est ancrée sur toute la référence : une référence légitime comme `0001` ou `0104-sch` n'est donc pas capturée.
+ 
+ ## Provenance
+ 
+diff --git a/docs/data-quality.md b/docs/data-quality.md
+index 06d76b9..48bb511 100644
+--- a/docs/data-quality.md
++++ b/docs/data-quality.md
+@@ -24,7 +24,23 @@ pnpm identities:reclassify
+ pnpm identities:reclassify -- --apply
+ ```
+ 
+-Elle ne fusionne, ne supprime et ne renomme aucun produit ou variant. Elle classe les références, résout avec une note les anciennes revues de placeholders/réutilisations attendues et laisse ouvertes les véritables ambiguïtés.
++Elle ne fusionne et ne supprime aucun produit ou variant. Lorsqu'une référence est confirmée comme réutilisée, elle remplace atomiquement les anciennes clés dépendantes de l'ordre par des clés qualifiées déterministes. L'ancrage est le plus petit couple `(source, externalId)` parmi tous les `SourceRecord` représentant le variant ; plusieurs sources reconnues `MATCH` restent donc dédupliquées sur le même variant. Elle classe ensuite les références, résout avec une note les anciennes revues de placeholders/réutilisations attendues et ne conserve qu'une tâche active par groupe réellement ambigu.
++
++Avant la première migration d'identité, ce préflight doit retourner zéro ligne :
++
++```sql
++SELECT sr.id, s.key AS source, sr.external_id,
++       COUNT(DISTINCT sv.entity_id) AS product_variant_ids,
++       ARRAY_AGG(DISTINCT sv.entity_id ORDER BY sv.entity_id) AS conflicting_variant_ids
++FROM source_records sr
++JOIN sources s ON s.id = sr.source_id
++JOIN source_values sv ON sv.source_record_id = sr.id
++WHERE sv.entity_type = 'ProductVariant'
++GROUP BY sr.id, s.key, sr.external_id
++HAVING COUNT(DISTINCT sv.entity_id) > 1;
++```
++
++La migration contient la même garde et s'interrompt intégralement si une incohérence est détectée ; elle ne choisit plus silencieusement le `SourceValue` le plus récent.
+ 
+ ## Rapport
+ 
+diff --git a/prisma/migrations/20260923133000_reference_identity/migration.sql b/prisma/migrations/20260923133000_reference_identity/migration.sql
+index 87d5347..e3180c3 100644
+--- a/prisma/migrations/20260923133000_reference_identity/migration.sql
++++ b/prisma/migrations/20260923133000_reference_identity/migration.sql
+@@ -1,5 +1,21 @@
+ -- Additive identity metadata. No product, variant, reference, provenance value,
+ -- conflict, or review task is deleted or merged by this migration.
++-- This guard deliberately runs before every DDL statement: even migration
++-- runners that do not wrap PostgreSQL migrations in a transaction cannot leave
++-- the new identity schema half-applied when provenance is inconsistent.
++DO $$
++BEGIN
++  IF EXISTS (
++    SELECT sv."source_record_id"
++    FROM "source_values" sv
++    WHERE sv."entity_type" = 'ProductVariant'
++    GROUP BY sv."source_record_id"
++    HAVING COUNT(DISTINCT sv."entity_id") > 1
++  ) THEN
++    RAISE EXCEPTION 'Identity migration aborted: at least one SourceRecord points to multiple ProductVariant identities';
++  END IF;
++END $$;
++
+ CREATE TYPE "ReferenceIdentityClass" AS ENUM ('ASSIGNED', 'PLACEHOLDER', 'REUSED', 'AMBIGUOUS');
+ 
+ ALTER TABLE "product_references"
+@@ -20,16 +36,16 @@ ALTER TABLE "source_records"
+ CREATE INDEX "source_records_variant_id_idx" ON "source_records"("variant_id");
+ CREATE INDEX "product_references_identity_class_idx" ON "product_references"("identity_class");
+ 
+--- Backfill the explicit link from existing provenance rows. SourceValue already
+--- contains the exact variant UUID used by each imported SourceRecord.
++-- Backfill the explicit link from existing provenance rows. The guard above
++-- proves that at most one ProductVariant UUID exists for each SourceRecord.
++
+ UPDATE "source_records" AS sr
+ SET "variant_id" = (
+-  SELECT sv."entity_id"
++  SELECT DISTINCT sv."entity_id"
+   FROM "source_values" AS sv
+   WHERE sv."source_record_id" = sr."id"
+     AND sv."entity_type" = 'ProductVariant'
+     AND EXISTS (SELECT 1 FROM "product_variants" pv WHERE pv."id" = sv."entity_id")
+-  ORDER BY sv."retrieved_at" DESC, sv."id"
+   LIMIT 1
+ )
+ WHERE sr."variant_id" IS NULL
+diff --git a/src/jobs/reclassify-identities.ts b/src/jobs/reclassify-identities.ts
+index 840a8e9..ef22fd0 100644
+--- a/src/jobs/reclassify-identities.ts
++++ b/src/jobs/reclassify-identities.ts
+@@ -1,5 +1,6 @@
+ import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
+ import { compareIdentitySignals, isPlaceholderReference, type IdentitySnapshot, type ReferenceIdentityClass } from "../domain/identity.js";
++import { qualifiedIdentityKeys, rekeyVariantIdentity } from "../pipeline/canonical-identity.js";
+ 
+ const json = (value: unknown) => value as Prisma.InputJsonValue;
+ 
+@@ -21,8 +22,10 @@ export interface IdentityReclassificationResult {
+   sourceRecordsUnlinked: number;
+   reviewsResolved: number;
+   reviewsCreated: number;
++  canonicalRekeysPlanned: number;
+   predictedTrueIdentityVariants: number;
+   trueIdentityReviewsOpen: number;
++  trueIdentityReviewsActive: number;
+ }
+ 
+ export async function reclassifyIdentities(db: PrismaClient, apply = false): Promise<IdentityReclassificationResult> {
+@@ -31,8 +34,9 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
+       variant: {
+         select: {
+           id: true, canonicalKey: true, name: true, releaseYear: true, format: true,
+-          product: { select: { id: true, canonicalKey: true, kind: true } },
++          product: { select: { id: true, canonicalKey: true, baseReference: true, kind: true } },
+           themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
++          sourceRecords: { select: { externalId: true, source: { select: { key: true } } } },
+         },
+       },
+     },
+@@ -47,7 +51,8 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
+   const classifications: Record<ReferenceIdentityClass, number> = { ASSIGNED: 0, PLACEHOLDER: 0, REUSED: 0, AMBIGUOUS: 0 };
+   const assignments = new Map<string, { identityClass: ReferenceIdentityClass; identityReason: string }>();
+   const variantClasses = new Map<string, ReferenceIdentityClass>();
+-  const ambiguousVariantGroups: string[][] = [];
++  const ambiguousVariantGroups: Array<{ normalizedValue: string; variantIds: string[]; reason: string }> = [];
++  const canonicalRekeys = new Map<string, { productKey: string; variantKey: string }>();
+   let reusedReferenceGroups = 0;
+   let ambiguousReferenceGroups = 0;
+ 
+@@ -72,15 +77,30 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
+       productKind: reference.variant.product.kind,
+       format: reference.variant.format,
+     }));
+-    const safelyReused = snapshots.every((snapshot, index) => snapshots
++    const pairwiseDistinct = snapshots.every((snapshot, index) => snapshots
+       .filter((_, otherIndex) => otherIndex !== index)
+       .every((other) => compareIdentitySignals(snapshot, other) === "DISTINCT"));
++    const hasStableAnchors = distinctVariants.every((reference) => reference.variant.sourceRecords.length > 0);
++    const safelyReused = pairwiseDistinct && hasStableAnchors;
+     const identityClass: ReferenceIdentityClass = safelyReused ? "REUSED" : "AMBIGUOUS";
+-    const identityReason = safelyReused ? "distinct-objects-reuse-reference" : "true-identity-conflict";
+-    if (safelyReused) reusedReferenceGroups += 1;
++    const identityReason = safelyReused ? "distinct-objects-reuse-reference"
++      : pairwiseDistinct ? "missing-source-record-identity" : "true-identity-conflict";
++    if (safelyReused) {
++      reusedReferenceGroups += 1;
++      for (const reference of distinctVariants) {
++        const keys = qualifiedIdentityKeys(
++          reference.baseValue ?? reference.variant.product.baseReference ?? reference.variant.product.canonicalKey.replace(/^ref:|:record:.*$/g, ""),
++          normalizedValue,
++          reference.variant.sourceRecords.map((sourceRecord) => ({ sourceKey: sourceRecord.source.key, externalId: sourceRecord.externalId })),
++        );
++        if (reference.variant.canonicalKey !== keys.variantKey || reference.variant.product.canonicalKey !== keys.productKey) {
++          canonicalRekeys.set(reference.variant.id, keys);
++        }
++      }
++    }
+     else {
+       ambiguousReferenceGroups += 1;
+-      ambiguousVariantGroups.push(distinctVariants.map((reference) => reference.variant.id));
++      ambiguousVariantGroups.push({ normalizedValue, variantIds: distinctVariants.map((reference) => reference.variant.id), reason: identityReason });
+     }
+     for (const reference of group) assignments.set(reference.id, { identityClass, identityReason });
+   }
+@@ -96,6 +116,7 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
+   let reviewsCreated = 0;
+   if (apply) await db.$transaction(async (tx) => {
+     for (const [id, assignment] of assignments) await tx.productReference.update({ where: { id }, data: assignment });
++    for (const [variantId, keys] of canonicalRekeys) await rekeyVariantIdentity(tx, variantId, keys);
+     for (const [variantId, identityClass] of variantClasses) {
+       if (identityClass === "PLACEHOLDER" || identityClass === "REUSED") {
+         const result = await tx.reviewTask.updateMany({
+@@ -110,36 +131,55 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
+           },
+         });
+         reviewsResolved += result.count;
+-      } else if (identityClass === "AMBIGUOUS") {
+-        await tx.reviewTask.updateMany({
+-          where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, status: { in: ["OPEN", "IN_REVIEW"] } },
+-          data: { reason: "true-identity-conflict", resolutionNote: null },
+-        });
+       }
+     }
+-    // One task represents one ambiguous reference group. Existing tasks are
+-    // retained; a missing task is attached to a stable representative variant.
+-    for (const variantIds of ambiguousVariantGroups) {
+-      const existing = await tx.reviewTask.findFirst({
+-        where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: { in: variantIds }, status: { in: ["OPEN", "IN_REVIEW"] } },
++    for (const group of ambiguousVariantGroups) {
++      const active = await tx.reviewTask.findMany({
++        where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: { in: group.variantIds }, status: { in: ["OPEN", "IN_REVIEW"] } },
++        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
++      });
++      // Prefer work already in progress, then the oldest task and UUID. This is
++      // deterministic and leaves exactly one active task for the whole group.
++      active.sort((left, right) => {
++        const status = Number(left.status !== "IN_REVIEW") - Number(right.status !== "IN_REVIEW");
++        if (status !== 0) return status;
++        const created = left.createdAt.getTime() - right.createdAt.getTime();
++        return created !== 0 ? created : left.id < right.id ? -1 : left.id > right.id ? 1 : 0;
+       });
+-      if (existing) continue;
+-      const variantId = [...variantIds].sort()[0]!;
++      const representative = active[0];
++      if (representative) {
++        await tx.reviewTask.update({ where: { id: representative.id }, data: { reason: group.reason } });
++        for (const redundant of active.slice(1)) {
++          await tx.reviewTask.update({
++            where: { id: redundant.id },
++            data: {
++              status: "RESOLVED",
++              reason: "duplicate-identity-review",
++              resolvedAt: new Date(),
++              resolutionNote: `Consolidated into ReviewTask ${representative.id} for ambiguous reference ${group.normalizedValue}.`,
++            },
++          });
++          reviewsResolved += 1;
++        }
++        continue;
++      }
++      const variantId = [...group.variantIds].sort()[0]!;
+       const reference = references.find((row) => row.variantId === variantId);
+       await tx.reviewTask.create({
+         data: {
+-          kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, reason: "true-identity-conflict",
+-          payload: json({ reference: reference?.displayValue, normalizedReference: reference?.normalizedValue, classification: "AMBIGUOUS", relatedVariantIds: variantIds }),
++          kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, reason: group.reason,
++          payload: json({ reference: reference?.displayValue, normalizedReference: reference?.normalizedValue, classification: "AMBIGUOUS", relatedVariantIds: group.variantIds }),
+         },
+       });
+       reviewsCreated += 1;
+     }
+   });
+ 
+-  const [sourceRecordsLinked, sourceRecordsUnlinked, trueIdentityReviewsOpen] = await Promise.all([
++  const [sourceRecordsLinked, sourceRecordsUnlinked, trueIdentityReviewsOpen, trueIdentityReviewsActive] = await Promise.all([
+     db.sourceRecord.count({ where: { recordType: "collectible", variantId: { not: null } } }),
+     db.sourceRecord.count({ where: { recordType: "collectible", variantId: null } }),
+     db.reviewTask.count({ where: { status: "OPEN", kind: "ambiguous-reference", reason: "true-identity-conflict" } }),
++    db.reviewTask.count({ where: { status: { in: ["OPEN", "IN_REVIEW"] }, kind: "ambiguous-reference", reason: "true-identity-conflict" } }),
+   ]);
+   return {
+     dryRun: !apply,
+@@ -152,7 +192,9 @@ export async function reclassifyIdentities(db: PrismaClient, apply = false): Pro
+     sourceRecordsUnlinked,
+     reviewsResolved,
+     reviewsCreated,
++    canonicalRekeysPlanned: canonicalRekeys.size,
+     predictedTrueIdentityVariants: [...variantClasses.values()].filter((identityClass) => identityClass === "AMBIGUOUS").length,
+     trueIdentityReviewsOpen,
++    trueIdentityReviewsActive,
+   };
+ }
+diff --git a/src/pipeline/canonical-identity.ts b/src/pipeline/canonical-identity.ts
+new file mode 100644
+index 0000000..2be6ce8
+--- /dev/null
++++ b/src/pipeline/canonical-identity.ts
+@@ -0,0 +1,96 @@
++import type { Prisma } from "../../generated/prisma/client.js";
++import { stableRecordQualifier } from "../domain/identity.js";
++
++export interface SourceRecordIdentity {
++  sourceKey: string;
++  externalId: string;
++}
++
++const compareStableText = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
++
++/**
++ * Selects one anchor from the complete set of records representing a variant.
++ * Sorting the source/external-id pair (rather than choosing the first import)
++ * makes the resulting key independent from ingestion order.
++ */
++export function canonicalRecordQualifier(records: SourceRecordIdentity[]): string {
++  if (records.length === 0) throw new Error("Cannot qualify a reused identity without a linked SourceRecord");
++  const anchor = [...records].sort((left, right) => compareStableText(
++    `${left.sourceKey}\0${left.externalId}`,
++    `${right.sourceKey}\0${right.externalId}`,
++  ))[0]!;
++  return stableRecordQualifier(anchor.sourceKey, anchor.externalId);
++}
++
++export function qualifiedIdentityKeys(baseReference: string, normalizedReference: string, records: SourceRecordIdentity[]) {
++  const qualifier = canonicalRecordQualifier(records);
++  return {
++    productKey: `ref:${baseReference}:record:${qualifier}`,
++    variantKey: `ref:${normalizedReference}:record:${qualifier}`,
++  };
++}
++
++/**
++ * Atomically promotes an existing variant to its record-qualified identity.
++ * A shared Product is split without deleting it; product-level facts are copied
++ * so moving one variant cannot strip metadata from either side.
++ */
++export async function rekeyVariantIdentity(
++  tx: Prisma.TransactionClient,
++  variantId: string,
++  keys: { productKey: string; variantKey: string },
++) {
++  const variant = await tx.productVariant.findUniqueOrThrow({
++    where: { id: variantId },
++    include: {
++      product: {
++        include: {
++          _count: { select: { variants: true } },
++          translations: true,
++          themes: true,
++          figures: true,
++          parts: true,
++        },
++      },
++    },
++  });
++  if (variant.canonicalKey === keys.variantKey && variant.product.canonicalKey === keys.productKey) return;
++
++  const occupiedVariant = await tx.productVariant.findUnique({ where: { canonicalKey: keys.variantKey }, select: { id: true } });
++  if (occupiedVariant && occupiedVariant.id !== variantId) throw new Error(`Canonical variant key collision: ${keys.variantKey}`);
++  const occupiedProduct = await tx.product.findUnique({ where: { canonicalKey: keys.productKey }, select: { id: true } });
++  if (occupiedProduct && occupiedProduct.id !== variant.productId) throw new Error(`Canonical product key collision: ${keys.productKey}`);
++
++  let productId = variant.productId;
++  if (variant.product.canonicalKey !== keys.productKey) {
++    if (variant.product._count.variants === 1) {
++      await tx.product.update({ where: { id: variant.productId }, data: { canonicalKey: keys.productKey } });
++    } else {
++      const cloned = await tx.product.create({
++        data: {
++          canonicalKey: keys.productKey,
++          baseReference: variant.product.baseReference,
++          kind: variant.product.kind,
++          releaseYear: variant.product.releaseYear,
++          discontinuedYear: variant.product.discontinuedYear,
++          name: variant.product.name,
++          description: variant.product.description,
++        },
++      });
++      productId = cloned.id;
++      if (variant.product.translations.length) await tx.translation.createMany({
++        data: variant.product.translations.map((row) => ({ productId, locale: row.locale, name: row.name, description: row.description })),
++      });
++      if (variant.product.themes.length) await tx.productTheme.createMany({
++        data: variant.product.themes.map((row) => ({ productId, themeId: row.themeId, isPrimary: row.isPrimary })),
++      });
++      if (variant.product.figures.length) await tx.productFigure.createMany({
++        data: variant.product.figures.map((row) => ({ productId, figureId: row.figureId, quantity: row.quantity })),
++      });
++      if (variant.product.parts.length) await tx.productPart.createMany({
++        data: variant.product.parts.map((row) => ({ productId, partId: row.partId, quantity: row.quantity })),
++      });
++    }
++  }
++  await tx.productVariant.update({ where: { id: variantId }, data: { canonicalKey: keys.variantKey, productId } });
++}
+diff --git a/src/pipeline/import-record.ts b/src/pipeline/import-record.ts
+index 4d799fe..2ea3ef7 100644
+--- a/src/pipeline/import-record.ts
++++ b/src/pipeline/import-record.ts
+@@ -5,6 +5,7 @@ import { resolveIdentityKeys, type IdentitySnapshot } from "../domain/identity.j
+ import { resolveCandidates } from "../domain/resolver.js";
+ import { klickypediaThemeSlug } from "../importers/klickypedia.js";
+ import type { RawCollectible } from "../importers/types.js";
++import { qualifiedIdentityKeys, rekeyVariantIdentity } from "./canonical-identity.js";
+ 
+ const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+ const json = (value: unknown) => value as Prisma.InputJsonValue;
+@@ -93,12 +94,14 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
+         product: { select: { canonicalKey: true, kind: true } },
+         themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
+         references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
++        sourceRecords: { select: { externalId: true, source: { select: { key: true } } } },
+       } })
+       : await tx.productVariant.findMany({ where: { references: { some: { normalizedValue: parsed.normalized } } }, select: {
+         id: true, productId: true, canonicalKey: true, name: true, releaseYear: true, format: true,
+         product: { select: { canonicalKey: true, kind: true } },
+         themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
+         references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
++        sourceRecords: { select: { externalId: true, source: { select: { key: true } } } },
+       } });
+     const candidates: IdentitySnapshot[] = candidateRows.map((candidate) => ({
+       id: candidate.id,
+@@ -112,7 +115,7 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
+       format: candidate.format,
+       referenceClass: candidate.references[0]?.identityClass ?? "ASSIGNED",
+     }));
+-    const identity = record.variantId && candidates[0]
++    let identity = record.variantId && candidates[0]
+       ? {
+         productKey: candidates[0].productKey!, variantKey: candidates[0].variantKey!, matchedCandidate: candidates[0],
+         referenceClass: candidates[0].referenceClass ?? "ASSIGNED", needsReview: false as const,
+@@ -122,6 +125,28 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
+               : "assigned-reference" as const,
+       }
+       : resolveIdentityKeys(item, parsed, candidates);
++    if (identity.referenceClass === "REUSED") {
++      if (identity.matchedCandidate?.id) {
++        const matched = candidateRows.find((candidate) => candidate.id === identity.matchedCandidate!.id)!;
++        const keys = qualifiedIdentityKeys(parsed.base, parsed.normalized, [
++          ...matched.sourceRecords.map((sourceRecord) => ({ sourceKey: sourceRecord.source.key, externalId: sourceRecord.externalId })),
++          { sourceKey: item.source, externalId: item.externalId },
++        ]);
++        await rekeyVariantIdentity(tx, matched.id, keys);
++        identity = { ...identity, ...keys };
++      } else {
++        // The collision changes the status of the entire reference group. Move
++        // every pre-existing object to its own deterministic key before the
++        // incoming object is created; the surrounding transaction is atomic.
++        for (const candidate of candidateRows) {
++          const keys = qualifiedIdentityKeys(parsed.base, parsed.normalized, candidate.sourceRecords.map((sourceRecord) => ({
++            sourceKey: sourceRecord.source.key,
++            externalId: sourceRecord.externalId,
++          })));
++          await rekeyVariantIdentity(tx, candidate.id, keys);
++        }
++      }
++    }
+     const product = await tx.product.upsert({
+       where: { canonicalKey: identity.productKey },
+       create: { canonicalKey: identity.productKey, baseReference: parsed.base, kind: inferProductKind(item), name: item.name ?? null, releaseYear: item.releaseYear ?? null, discontinuedYear: item.discontinuedYear ?? null },
+diff --git a/src/report/coverage.ts b/src/report/coverage.ts
+index 7cf06cd..80fb4ae 100644
+--- a/src/report/coverage.ts
++++ b/src/report/coverage.ts
+@@ -8,7 +8,7 @@ export async function buildCoverageReport(db: PrismaClient) {
+     products, variants, sourceRecords, referenceRows, names, namesFr, years, discontinued, themes, mainImages, boxFront, boxBack,
+     instructions, figureCounts, pieceCounts, linkedParts, fullPartsInventory, openConflicts, openReviews, sourceStats, yearRows, sourceReferenceValues,
+     productKinds, variantKinds, promotions, exclusives, variantPartRows, referenceIdentityKinds, linkedRecordsByVariant,
+-    unlinkedSourceRecords, openReviewsByReason,
++    unlinkedSourceRecords, openReviewsByReason, activeReviews, activeReviewsByReason,
+   ] = await Promise.all([
+     db.product.count(),
+     db.productVariant.count(),
+@@ -41,6 +41,8 @@ export async function buildCoverageReport(db: PrismaClient) {
+     db.sourceRecord.groupBy({ by: ["variantId"], where: { recordType: "collectible", variantId: { not: null } }, _count: { _all: true } }),
+     db.sourceRecord.count({ where: { recordType: "collectible", variantId: null } }),
+     db.reviewTask.groupBy({ by: ["reason"], where: { status: "OPEN" }, _count: { _all: true } }),
++    db.reviewTask.count({ where: { status: { in: ["OPEN", "IN_REVIEW"] } } }),
++    db.reviewTask.groupBy({ by: ["reason"], where: { status: { in: ["OPEN", "IN_REVIEW"] } }, _count: { _all: true } }),
+   ]);
+ 
+   const normalizedReferenceCount = new Set(referenceRows.map((row) => row.normalizedValue)).size;
+@@ -85,6 +87,8 @@ export async function buildCoverageReport(db: PrismaClient) {
+       openConflicts,
+       openReviewTasks: openReviews,
+       openReviewTasksByReason: Object.fromEntries(openReviewsByReason.map((row) => [row.reason, row._count._all])),
++      activeReviewTasks: activeReviews,
++      activeReviewTasksByReason: Object.fromEntries(activeReviewsByReason.map((row) => [row.reason, row._count._all])),
+       referenceIdentityClasses: Object.fromEntries(referenceIdentityKinds.map((row) => [row.identityClass, row._count._all])),
+       reusedReferenceGroups,
+       ambiguousReferenceGroups,
+diff --git a/tests/identity-reclassification.test.ts b/tests/identity-reclassification.test.ts
+index e074aaa..30f2f3f 100644
+--- a/tests/identity-reclassification.test.ts
++++ b/tests/identity-reclassification.test.ts
+@@ -1,10 +1,12 @@
+-import { mkdtemp, rm } from "node:fs/promises";
++import { mkdtemp, readFile, rm } from "node:fs/promises";
+ import { tmpdir } from "node:os";
+ import { join } from "node:path";
+ import { afterEach, describe, expect, it } from "vitest";
++import { PGlite } from "@electric-sql/pglite";
+ import { createEmbeddedDatabaseClient } from "../src/db/embedded.js";
+ import { reclassifyIdentities } from "../src/jobs/reclassify-identities.js";
+ import { importRecord } from "../src/pipeline/import-record.js";
++import type { RawCollectible } from "../src/importers/types.js";
+ 
+ const directories: string[] = [];
+ afterEach(async () => {
+@@ -22,7 +24,11 @@ describe("identity reclassification", () => {
+       const createVariant = async (key: string, reference: string, name: string, releaseYear: number | null, kind: "SET" | "FIGURE" | "CATALOGUE" = "SET") => {
+         const product = await db.product.create({ data: { canonicalKey: `${key}:product`, baseReference: reference, kind } });
+         const variant = await db.productVariant.create({ data: { canonicalKey: key, productId: product.id, name, releaseYear } });
+-        await db.productReference.create({ data: { variantId: variant.id, displayValue: reference, normalizedValue: reference.toUpperCase(), isPrimary: true, sourceId: source.id } });
++        await db.productReference.create({ data: { variantId: variant.id, displayValue: reference, normalizedValue: reference.toUpperCase(), baseValue: reference.toUpperCase(), isPrimary: true, sourceId: source.id } });
++        await db.sourceRecord.create({ data: {
++          sourceId: source.id, variantId: variant.id, externalId: key, sourceUrl: `https://example.test/${key}`,
++          recordType: "collectible", contentHash: key,
++        } });
+         return variant;
+       };
+       const old3133 = await createVariant("ref:3133", "3133", "Go karts", 1980);
+@@ -34,30 +40,105 @@ describe("identity reclassification", () => {
+         { variantId: police.id, themeId: theme.id, isPrimary: true },
+         { variantId: policeNearMatch.id, themeId: theme.id, isPrimary: true },
+       ] });
+-      for (const variant of [new3133, placeholder, policeNearMatch]) await db.reviewTask.create({
++      for (const variant of [new3133, placeholder, policeNearMatch, police]) await db.reviewTask.create({
+         data: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variant.id, reason: "conflicting-identity-signals" },
+       });
++      const inReview = await db.reviewTask.create({
++        data: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: policeNearMatch.id, reason: "conflicting-identity-signals", status: "IN_REVIEW" },
++      });
+ 
+       const dryRun = await reclassifyIdentities(db, false);
+       expect(dryRun).toMatchObject({ dryRun: true, reusedReferenceGroups: 1, ambiguousReferenceGroups: 1, reviewsResolved: 0 });
+-      expect(await db.reviewTask.count({ where: { status: "OPEN" } })).toBe(3);
++      expect(await db.reviewTask.count({ where: { status: { in: ["OPEN", "IN_REVIEW"] } } })).toBe(5);
+ 
+       const applied = await reclassifyIdentities(db, true);
+-      expect(applied).toMatchObject({ dryRun: false, reusedReferenceGroups: 1, ambiguousReferenceGroups: 1, reviewsResolved: 2 });
++      expect(applied).toMatchObject({ dryRun: false, reusedReferenceGroups: 1, ambiguousReferenceGroups: 1, reviewsResolved: 4, trueIdentityReviewsActive: 1 });
+       expect(await db.productVariant.count()).toBe(5);
+       expect(await db.product.count()).toBe(5);
+       expect(await db.productReference.count({ where: { identityClass: "REUSED" } })).toBe(2);
+       expect(await db.productReference.count({ where: { identityClass: "PLACEHOLDER" } })).toBe(1);
+       expect(await db.productReference.count({ where: { identityClass: "AMBIGUOUS" } })).toBe(2);
+-      expect(await db.reviewTask.count({ where: { status: "OPEN", reason: "true-identity-conflict" } })).toBe(1);
+-      expect(await db.reviewTask.count({ where: { status: "RESOLVED" } })).toBe(2);
+-      expect(await db.productVariant.findUnique({ where: { id: old3133.id } })).not.toBeNull();
++      expect(await db.reviewTask.count({ where: { status: { in: ["OPEN", "IN_REVIEW"] }, reason: "true-identity-conflict" } })).toBe(1);
++      expect(await db.reviewTask.count({ where: { status: "RESOLVED" } })).toBe(4);
++      expect((await db.reviewTask.findUniqueOrThrow({ where: { id: inReview.id } })).status).toBe("IN_REVIEW");
++      const redundantReviews = await db.reviewTask.findMany({ where: { reason: "duplicate-identity-review" } });
++      expect(redundantReviews).toHaveLength(2);
++      expect(redundantReviews.every((task) => task.resolutionNote?.includes(inReview.id))).toBe(true);
++      const rekeyed3133 = await db.productVariant.findMany({
++        where: { id: { in: [old3133.id, new3133.id] } },
++        select: { canonicalKey: true, product: { select: { canonicalKey: true } } },
++      });
++      expect(rekeyed3133).toHaveLength(2);
++      expect(new Set(rekeyed3133.map((variant) => variant.canonicalKey)).size).toBe(2);
++      expect(rekeyed3133.every((variant) => variant.canonicalKey.startsWith("ref:3133:record:"))).toBe(true);
++      expect(rekeyed3133.every((variant) => variant.product.canonicalKey.startsWith("ref:3133:record:"))).toBe(true);
+     } finally {
+       await db.$disconnect();
+       await database.close();
+     }
+   });
+ 
++  const collectible = (externalId: string, name: string, releaseYear: number, theme: string, source = "klickypedia"): RawCollectible => ({
++    source,
++    externalId,
++    sourceUrl: `https://example.test/${source}/${externalId}`,
++    reference: "3133",
++    name,
++    releaseYear,
++    theme,
++    raw: { externalId, name, releaseYear, theme },
++  });
++
++  async function importInOrder(items: RawCollectible[]) {
++    const directory = await mkdtemp(join(tmpdir(), "playmobil-identity-order-"));
++    directories.push(directory);
++    const { db, database } = await createEmbeddedDatabaseClient(directory);
++    await db.source.createMany({ data: [
++      { key: "klickypedia", name: "Klickypedia", baseUrl: "https://example.test/k", kind: "COMMUNITY_DATABASE" },
++      { key: "official", name: "Official", baseUrl: "https://example.test/o", kind: "OFFICIAL", priority: 10 },
++    ] });
++    for (const item of items) await importRecord(db, item);
++    const rows = await db.sourceRecord.findMany({
++      orderBy: [{ source: { key: "asc" } }, { externalId: "asc" }],
++      select: { externalId: true, source: { select: { key: true } }, variant: { select: { canonicalKey: true, product: { select: { canonicalKey: true } } } } },
++    });
++    const result = Object.fromEntries(rows.map((row) => [`${row.source.key}:${row.externalId}`, {
++      variantKey: row.variant?.canonicalKey,
++      productKey: row.variant?.product.canonicalKey,
++    }]));
++    await db.$disconnect();
++    await database.close();
++    return result;
++  }
++
++  it("produces the same canonical mapping in either import order while preserving a cross-source MATCH", async () => {
++    const goKarts = collectible("go-karts", "Go karts", 1980, "Racing");
++    const goKartsOfficial = collectible("official-go-karts", "Go karts", 1980, "Racing", "official");
++    const pirates = collectible("pirates-2003", "Special Edition 25 Years Pirates", 2003, "Pirates");
++    const forward = await importInOrder([goKarts, goKartsOfficial, pirates]);
++    const reverse = await importInOrder([pirates, goKartsOfficial, goKarts]);
++
++    expect(reverse).toEqual(forward);
++    expect(forward["klickypedia:go-karts"]).toEqual(forward["official:official-go-karts"]);
++    expect(forward["klickypedia:go-karts"]?.variantKey).toMatch(/^ref:3133:record:/);
++    expect(forward["klickypedia:pirates-2003"]?.variantKey).toMatch(/^ref:3133:record:/);
++    expect(forward["klickypedia:go-karts"]?.variantKey).not.toBe(forward["klickypedia:pirates-2003"]?.variantKey);
++  });
++
++  it("produces the same canonical mapping for three reused objects in reverse order", async () => {
++    const items = [
++      collectible("go-karts", "Go karts", 1980, "Racing"),
++      collectible("pirates-2003", "Special Edition 25 Years Pirates", 2003, "Pirates"),
++      collectible("police-2020", "Police command centre", 2020, "Police"),
++    ];
++    const forward = await importInOrder(items);
++    const reverse = await importInOrder([...items].reverse());
++
++    expect(reverse).toEqual(forward);
++    expect(new Set(Object.values(forward).map((identity) => identity.variantKey)).size).toBe(3);
++    expect(Object.values(forward).every((identity) => identity.variantKey?.startsWith("ref:3133:record:"))).toBe(true);
++  });
++
+   it("keeps a SourceRecord attached to the same variant across changed reimports", async () => {
+     const directory = await mkdtemp(join(tmpdir(), "playmobil-identity-resume-"));
+     directories.push(directory);
+@@ -98,4 +179,40 @@ describe("identity reclassification", () => {
+       await database.close();
+     }
+   });
++
++  it("aborts the identity migration before DDL when one SourceRecord points to multiple variants", async () => {
++    const directory = await mkdtemp(join(tmpdir(), "playmobil-identity-migration-"));
++    directories.push(directory);
++    const database = new PGlite({ dataDir: directory });
++    await database.waitReady;
++    try {
++      for (const migration of ["20260922190000_init", "20260922204500_variant_metadata"]) {
++        await database.exec(await readFile(join(process.cwd(), "prisma/migrations", migration, "migration.sql"), "utf8"));
++      }
++      await database.exec(`
++        INSERT INTO sources (id, key, name, base_url, kind)
++          VALUES ('00000000-0000-0000-0000-000000000001', 'test', 'Test', 'https://example.test', 'COMMUNITY_DATABASE');
++        INSERT INTO products (id, canonical_key, updated_at) VALUES
++          ('00000000-0000-0000-0000-000000000011', 'ref:a', now()),
++          ('00000000-0000-0000-0000-000000000012', 'ref:b', now());
++        INSERT INTO product_variants (id, product_id, canonical_key, updated_at) VALUES
++          ('00000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000011', 'ref:a', now()),
++          ('00000000-0000-0000-0000-000000000022', '00000000-0000-0000-0000-000000000012', 'ref:b', now());
++        INSERT INTO source_records (id, source_id, external_id, source_url, record_type, content_hash)
++          VALUES ('00000000-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000001', 'record', 'https://example.test/record', 'collectible', 'hash');
++        INSERT INTO source_values (id, source_id, source_record_id, entity_type, entity_id, field, raw_value, priority) VALUES
++          ('00000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000031', 'ProductVariant', '00000000-0000-0000-0000-000000000021', 'name', '"A"'::jsonb, 100),
++          ('00000000-0000-0000-0000-000000000042', '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000031', 'ProductVariant', '00000000-0000-0000-0000-000000000022', 'releaseYear', '2000'::jsonb, 100);
++      `);
++      const identityMigration = await readFile(join(process.cwd(), "prisma/migrations/20260923133000_reference_identity/migration.sql"), "utf8");
++      await expect(database.exec(identityMigration)).rejects.toThrow(/points to multiple ProductVariant identities/);
++      const columns = await database.query<{ column_name: string }>(`
++        SELECT column_name FROM information_schema.columns
++        WHERE table_name = 'source_records' AND column_name = 'variant_id'
++      `);
++      expect(columns.rows).toHaveLength(0);
++    } finally {
++      await database.close();
++    }
++  });
+ });
+-- 
+2.51.1
+
