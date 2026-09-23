@@ -4,7 +4,7 @@
 
 | Source | Type | Accès mesuré | Volume observé | Décision actuelle |
 |---|---|---|---:|---|
-| Klickypedia | WordPress communautaire | `robots.txt` 200, sitemap autorisé ; REST `/wp-json/` explicitement interdit | 15 sitemaps, 14 467 URL `sets` | index sitemap activé, fiches à cadence lente |
+| Klickypedia | WordPress communautaire | `robots.txt` 200, sitemap autorisé ; REST `/wp-json/` explicitement interdit | 15 sitemaps, 14 467 URL dont 14 466 fiches | import reprenable, fiches à cadence lente |
 | PLAYMOBIL DE | officiel Salesforce Commerce Cloud | robots et sitemap 200 | 546 URL dans le sitemap produits courant | source prioritaire pour produits présents |
 | PLAYMOBIL FR | officiel Salesforce Commerce Cloud | robots et sitemap 200 | 327 URL dans le sitemap produits courant | noms FR et produits présents |
 | PlaymoDB | base communautaire | page publique indexée ; client automatisé refusé 403 | 7 718 sets, 68 711 pièces, 6 023 sets avec pièces, 7 706 klickies annoncés | parseur prêt, import désactivé |
@@ -15,11 +15,11 @@
 
 Le site expose un index Yoast `sitemap_index.xml` et 15 fichiers `sets-sitemap*.xml`. Son `robots.txt` daté de juillet 2026 interdit `/wp-json/`, les recherches paramétrées et plusieurs vues. L'endpoint WordPress techniquement imaginable n'est donc pas utilisé. Les URL de sitemap contiennent des slugs utiles, mais aucun nombre de références uniques n'est dérivé du slug sans lecture/validation de la fiche.
 
-Les pages observées peuvent exposer titre, référence avec variante, années, traductions et URL d'image. Le droit de réhéberger ces images n'est pas établi.
+L'import réel de 200 pages a confirmé l'extraction du titre, de la référence/variante, des années, thèmes, formats, traductions, marchés, exclusivités/promotions, images, notices, compteurs de figurines et liens de pièces. Le droit de réhéberger les images n'est pas établi.
 
 ## PLAYMOBIL
 
-Les sitemaps actuels contiennent trois enfants par marché : produits, catégories et contenu. Une fiche produit officielle expose référence, nom localisé, description, médias structurés (`product_detail`, `product_box_front`, `product_box_back`), dimensions, poids, âge, figures/accessoires et un lien de notice. Le sitemap courant n'est pas une archive historique exhaustive.
+Les sitemaps actuels contiennent trois enfants par marché : produits, catégories et contenu. Une fiche produit officielle expose référence, nom localisé, description, médias structurés (`product_detail`, `product_box_front`, `product_box_back`), dimensions, poids, âge, figures/accessoires et un lien de notice. Le parseur et l'import DE/FR ont été vérifiés sur de vraies pages. Le sitemap courant n'est pas une archive historique exhaustive et les archives DE/FR ne sont pas symétriques.
 
 ## PlaymoDB
 

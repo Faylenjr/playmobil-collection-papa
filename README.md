@@ -7,10 +7,11 @@ Catalogue non commercial, traçable et reproductible destiné aux collectionneur
 - PostgreSQL + Prisma 7 ;
 - distinction `Product` / `ProductVariant` / `ProductReference` ;
 - provenance champ par champ, conflits et file de revue ;
-- parseurs testés pour références, sitemaps, PLAYMOBIL, Klickypedia et statistiques PlaymoDB ;
+- importeurs réels et reprenables pour Klickypedia et l'enrichissement PLAYMOBIL DE/FR ;
 - audit respectueux de `robots.txt`, avec délais, timeouts et retries ;
 - rapport de couverture calculé depuis la base ;
-- 16 tests automatisés.
+- 22 tests automatisés ;
+- échantillon mesuré : 200 fiches Klickypedia, 0 erreur, 192 références distinctes, 197 produits et 200 objets collectionnables.
 
 L'audit du 22 septembre 2026 mesure 14 467 URL de fiches réparties sur 15 sitemaps `sets` de Klickypedia. Ce nombre n'est **pas** présenté comme un nombre de références uniques. Voir [`docs/phase-0-report.md`](docs/phase-0-report.md).
 
@@ -40,6 +41,13 @@ Rapport de couverture de la base :
 pnpm report
 ```
 
+Sans daemon PostgreSQL local, le fallback de validation PGlite (PostgreSQL WASM) est disponible :
+
+```bash
+PGLITE_DIR=./.data/pglite pnpm import:klickypedia:sample:embedded
+PGLITE_DIR=./.data/pglite pnpm report:embedded
+```
+
 `docker compose up` lance PostgreSQL puis applique le schéma. Le conteneur d'application est volontairement un worker ponctuel pendant la phase données ; le service web sera ajouté quand le seuil qualité du catalogue sera atteint.
 
 ## Règles de collecte
@@ -60,6 +68,9 @@ pnpm report
 | `pnpm build` | Compilation du worker |
 | `pnpm source:audit` | Audit live des robots/sitemaps et métriques accessibles |
 | `pnpm import:klickypedia:index` | Indexe les URL publiques des sitemaps, sans aspirer les fiches |
+| `pnpm import:klickypedia:sample` | Importe/reprend le lot représentatif de 200 fiches |
+| `pnpm import:klickypedia:full` | Importe/reprend les 14 466 fiches publiques à cadence prudente |
+| `pnpm import:playmobil -- --limit=20` | Enrichit les références connues depuis PLAYMOBIL DE/FR |
 | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
 
 ## Documentation

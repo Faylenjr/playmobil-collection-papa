@@ -12,11 +12,22 @@
 
 ## Résilience
 
-Le client applique délai minimum par origine, timeout, backoff exponentiel et trois retries au maximum. Les statuts 429/5xx sont réessayés ; une erreur de fiche ne doit pas annuler un lot. La concurrence par défaut est limitée à deux et ne doit pas être augmentée sans justification.
+Le client applique délai minimum par origine, timeout, backoff exponentiel et trois retries au maximum. Les statuts 429/5xx sont réessayés ; une erreur de fiche ne doit pas annuler un lot. L'import de fiches est séquentiel et applique par défaut au moins 1,5 seconde entre requêtes d'une même origine. Cette cadence ne doit pas être augmentée sans justification.
 
 ## Échantillon requis avant import complet
 
-Le jeu de validation doit couvrir 1970, 1980, 1990, 2000, 2010, 2020 et l'année courante, plus : suffixes `vN`, lettre, marchés, promotions, exclusivités, Direkt Service, merchandising et rééditions. Les fixtures du dépôt ne sont que des tests techniques minimaux ; elles ne constituent pas encore ce corpus métier.
+Le lot déterministe de 200 fiches couvre 1970, 1980, 1990, 2000, 2010, 2020 et l'année courante, plus : suffixes `vN`, marchés, promotions, exclusivités, merchandising et rééditions. Il a permis de détecter puis corriger la collision des références `0000`/`00000`. Les fixtures restent des tests hors réseau minimaux.
+
+## Commandes d'import
+
+```bash
+pnpm import:klickypedia:sample
+pnpm import:klickypedia:full
+pnpm import:playmobil -- --limit=20
+pnpm report
+```
+
+Le job Klickypedia mémorise son index et son curseur dans `ImportRun`. `--resume` reprend un run `RUNNING`, `PARTIAL` ou `FAILED` si la sélection de sitemap n'a pas changé. PLAYMOBIL DE/FR enrichit uniquement des références déjà connues, sauf liste explicite passée avec `--references=`.
 
 ## Synchronisation
 
