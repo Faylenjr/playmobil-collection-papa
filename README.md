@@ -74,6 +74,7 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
 | `pnpm import:playmobil -- --limit=20` | Enrichit les références connues depuis PLAYMOBIL DE/FR |
 | `pnpm identities:reclassify` | Prévisualise la reclassification d'identité, sans écrire |
 | `pnpm identities:reclassify -- --apply` | Applique la reclassification et résout les revues attendues |
+| `pnpm identities:audit-merged` | Audite en lecture seule les variants ayant plusieurs SourceRecords |
 | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
 
 ## Documentation

@@ -24,6 +24,7 @@
     "import:playmobil": "pnpm --silent build && node dist/src/cli.js import:playmobil",
     "import:playmobil:embedded": "pnpm --silent build && node dist/src/embedded-cli.js import:playmobil",
     "identities:reclassify": "pnpm --silent build && node dist/src/cli.js identities:reclassify",
+    "identities:audit-merged": "pnpm --silent build && node dist/src/cli.js identities:audit-merged",
     "report:embedded": "pnpm --silent build && node dist/src/embedded-cli.js report",
     "report": "pnpm --silent build && node dist/src/cli.js report"
   },
