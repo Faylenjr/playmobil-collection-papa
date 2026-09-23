@@ -1,0 +1,28 @@
+name: Apply identity ordering fix
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "identity-order-fix.patch"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor == 'Faylenjr'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply validated patch and clean transit files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git am identity-order-fix.patch
+          git rm identity-order-fix.patch
+          git rm .github/workflows/apply-identity-fix.yml
+          git commit -m "chore: remove identity fix transit files"
+          git push origin HEAD:main
