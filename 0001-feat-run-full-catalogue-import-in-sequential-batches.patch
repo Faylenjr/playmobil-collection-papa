@@ -1,560 +1,1428 @@
-From 4b72c393dd43810d8ec5d3b32448131c36f653ef Mon Sep 17 00:00:00 2001
+From dc48e6cbe2b758985ceee08a6494eb770f582864 Mon Sep 17 00:00:00 2001
 From: Codex <codex@openai.com>
-Date: Wed, 23 Sep 2026 08:27:29 +0500
-Subject: [PATCH] feat: run full catalogue import in sequential batches
+Date: Wed, 23 Sep 2026 13:46:59 +0000
+Subject: [PATCH] feat: classify reused and ambiguous references
 
 ---
- .github/actions/klickypedia-batch/action.yml  |  54 +++++++
- .github/workflows/klickypedia-full-import.yml | 143 ++++++++++++++++++
- README.md                                     |   2 +
- docs/import-process.md                        |  16 ++
- package.json                                  |   2 +
- src/cli.ts                                    |   4 +-
- src/embedded-cli.ts                           |  11 +-
- src/jobs/import-klickypedia.ts                |  34 +++--
- src/report/anomalies.ts                       |  63 ++++++++
- src/report/coverage.ts                        |  14 ++
- tests/parsers.test.ts                         |  17 +++
- 11 files changed, 348 insertions(+), 12 deletions(-)
- create mode 100644 .github/actions/klickypedia-batch/action.yml
- create mode 100644 .github/workflows/klickypedia-full-import.yml
- create mode 100644 src/report/anomalies.ts
+ .github/actions/klickypedia-batch/action.yml  |  54 -----
+ .github/workflows/klickypedia-full-import.yml | 143 -------------
+ README.md                                     |   7 +-
+ docs/data-model.md                            |  11 +-
+ docs/data-quality.md                          |  13 +-
+ docs/import-process.md                        |  16 +-
+ docs/phase-0-report.md                        |  28 ++-
+ package.json                                  |   1 +
+ .../migration.sql                             |  50 +++++
+ prisma/schema.prisma                          |  75 ++++---
+ src/cli.ts                                    |   9 +-
+ src/domain/identity.ts                        | 198 ++++++++++++++++++
+ src/jobs/reclassify-identities.ts             | 158 ++++++++++++++
+ src/pipeline/import-record.ts                 | 100 ++++-----
+ src/report/coverage.ts                        |  29 ++-
+ tests/identity-reclassification.test.ts       | 101 +++++++++
+ tests/reference.test.ts                       |  74 +++++--
+ 17 files changed, 747 insertions(+), 320 deletions(-)
+ delete mode 100644 .github/actions/klickypedia-batch/action.yml
+ delete mode 100644 .github/workflows/klickypedia-full-import.yml
+ create mode 100644 prisma/migrations/20260923133000_reference_identity/migration.sql
+ create mode 100644 src/domain/identity.ts
+ create mode 100644 src/jobs/reclassify-identities.ts
+ create mode 100644 tests/identity-reclassification.test.ts
 
 diff --git a/.github/actions/klickypedia-batch/action.yml b/.github/actions/klickypedia-batch/action.yml
-new file mode 100644
-index 0000000..0f32c42
---- /dev/null
-+++ b/.github/actions/klickypedia-batch/action.yml
-@@ -0,0 +1,54 @@
-+name: Import Klickypedia batch
-+description: Restore the persistent PGlite catalogue, import one sequential batch, then checkpoint it.
-+inputs:
-+  offset:
-+    required: true
-+  limit:
-+    required: true
-+  restore-suffix:
-+    required: true
-+  save-suffix:
-+    required: true
-+  require-restore:
-+    required: false
-+    default: "true"
-+runs:
-+  using: composite
-+  steps:
-+    - uses: pnpm/action-setup@v4
-+      with:
-+        version: 11.19.0
-+    - uses: actions/setup-node@v4
-+      with:
-+        node-version: 24
-+        cache: pnpm
-+    - run: pnpm install --frozen-lockfile
-+      shell: bash
-+    - run: pnpm db:generate && pnpm build
-+      shell: bash
-+    - name: Restore previous database checkpoint
-+      id: restore-db
-+      uses: actions/cache/restore@v4
-+      with:
-+        path: .data/pglite-full
-+        key: klickypedia-${{ github.run_id }}-${{ inputs.restore-suffix }}
-+    - name: Verify required checkpoint
-+      if: inputs.require-restore == 'true' && steps.restore-db.outputs.cache-hit != 'true'
-+      shell: bash
-+      run: |
-+        echo "Required database checkpoint was not found; refusing to start from an empty catalogue." >&2
-+        exit 1
-+    - name: Import batch
-+      shell: bash
-+      env:
-+        PGLITE_DIR: ./.data/pglite-full
-+        IMPORT_MIN_DELAY_MS: "2000"
-+        IMPORT_TIMEOUT_MS: "20000"
-+        IMPORT_MAX_RETRIES: "3"
-+        IMPORT_USER_AGENT: PlaymobilCollectionResearch/0.2 (+https://github.com/Faylenjr/playmobil-collection-papa; non-commercial research)
-+      run: node dist/src/embedded-cli.js import:klickypedia --offset=${{ inputs.offset }} --limit=${{ inputs.limit }} --resume
-+    - name: Save database checkpoint
-+      uses: actions/cache/save@v4
-+      with:
-+        path: .data/pglite-full
-+        key: klickypedia-${{ github.run_id }}-${{ inputs.save-suffix }}
+deleted file mode 100644
+index 0f32c42..0000000
+--- a/.github/actions/klickypedia-batch/action.yml
++++ /dev/null
+@@ -1,54 +0,0 @@
+-name: Import Klickypedia batch
+-description: Restore the persistent PGlite catalogue, import one sequential batch, then checkpoint it.
+-inputs:
+-  offset:
+-    required: true
+-  limit:
+-    required: true
+-  restore-suffix:
+-    required: true
+-  save-suffix:
+-    required: true
+-  require-restore:
+-    required: false
+-    default: "true"
+-runs:
+-  using: composite
+-  steps:
+-    - uses: pnpm/action-setup@v4
+-      with:
+-        version: 11.19.0
+-    - uses: actions/setup-node@v4
+-      with:
+-        node-version: 24
+-        cache: pnpm
+-    - run: pnpm install --frozen-lockfile
+-      shell: bash
+-    - run: pnpm db:generate && pnpm build
+-      shell: bash
+-    - name: Restore previous database checkpoint
+-      id: restore-db
+-      uses: actions/cache/restore@v4
+-      with:
+-        path: .data/pglite-full
+-        key: klickypedia-${{ github.run_id }}-${{ inputs.restore-suffix }}
+-    - name: Verify required checkpoint
+-      if: inputs.require-restore == 'true' && steps.restore-db.outputs.cache-hit != 'true'
+-      shell: bash
+-      run: |
+-        echo "Required database checkpoint was not found; refusing to start from an empty catalogue." >&2
+-        exit 1
+-    - name: Import batch
+-      shell: bash
+-      env:
+-        PGLITE_DIR: ./.data/pglite-full
+-        IMPORT_MIN_DELAY_MS: "2000"
+-        IMPORT_TIMEOUT_MS: "20000"
+-        IMPORT_MAX_RETRIES: "3"
+-        IMPORT_USER_AGENT: PlaymobilCollectionResearch/0.2 (+https://github.com/Faylenjr/playmobil-collection-papa; non-commercial research)
+-      run: node dist/src/embedded-cli.js import:klickypedia --offset=${{ inputs.offset }} --limit=${{ inputs.limit }} --resume
+-    - name: Save database checkpoint
+-      uses: actions/cache/save@v4
+-      with:
+-        path: .data/pglite-full
+-        key: klickypedia-${{ github.run_id }}-${{ inputs.save-suffix }}
 diff --git a/.github/workflows/klickypedia-full-import.yml b/.github/workflows/klickypedia-full-import.yml
-new file mode 100644
-index 0000000..cb628f8
---- /dev/null
-+++ b/.github/workflows/klickypedia-full-import.yml
-@@ -0,0 +1,143 @@
-+name: Klickypedia full import
-+
-+on:
-+  workflow_dispatch:
-+    inputs:
-+      mode:
-+        description: Run the five-page smoke test or the complete sequential import
-+        required: true
-+        default: smoke
-+        type: choice
-+        options:
-+          - smoke
-+          - full
-+
-+permissions:
-+  contents: read
-+  actions: write
-+
-+concurrency:
-+  group: klickypedia-full-import
-+  cancel-in-progress: false
-+
-+jobs:
-+  smoke:
-+    if: inputs.mode == 'smoke'
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 20
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with:
-+          offset: "0"
-+          limit: "5"
-+          restore-suffix: smoke-seed
-+          save-suffix: smoke-complete
-+          require-restore: "false"
-+      - name: Generate smoke reports
-+        env:
-+          PGLITE_DIR: ./.data/pglite-full
-+        run: |
-+          mkdir -p reports
-+          node dist/src/embedded-cli.js report > reports/coverage.json
-+          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
-+      - uses: actions/upload-artifact@v4
-+        with:
-+          name: klickypedia-smoke-${{ github.run_id }}
-+          path: reports
-+          retention-days: 3
-+
-+  batch-0:
-+    if: inputs.mode == 'full'
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "0", limit: "1900", restore-suffix: seed, save-suffix: batch-0, require-restore: "false" }
-+
-+  batch-1:
-+    if: inputs.mode == 'full'
-+    needs: batch-0
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "1900", limit: "1900", restore-suffix: batch-0, save-suffix: batch-1 }
-+
-+  batch-2:
-+    if: inputs.mode == 'full'
-+    needs: batch-1
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "3800", limit: "1900", restore-suffix: batch-1, save-suffix: batch-2 }
-+
-+  batch-3:
-+    if: inputs.mode == 'full'
-+    needs: batch-2
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "5700", limit: "1900", restore-suffix: batch-2, save-suffix: batch-3 }
-+
-+  batch-4:
-+    if: inputs.mode == 'full'
-+    needs: batch-3
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "7600", limit: "1900", restore-suffix: batch-3, save-suffix: batch-4 }
-+
-+  batch-5:
-+    if: inputs.mode == 'full'
-+    needs: batch-4
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "9500", limit: "1900", restore-suffix: batch-4, save-suffix: batch-5 }
-+
-+  batch-6:
-+    if: inputs.mode == 'full'
-+    needs: batch-5
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "11400", limit: "1900", restore-suffix: batch-5, save-suffix: batch-6 }
-+
-+  batch-7-and-report:
-+    if: inputs.mode == 'full'
-+    needs: batch-6
-+    runs-on: ubuntu-latest
-+    timeout-minutes: 180
-+    steps:
-+      - uses: actions/checkout@v4
-+      - uses: ./.github/actions/klickypedia-batch
-+        with: { offset: "13300", limit: "1900", restore-suffix: batch-6, save-suffix: batch-7 }
-+      - name: Generate final measured results
-+        env:
-+          PGLITE_DIR: ./.data/pglite-full
-+        run: |
-+          mkdir -p reports
-+          node dist/src/embedded-cli.js report > reports/coverage.json
-+          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
-+          node dist/src/embedded-cli.js export > reports/catalogue-export.json
-+      - name: Preserve final catalogue and reports
-+        uses: actions/upload-artifact@v4
-+        with:
-+          name: klickypedia-complete-${{ github.run_id }}
-+          path: |
-+            .data/pglite-full
-+            reports
-+          retention-days: 30
+deleted file mode 100644
+index cb628f8..0000000
+--- a/.github/workflows/klickypedia-full-import.yml
++++ /dev/null
+@@ -1,143 +0,0 @@
+-name: Klickypedia full import
+-
+-on:
+-  workflow_dispatch:
+-    inputs:
+-      mode:
+-        description: Run the five-page smoke test or the complete sequential import
+-        required: true
+-        default: smoke
+-        type: choice
+-        options:
+-          - smoke
+-          - full
+-
+-permissions:
+-  contents: read
+-  actions: write
+-
+-concurrency:
+-  group: klickypedia-full-import
+-  cancel-in-progress: false
+-
+-jobs:
+-  smoke:
+-    if: inputs.mode == 'smoke'
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 20
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with:
+-          offset: "0"
+-          limit: "5"
+-          restore-suffix: smoke-seed
+-          save-suffix: smoke-complete
+-          require-restore: "false"
+-      - name: Generate smoke reports
+-        env:
+-          PGLITE_DIR: ./.data/pglite-full
+-        run: |
+-          mkdir -p reports
+-          node dist/src/embedded-cli.js report > reports/coverage.json
+-          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
+-      - uses: actions/upload-artifact@v4
+-        with:
+-          name: klickypedia-smoke-${{ github.run_id }}
+-          path: reports
+-          retention-days: 3
+-
+-  batch-0:
+-    if: inputs.mode == 'full'
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "0", limit: "1900", restore-suffix: seed, save-suffix: batch-0, require-restore: "false" }
+-
+-  batch-1:
+-    if: inputs.mode == 'full'
+-    needs: batch-0
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "1900", limit: "1900", restore-suffix: batch-0, save-suffix: batch-1 }
+-
+-  batch-2:
+-    if: inputs.mode == 'full'
+-    needs: batch-1
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "3800", limit: "1900", restore-suffix: batch-1, save-suffix: batch-2 }
+-
+-  batch-3:
+-    if: inputs.mode == 'full'
+-    needs: batch-2
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "5700", limit: "1900", restore-suffix: batch-2, save-suffix: batch-3 }
+-
+-  batch-4:
+-    if: inputs.mode == 'full'
+-    needs: batch-3
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "7600", limit: "1900", restore-suffix: batch-3, save-suffix: batch-4 }
+-
+-  batch-5:
+-    if: inputs.mode == 'full'
+-    needs: batch-4
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "9500", limit: "1900", restore-suffix: batch-4, save-suffix: batch-5 }
+-
+-  batch-6:
+-    if: inputs.mode == 'full'
+-    needs: batch-5
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "11400", limit: "1900", restore-suffix: batch-5, save-suffix: batch-6 }
+-
+-  batch-7-and-report:
+-    if: inputs.mode == 'full'
+-    needs: batch-6
+-    runs-on: ubuntu-latest
+-    timeout-minutes: 180
+-    steps:
+-      - uses: actions/checkout@v4
+-      - uses: ./.github/actions/klickypedia-batch
+-        with: { offset: "13300", limit: "1900", restore-suffix: batch-6, save-suffix: batch-7 }
+-      - name: Generate final measured results
+-        env:
+-          PGLITE_DIR: ./.data/pglite-full
+-        run: |
+-          mkdir -p reports
+-          node dist/src/embedded-cli.js report > reports/coverage.json
+-          node dist/src/embedded-cli.js anomalies > reports/anomalies.json
+-          node dist/src/embedded-cli.js export > reports/catalogue-export.json
+-      - name: Preserve final catalogue and reports
+-        uses: actions/upload-artifact@v4
+-        with:
+-          name: klickypedia-complete-${{ github.run_id }}
+-          path: |
+-            .data/pglite-full
+-            reports
+-          retention-days: 30
 diff --git a/README.md b/README.md
-index 166eef1..2cab195 100644
+index 166eef1..9ddc687 100644
 --- a/README.md
 +++ b/README.md
-@@ -73,6 +73,8 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
+@@ -10,8 +10,9 @@ Catalogue non commercial, traçable et reproductible destiné aux collectionneur
+ - importeurs réels et reprenables pour Klickypedia et l'enrichissement PLAYMOBIL DE/FR ;
+ - audit respectueux de `robots.txt`, avec délais, timeouts et retries ;
+ - rapport de couverture calculé depuis la base ;
+-- 22 tests automatisés ;
+-- échantillon mesuré : 200 fiches Klickypedia, 0 erreur, 192 références distinctes, 197 produits et 200 objets collectionnables.
++- 45 tests automatisés hors réseau ;
++- import complet Klickypedia exécuté sur le homelab : 14 466 fiches sur 14 466, sans erreur technique ;
++- identité explicite des références assignées, placeholders, réutilisées et réellement ambiguës.
+ 
+ L'audit du 22 septembre 2026 mesure 14 467 URL de fiches réparties sur 15 sitemaps `sets` de Klickypedia. Ce nombre n'est **pas** présenté comme un nombre de références uniques. Voir [`docs/phase-0-report.md`](docs/phase-0-report.md).
+ 
+@@ -71,6 +72,8 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
+ | `pnpm import:klickypedia:sample` | Importe/reprend le lot représentatif de 200 fiches |
+ | `pnpm import:klickypedia:full` | Importe/reprend les 14 466 fiches publiques à cadence prudente |
  | `pnpm import:playmobil -- --limit=20` | Enrichit les références connues depuis PLAYMOBIL DE/FR |
++| `pnpm identities:reclassify` | Prévisualise la reclassification d'identité, sans écrire |
++| `pnpm identities:reclassify -- --apply` | Applique la reclassification et résout les revues attendues |
  | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
  
-+L'import historique autonome se déclenche manuellement dans GitHub Actions via **Klickypedia full import**. Toujours exécuter le mode `smoke` avant `full`. Le workflow complet est séquentiel et conserve sa base entre les huit lots ; il ne nécessite pas qu'une session ChatGPT reste ouverte.
-+
  ## Documentation
+diff --git a/docs/data-model.md b/docs/data-model.md
+index 8aadb76..f3bf3d0 100644
+--- a/docs/data-model.md
++++ b/docs/data-model.md
+@@ -10,11 +10,18 @@ Le parseur est volontairement conservateur : `70733v1` est reconnu comme variant
  
- - [Architecture](docs/architecture.md)
+ Les noms, traductions, thèmes, dates, format, dimensions, poids, âge, compteurs, médias, notices, figurines et pièces peuvent être portés par `ProductVariant`. Les tables au niveau `Product` restent disponibles pour la consolidation du concept de base. Une variante peut donc posséder un contenu ou un nom différent sans contaminer ses voisines.
+ 
+-Les références-placeholder (`0`, `0000`, `00000`) ne sont pas considérées uniques. Leur clé canonique est qualifiée par l'identité stable de la fiche source et une `ReviewTask` est ouverte.
++Chaque `ProductReference` porte une classe d'identité :
++
++- `ASSIGNED` : référence attribuée à un objet sans collision connue ;
++- `PLACEHOLDER` : valeur générique (`0`, `0000`, `00000`, `N/A` et variantes de marché/version strictement reconnues) ;
++- `REUSED` : même référence publiée pour plusieurs objets dont les signaux distinctifs sont suffisants ;
++- `AMBIGUOUS` : collision que les données disponibles ne permettent pas de trancher sûrement.
++
++Les placeholders et les réutilisations restent des objets séparés avec une clé qualifiée par le couple stable source/identifiant externe. Ils ne créent pas de revue humaine ouverte. Une `ReviewTask` n'est conservée que pour `AMBIGUOUS`. La détection des placeholders est ancrée sur toute la référence : une référence légitime comme `0001` ou `0104-sch` n'est donc pas capturée.
+ 
+ ## Provenance
+ 
+-`source_records` conserve l'identité externe, l'URL, le hash et éventuellement la charge brute. `source_values` conserve chaque affirmation champ par champ, sa valeur brute, sa valeur normalisée, sa confiance, sa priorité et sa date. `conflicts` relie les affirmations contradictoires ; `review_tasks` contient les cas ambigus.
++`source_records` conserve l'identité externe, l'URL, le hash, éventuellement la charge brute et un lien explicite vers la variante importée. Ce lien rend les réimports idempotents même si le nom, l'année ou le thème source change. `source_values` conserve chaque affirmation champ par champ, sa valeur brute, sa valeur normalisée, sa confiance, sa priorité et sa date. `conflicts` relie les affirmations contradictoires ; `review_tasks` contient les cas réellement ambigus.
+ 
+ La valeur canonique est recalculée par priorité de source sans perdre l'opinion d'une source. Les traductions utilisent des champs de provenance localisés (`name.fr`, `name.de`, etc.) afin de ne pas traiter deux langues comme une contradiction.
+ 
+diff --git a/docs/data-quality.md b/docs/data-quality.md
+index b9610c1..06d76b9 100644
+--- a/docs/data-quality.md
++++ b/docs/data-quality.md
+@@ -15,11 +15,22 @@ Une URL de sitemap n'est pas automatiquement une référence et une référence
+ 
+ La priorité est : officiel pertinent, base communautaire structurée, source éditoriale, marchand. La priorité ne transforme pas une affirmation en vérité ; tout désaccord reste visible. À priorité égale, la confiance puis la récence départagent la sélection automatique.
+ 
++L'identité emploie une comparaison à trois issues : `MATCH`, `DISTINCT` ou `AMBIGUOUS`. Un nom identique ne suffit pas à fusionner : au moins une année ou un thème doit également concorder, sans contradiction. Une différence de nom seule ne suffit pas non plus à séparer. Les années, thèmes, familles d'objets, qualificatifs explicites et numéros de catalogue/magazine servent uniquement à reconnaître les cas distincts suffisamment étayés. Le doute produit `AMBIGUOUS` et une revue humaine.
++
++La reclassification de la base existante est prévisualisable puis applicable :
++
++```bash
++pnpm identities:reclassify
++pnpm identities:reclassify -- --apply
++```
++
++Elle ne fusionne, ne supprime et ne renomme aucun produit ou variant. Elle classe les références, résout avec une note les anciennes revues de placeholders/réutilisations attendues et laisse ouvertes les véritables ambiguïtés.
++
+ ## Rapport
+ 
+ `src/report/coverage.ts` calcule la couverture depuis PostgreSQL. Un catalogue vide retourne 0 %, jamais une constante. Les métriques sont séparées entre produits et variantes afin de ne pas gonfler artificiellement les résultats.
+ 
+-Le rapport expose aussi les répartitions par source, année, décennie et taxonomie. Il distingue le nombre total de variantes du nombre de valeurs de référence distinctes : plusieurs objets légitimes peuvent publier `0000` ou `00000`.
++Le rapport expose aussi les répartitions par source, année, décennie, taxonomie et classe d'identité. Il distingue les groupes de références réutilisées des groupes ambigus. `duplicatesMerged` reste présent pour compatibilité, mais correspond désormais uniquement aux `SourceRecord` supplémentaires explicitement liés à une variante déjà représentée ; ce n'est plus la soustraction trompeuse `sourceRecords - variants`.
+ 
+ ## Seuil avant MVP
+ 
 diff --git a/docs/import-process.md b/docs/import-process.md
-index 2b13303..ad3cfb1 100644
+index ad3cfb1..0ca4931 100644
 --- a/docs/import-process.md
 +++ b/docs/import-process.md
-@@ -29,6 +29,22 @@ pnpm report
+@@ -29,21 +29,9 @@ pnpm report
  
  Le job Klickypedia mémorise son index et son curseur dans `ImportRun`. `--resume` reprend un run `RUNNING`, `PARTIAL` ou `FAILED` si la sélection de sitemap n'a pas changé. PLAYMOBIL DE/FR enrichit uniquement des références déjà connues, sauf liste explicite passée avec `--references=`.
  
-+## Import nocturne GitHub Actions
-+
-+Le workflow manuel `Klickypedia full import` propose deux modes :
-+
-+- `smoke` importe cinq fiches dans une base vierge et publie ses rapports pendant trois jours ;
-+- `full` exécute huit jobs strictement chaînés, soit sept lots de 1 900 fiches et un dernier lot de 1 166.
-+
-+Chaque job restaure le checkpoint PGlite exact produit par son prédécesseur. L'absence du checkpoint fait échouer le lot au lieu de repartir silencieusement d'une base vide. Les caches sont propres au `run_id`, empêchant deux exécutions de mélanger leurs données. Le dernier job publie pendant 30 jours :
-+
-+- la base PostgreSQL/PGlite complète ;
-+- `coverage.json` ;
-+- `anomalies.json` ;
-+- `catalogue-export.json`, qui contient notamment toutes les URL et tous les journaux d'import.
-+
-+Une relance d'un lot déjà terminé réutilise `lastmod` et les hashes. Un run `PARTIAL` arrivé au bout est recréé afin de retenter ses URL en erreur ; les fiches réussies et inchangées sont ignorées.
-+
+-## Import nocturne GitHub Actions
++## Exécution complète
+ 
+-Le workflow manuel `Klickypedia full import` propose deux modes :
+-
+-- `smoke` importe cinq fiches dans une base vierge et publie ses rapports pendant trois jours ;
+-- `full` exécute huit jobs strictement chaînés, soit sept lots de 1 900 fiches et un dernier lot de 1 166.
+-
+-Chaque job restaure le checkpoint PGlite exact produit par son prédécesseur. L'absence du checkpoint fait échouer le lot au lieu de repartir silencieusement d'une base vide. Les caches sont propres au `run_id`, empêchant deux exécutions de mélanger leurs données. Le dernier job publie pendant 30 jours :
+-
+-- la base PostgreSQL/PGlite complète ;
+-- `coverage.json` ;
+-- `anomalies.json` ;
+-- `catalogue-export.json`, qui contient notamment toutes les URL et tous les journaux d'import.
+-
+-Une relance d'un lot déjà terminé réutilise `lastmod` et les hashes. Un run `PARTIAL` arrivé au bout est recréé afin de retenter ses URL en erreur ; les fiches réussies et inchangées sont ignorées.
++L'import complet a été exécuté sur le homelab depuis une connexion résidentielle. Les runners GitHub/Azure recevaient des réponses 403 de Klickypedia ; les workflows de crawl correspondants ont donc été retirés. La CI GitHub reste limitée aux tests, au typecheck, au build et à la validation Prisma. Les prochains imports longs doivent utiliser le worker du homelab ou une infrastructure explicitement acceptée par la source.
+ 
  ## Synchronisation
  
- - PLAYMOBIL : sitemap/nouveautés quotidien, fiches modifiées seulement.
+diff --git a/docs/phase-0-report.md b/docs/phase-0-report.md
+index 7e3481a..dc8e0c1 100644
+--- a/docs/phase-0-report.md
++++ b/docs/phase-0-report.md
+@@ -1,6 +1,6 @@
+ # Rapport de phase 0 — mesures reproductibles
+ 
+-Date de mesure : 23 septembre 2026. Statut : **échantillon validé, catalogue complet non encore importé**.
++Date de mesure : 23 septembre 2026. Statut : **import complet Klickypedia terminé ; reclassification d'identité à appliquer sur la base du homelab**.
+ 
+ ## Sources
+ 
+@@ -20,6 +20,22 @@ Ces unités ne sont pas additionnables. PlaymoDB reste désactivé car l'accès
+ 
+ ## Résultats importés
+ 
++### Import complet Klickypedia
++
++Le dernier run sur la base PostgreSQL persistante du homelab a terminé avec les compteurs suivants :
++
++| Mesure | Résultat |
++|---|---:|
++| URL de fiches attendues | **14 466** |
++| fiches parcourues | **14 466** |
++| créations lors du dernier passage | **5** |
++| mises à jour lors du dernier passage | **0** |
++| fiches inchangées | **14 461** |
++| erreurs / inaccessibles | **0 / 0** |
++| statut | **SUCCEEDED** |
++
++Les métriques d'identité et de couverture post-reclassification doivent être régénérées directement depuis cette base avec `pnpm identities:reclassify -- --apply` puis `pnpm report`. Elles ne sont pas extrapolées depuis une copie locale incomplète.
++
+ ### Validation Klickypedia (200 fiches)
+ 
+ L'échantillon déterministe couvre 1974–2026, toutes les décennies demandées, les variantes `vN`, marchés, promotions, exclusivités, catalogues, merchandising et références atypiques.
+@@ -38,7 +54,7 @@ L'échantillon déterministe couvre 1974–2026, toutes les décennies demandée
+ 
+ Une seconde exécution incrémentale a classé les **200 fiches comme inchangées**, sans les retélécharger ni créer de doublon.
+ 
+-Les 12 revues concernent des références génériques (`0`, `0000`, `00000`) qui ne sont pas des identifiants uniques. La première exécution les fusionnait à tort et produisait 25 conflits. La règle corrigée conserve leur référence affichée mais attribue à chaque fiche une identité stable dérivée de la source. Une seconde importation vierge a produit 200 objets distincts et zéro conflit artificiel.
++Dans cet ancien échantillon, les 12 revues concernaient des références génériques (`0`, `0000`, `00000`) qui ne sont pas des identifiants uniques. La première exécution les fusionnait à tort et produisait 25 conflits. La règle corrigée conservait déjà leur référence affichée et attribuait à chaque fiche une identité stable dérivée de la source. La nouvelle classification `PLACEHOLDER` permet désormais de résoudre ces tâches attendues sans revue humaine.
+ 
+ ### Enrichissement officiel mesuré
+ 
+@@ -63,7 +79,9 @@ Les deux conflits sont réels et conservés : pour la même référence, DE et F
+ - `Product` représente le produit de base ; `ProductVariant` représente l'objet collectionnable.
+ - Les références ne sont jamais converties en nombres.
+ - Les suffixes `vN`, éditions et marchés sont interprétés de façon conservatrice.
+-- Les références-placeholder sont disambiguïsées par l'identité du `SourceRecord` et placées en revue.
++- Les références-placeholder sont disambiguïsées par l'identité du `SourceRecord` sans revue humaine ouverte.
++- Une référence réellement réutilisée conserve chaque objet dans une variante séparée et n'est pas comptée comme problème.
++- Seules les collisions `AMBIGUOUS` restent en revue humaine.
+ - Une fusion n'est acceptée que lorsque les signaux d'identité ne se contredisent pas.
+ - Les hashes HTML et `lastmod` évitent de retraiter une fiche inchangée ; le curseur d'`ImportRun` permet la reprise.
+ 
+@@ -124,7 +142,7 @@ Les relations existent aux niveaux produit **et variante**. L'import Klickypedia
+ 
+ ## Problèmes restant ouverts
+ 
+-- L'import complet de 14 466 fiches n'a pas été exécuté dans cette session : à la cadence validée (1,5–2 s minimum, séquentielle), il nécessite environ 6 à 9 heures. Le job est prêt, reprenable et journalisé avec `pnpm import:klickypedia:full`.
++- Les totaux post-reclassification restent à mesurer sur la base persistante du homelab ; aucune valeur n'est inventée depuis l'environnement Work.
+ - La disponibilité des archives officielles diffère fortement entre DE et FR ; un 404 n'est pas une preuve d'inexistence historique.
+ - Les prix et statuts officiels sont dépendants du marché ; une table d'offres par marché est recommandée avant un import officiel large.
+ - Les licences de base et droits d'affichage des médias doivent être clarifiés avant publication publique ou usage commercial.
+@@ -132,4 +150,4 @@ Les relations existent aux niveaux produit **et variante**. L'import Klickypedia
+ 
+ ## Recommandation
+ 
+-Conserver PostgreSQL, Prisma et le modèle de provenance actuel. Exécuter ensuite le job Klickypedia complet sur un worker durable avec PostgreSQL managé, sans augmenter la cadence, puis générer ce rapport depuis la base complète. L'enrichissement officiel doit suivre par lots et par marché. Le MVP utilisateur reste différé jusqu'à obtention des métriques complètes.
++Conserver PostgreSQL, Prisma et le modèle de provenance actuel. Appliquer la migration additive, prévisualiser puis appliquer la reclassification, et générer le rapport depuis la base complète. L'enrichissement officiel doit suivre par lots et par marché. Le MVP utilisateur reste différé jusqu'à validation des métriques post-reclassification.
 diff --git a/package.json b/package.json
-index 9266698..50c597f 100644
+index 9266698..86713d5 100644
 --- a/package.json
 +++ b/package.json
-@@ -24,6 +24,8 @@
+@@ -23,6 +23,7 @@
+     "import:klickypedia:sample:embedded": "pnpm --silent build && node dist/src/embedded-cli.js import:klickypedia --limit=200 --resume",
      "import:playmobil": "pnpm --silent build && node dist/src/cli.js import:playmobil",
      "import:playmobil:embedded": "pnpm --silent build && node dist/src/embedded-cli.js import:playmobil",
++    "identities:reclassify": "pnpm --silent build && node dist/src/cli.js identities:reclassify",
      "report:embedded": "pnpm --silent build && node dist/src/embedded-cli.js report",
-+    "anomalies:embedded": "pnpm --silent build && node dist/src/embedded-cli.js anomalies",
-+    "export:embedded": "pnpm --silent build && node dist/src/embedded-cli.js export",
      "report": "pnpm --silent build && node dist/src/cli.js report"
    },
-   "dependencies": {
+diff --git a/prisma/migrations/20260923133000_reference_identity/migration.sql b/prisma/migrations/20260923133000_reference_identity/migration.sql
+new file mode 100644
+index 0000000..87d5347
+--- /dev/null
++++ b/prisma/migrations/20260923133000_reference_identity/migration.sql
+@@ -0,0 +1,50 @@
++-- Additive identity metadata. No product, variant, reference, provenance value,
++-- conflict, or review task is deleted or merged by this migration.
++CREATE TYPE "ReferenceIdentityClass" AS ENUM ('ASSIGNED', 'PLACEHOLDER', 'REUSED', 'AMBIGUOUS');
++
++ALTER TABLE "product_references"
++  ADD COLUMN "identity_class" "ReferenceIdentityClass" NOT NULL DEFAULT 'ASSIGNED',
++  ADD COLUMN "identity_reason" TEXT;
++
++ALTER TABLE "source_records"
++  ADD COLUMN "variant_id" UUID;
++
++ALTER TABLE "review_tasks"
++  ADD COLUMN "resolution_note" TEXT;
++
++ALTER TABLE "source_records"
++  ADD CONSTRAINT "source_records_variant_id_fkey"
++  FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id")
++  ON DELETE SET NULL ON UPDATE CASCADE;
++
++CREATE INDEX "source_records_variant_id_idx" ON "source_records"("variant_id");
++CREATE INDEX "product_references_identity_class_idx" ON "product_references"("identity_class");
++
++-- Backfill the explicit link from existing provenance rows. SourceValue already
++-- contains the exact variant UUID used by each imported SourceRecord.
++UPDATE "source_records" AS sr
++SET "variant_id" = (
++  SELECT sv."entity_id"
++  FROM "source_values" AS sv
++  WHERE sv."source_record_id" = sr."id"
++    AND sv."entity_type" = 'ProductVariant'
++    AND EXISTS (SELECT 1 FROM "product_variants" pv WHERE pv."id" = sv."entity_id")
++  ORDER BY sv."retrieved_at" DESC, sv."id"
++  LIMIT 1
++)
++WHERE sr."variant_id" IS NULL
++  AND EXISTS (
++    SELECT 1 FROM "source_values" sv
++    JOIN "product_variants" pv ON pv."id" = sv."entity_id"
++    WHERE sv."source_record_id" = sr."id"
++      AND sv."entity_type" = 'ProductVariant'
++  );
++
++-- Only the syntactically certain placeholder family is classified in SQL.
++-- Reused and ambiguous references need the conservative signal comparison in
++-- the TypeScript reclassifier and are intentionally not guessed here.
++UPDATE "product_references"
++SET "identity_class" = 'PLACEHOLDER',
++    "identity_reason" = 'syntactic-placeholder-reference'
++WHERE UPPER(REGEXP_REPLACE("normalized_value", '[[:space:]]+', '', 'g'))
++  ~ '^(0+(V[0-9]+)?(-[A-Z0-9-]+)?|N/?A(-[A-Z0-9-]+)?)$';
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index a64eae2..8d5e9a8 100644
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -59,6 +59,13 @@ enum ReviewStatus {
+   IGNORED
+ }
+ 
++enum ReferenceIdentityClass {
++  ASSIGNED
++  PLACEHOLDER
++  REUSED
++  AMBIGUOUS
++}
++
+ enum CollectionCondition {
+   SEALED
+   NEW
+@@ -135,6 +142,7 @@ model ProductVariant {
+   parts                  VariantPart[]
+   collectionItems        CollectionItem[]
+   wishlistItems          WishlistItem[]
++  sourceRecords          SourceRecord[]
+ 
+   @@index([productId])
+   @@index([releaseYear])
+@@ -142,20 +150,23 @@ model ProductVariant {
+ }
+ 
+ model ProductReference {
+-  id              String         @id @default(uuid()) @db.Uuid
+-  variantId       String         @map("variant_id") @db.Uuid
+-  displayValue    String         @map("display_value")
+-  normalizedValue String         @map("normalized_value")
+-  baseValue       String?        @map("base_value")
++  id              String                 @id @default(uuid()) @db.Uuid
++  variantId       String                 @map("variant_id") @db.Uuid
++  displayValue    String                 @map("display_value")
++  normalizedValue String                 @map("normalized_value")
++  baseValue       String?                @map("base_value")
+   suffix          String?
+-  isPrimary       Boolean        @default(false) @map("is_primary")
+-  sourceId        String?        @map("source_id") @db.Uuid
+-  variant         ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+-  source          Source?        @relation(fields: [sourceId], references: [id], onDelete: SetNull)
++  isPrimary       Boolean                @default(false) @map("is_primary")
++  sourceId        String?                @map("source_id") @db.Uuid
++  identityClass   ReferenceIdentityClass @default(ASSIGNED) @map("identity_class")
++  identityReason  String?                @map("identity_reason")
++  variant         ProductVariant         @relation(fields: [variantId], references: [id], onDelete: Cascade)
++  source          Source?                @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+ 
+   @@unique([variantId, normalizedValue])
+   @@index([normalizedValue])
+   @@index([baseValue])
++  @@index([identityClass])
+   @@map("product_references")
+ }
+ 
+@@ -361,22 +372,25 @@ model Source {
+ }
+ 
+ model SourceRecord {
+-  id              String        @id @default(uuid()) @db.Uuid
+-  sourceId        String        @map("source_id") @db.Uuid
+-  externalId      String        @map("external_id")
+-  sourceUrl       String        @map("source_url")
+-  recordType      String        @map("record_type")
+-  rawPayload      Json?         @map("raw_payload")
+-  contentHash     String        @map("content_hash")
+-  sourceUpdatedAt DateTime?     @map("source_updated_at")
+-  firstSeenAt     DateTime      @default(now()) @map("first_seen_at")
+-  lastSeenAt      DateTime      @default(now()) @map("last_seen_at")
+-  lastCheckedAt   DateTime      @default(now()) @map("last_checked_at")
+-  source          Source        @relation(fields: [sourceId], references: [id], onDelete: Cascade)
++  id              String          @id @default(uuid()) @db.Uuid
++  sourceId        String          @map("source_id") @db.Uuid
++  variantId       String?         @map("variant_id") @db.Uuid
++  externalId      String          @map("external_id")
++  sourceUrl       String          @map("source_url")
++  recordType      String          @map("record_type")
++  rawPayload      Json?           @map("raw_payload")
++  contentHash     String          @map("content_hash")
++  sourceUpdatedAt DateTime?       @map("source_updated_at")
++  firstSeenAt     DateTime        @default(now()) @map("first_seen_at")
++  lastSeenAt      DateTime        @default(now()) @map("last_seen_at")
++  lastCheckedAt   DateTime        @default(now()) @map("last_checked_at")
++  source          Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
++  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+   values          SourceValue[]
+ 
+   @@unique([sourceId, externalId])
+   @@index([contentHash])
++  @@index([variantId])
+   @@map("source_records")
+ }
+ 
+@@ -428,15 +442,16 @@ model ConflictValue {
+ }
+ 
+ model ReviewTask {
+-  id         String       @id @default(uuid()) @db.Uuid
+-  kind       String
+-  entityType String       @map("entity_type")
+-  entityId   String?      @map("entity_id") @db.Uuid
+-  reason     String
+-  payload    Json?
+-  status     ReviewStatus @default(OPEN)
+-  createdAt  DateTime     @default(now()) @map("created_at")
+-  resolvedAt DateTime?    @map("resolved_at")
++  id             String       @id @default(uuid()) @db.Uuid
++  kind           String
++  entityType     String       @map("entity_type")
++  entityId       String?      @map("entity_id") @db.Uuid
++  reason         String
++  payload        Json?
++  status         ReviewStatus @default(OPEN)
++  createdAt      DateTime     @default(now()) @map("created_at")
++  resolvedAt     DateTime?    @map("resolved_at")
++  resolutionNote String?      @map("resolution_note")
+ 
+   @@index([status, kind])
+   @@map("review_tasks")
 diff --git a/src/cli.ts b/src/cli.ts
-index a844fa6..2daa73b 100644
+index a844fa6..8e532a5 100644
 --- a/src/cli.ts
 +++ b/src/cli.ts
-@@ -27,8 +27,10 @@ switch (command) {
-     const db = createDatabaseClient();
-     const mode = process.argv.includes("--full") ? "full" : "sample";
-     const limitArgument = process.argv.find((argument) => argument.startsWith("--limit="));
-+    const offsetArgument = process.argv.find((argument) => argument.startsWith("--offset="));
-     const limit = limitArgument ? Number(limitArgument.split("=")[1]) : undefined;
--    try { console.log(JSON.stringify(await runKlickypediaImport(db, { mode, ...(limit ? { limit } : {}), resume: process.argv.includes("--resume") }), null, 2)); }
-+    const offset = offsetArgument ? Number(offsetArgument.split("=")[1]) : undefined;
-+    try { console.log(JSON.stringify(await runKlickypediaImport(db, { mode: offset === undefined ? mode : "batch", ...(limit ? { limit } : {}), ...(offset === undefined ? {} : { offset }), resume: process.argv.includes("--resume") }), null, 2)); }
+@@ -5,6 +5,7 @@ import { buildCoverageReport } from "./report/coverage.js";
+ import { listKlickypediaSetUrls } from "./importers/klickypedia.js";
+ import { runKlickypediaImport } from "./jobs/import-klickypedia.js";
+ import { runPlaymobilImport } from "./jobs/import-playmobil.js";
++import { reclassifyIdentities } from "./jobs/reclassify-identities.js";
+ 
+ const command = process.argv[2];
+ 
+@@ -23,6 +24,12 @@ switch (command) {
      finally { await db.$disconnect(); }
      break;
    }
-diff --git a/src/embedded-cli.ts b/src/embedded-cli.ts
-index 661d06a..3c2a0b4 100644
---- a/src/embedded-cli.ts
-+++ b/src/embedded-cli.ts
-@@ -3,16 +3,23 @@ import { createEmbeddedDatabaseClient } from "./db/embedded.js";
- import { runKlickypediaImport } from "./jobs/import-klickypedia.js";
- import { buildCoverageReport } from "./report/coverage.js";
- import { runPlaymobilImport } from "./jobs/import-playmobil.js";
-+import { buildAnomalyReport, buildExportBundle } from "./report/anomalies.js";
- 
- const command = process.argv[2];
- const { db, database } = await createEmbeddedDatabaseClient();
- try {
-   if (command === "import:klickypedia") {
-     const limitArgument = process.argv.find((argument) => argument.startsWith("--limit="));
-+    const offsetArgument = process.argv.find((argument) => argument.startsWith("--offset="));
-     const limit = limitArgument ? Number(limitArgument.split("=")[1]) : 200;
--    console.log(JSON.stringify(await runKlickypediaImport(db, { mode: "sample", limit, resume: process.argv.includes("--resume") }), null, 2));
-+    const offset = offsetArgument ? Number(offsetArgument.split("=")[1]) : undefined;
-+    console.log(JSON.stringify(await runKlickypediaImport(db, { mode: offset === undefined ? "sample" : "batch", limit, ...(offset === undefined ? {} : { offset }), resume: process.argv.includes("--resume") }), null, 2));
-   } else if (command === "report") {
-     console.log(JSON.stringify(await buildCoverageReport(db), null, 2));
-+  } else if (command === "anomalies") {
-+    console.log(JSON.stringify(await buildAnomalyReport(db), null, 2));
-+  } else if (command === "export") {
-+    console.log(JSON.stringify(await buildExportBundle(db), null, 2));
-   } else if (command === "import:playmobil") {
-     const limitArgument = process.argv.find((argument) => argument.startsWith("--limit="));
-     const referencesArgument = process.argv.find((argument) => argument.startsWith("--references="));
-@@ -21,7 +28,7 @@ try {
-       ...(referencesArgument ? { references: referencesArgument.split("=")[1]!.split(",") } : {}),
-     }), null, 2));
-   } else {
--    throw new Error("Usage: embedded-cli import:klickypedia --limit=200 --resume | embedded-cli import:playmobil --limit=20 | embedded-cli report");
-+    throw new Error("Usage: embedded-cli import:klickypedia --offset=0 --limit=1900 --resume | embedded-cli import:playmobil --limit=20 | embedded-cli report | anomalies | export");
-   }
- } finally {
-   await db.$disconnect();
-diff --git a/src/jobs/import-klickypedia.ts b/src/jobs/import-klickypedia.ts
-index c4deac6..bd75f28 100644
---- a/src/jobs/import-klickypedia.ts
-+++ b/src/jobs/import-klickypedia.ts
-@@ -6,8 +6,9 @@ import type { SitemapEntry } from "../importers/types.js";
- import { importRecord } from "../pipeline/import-record.js";
- 
- export interface KlickypediaImportOptions {
--  mode: "sample" | "full";
-+  mode: "sample" | "full" | "batch";
-   limit?: number;
-+  offset?: number;
-   resume?: boolean;
- }
- 
-@@ -53,6 +54,9 @@ function selectRepresentative(entries: SitemapEntry[], limit: number): SitemapEn
- 
- const selectionHash = (entries: SitemapEntry[]) => createHash("sha256").update(entries.map((entry) => `${entry.loc}\t${entry.lastmod ?? ""}`).join("\n")).digest("hex");
- 
-+export const selectBatchEntries = (entries: SitemapEntry[], offset: number, limit: number) =>
-+  entries.slice(Math.max(0, offset), Math.max(0, offset) + Math.min(Math.max(limit, 1), 2_000));
-+
- export async function runKlickypediaImport(db: PrismaClient, options: KlickypediaImportOptions) {
-   const source = await db.source.upsert({
-     where: { key: KLICKYPEDIA.key },
-@@ -62,18 +66,30 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
-   const client = new PoliteHttpClient();
-   const indexed = await listKlickypediaSetUrls(client);
-   const detailEntries = indexed.filter((entry) => new URL(entry.loc).pathname !== "/sets/");
--  const limit = options.mode === "full" ? detailEntries.length : Math.min(Math.max(options.limit ?? 200, 1), 300);
--  const entries = options.mode === "full" ? detailEntries : selectRepresentative(detailEntries, limit);
-+  const offset = Math.max(0, options.offset ?? 0);
-+  const limit = options.mode === "full"
-+    ? detailEntries.length
-+    : options.mode === "batch"
-+      ? Math.min(Math.max(options.limit ?? 1_900, 1), 2_000)
-+      : Math.min(Math.max(options.limit ?? 200, 1), 300);
-+  const entries = options.mode === "full"
-+    ? detailEntries
-+    : options.mode === "batch"
-+      ? selectBatchEntries(detailEntries, offset, limit)
-+      : selectRepresentative(detailEntries, limit);
-   const hash = selectionHash(entries);
-+  const runMode = options.mode === "batch" ? `klickypedia:batch:${offset}:${limit}` : `klickypedia:${options.mode}`;
- 
-   const resumable = options.resume ? await db.importRun.findFirst({
--    where: { sourceId: source.id, mode: `klickypedia:${options.mode}`, status: { in: ["RUNNING", "PARTIAL", "FAILED"] } },
-+    where: { sourceId: source.id, mode: runMode, status: { in: ["RUNNING", "PARTIAL", "FAILED"] } },
-     orderBy: { startedAt: "desc" },
-   }) : null;
-   const savedCursor = resumable?.cursor as { index?: number; selectionHash?: string } | null;
--  const canResume = savedCursor?.selectionHash === hash;
-+  // A completed PARTIAL run is deliberately restarted: unchanged records are
-+  // skipped via lastmod/hash while failed URLs are attempted again.
-+  const canResume = savedCursor?.selectionHash === hash && (savedCursor.index ?? 0) < entries.length;
-   const run = canResume && resumable ? await db.importRun.update({ where: { id: resumable.id }, data: { status: "RUNNING", finishedAt: null } }) : await db.importRun.create({
--    data: { sourceId: source.id, mode: `klickypedia:${options.mode}`, cursor: { index: 0, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash } },
-+    data: { sourceId: source.id, mode: runMode, cursor: { index: 0, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash } },
-   });
-   let index = canResume ? Math.min(savedCursor?.index ?? 0, entries.length) : 0;
-   const counters = { scanned: run.scanned, created: run.created, updated: run.updated, unchanged: run.unchanged, errors: run.errors, conflicts: run.conflicts, inaccessible: run.inaccessible };
-@@ -115,7 +131,7 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
-         if (errorSummary.length < 100) errorSummary.push({ url: entry.loc, error: error instanceof Error ? error.message : String(error) });
-       }
-       counters.scanned += 1;
--      await db.importRun.update({ where: { id: run.id }, data: { ...counters, cursor: { index: index + 1, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
-+      await db.importRun.update({ where: { id: run.id }, data: { ...counters, cursor: { index: index + 1, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
-       if ((index + 1) % 25 === 0) console.log(JSON.stringify({ runId: run.id, progress: index + 1, total: entries.length, ...counters }));
-     }
-   } finally {
-@@ -124,6 +140,6 @@ export async function runKlickypediaImport(db: PrismaClient, options: Klickypedi
-   }
- 
-   const status = interrupted ? "PARTIAL" : counters.errors > 0 ? "PARTIAL" : "SUCCEEDED";
--  const completed = await db.importRun.update({ where: { id: run.id }, data: { ...counters, status, finishedAt: new Date(), cursor: { index, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
--  return { run: completed, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectedUrls: entries.length, errors: errorSummary };
-+  const completed = await db.importRun.update({ where: { id: run.id }, data: { ...counters, status, finishedAt: new Date(), cursor: { index, offset, total: entries.length, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectionHash: hash }, errorSummary } });
-+  return { run: completed, indexedUrls: indexed.length, detailUrls: detailEntries.length, selectedUrls: entries.length, offset, errors: errorSummary };
- }
-diff --git a/src/report/anomalies.ts b/src/report/anomalies.ts
-new file mode 100644
-index 0000000..6ba2906
---- /dev/null
-+++ b/src/report/anomalies.ts
-@@ -0,0 +1,63 @@
-+import type { PrismaClient } from "../../generated/prisma/client.js";
-+import { buildCoverageReport } from "./coverage.js";
-+
-+export async function buildAnomalyReport(db: PrismaClient) {
-+  const [references, missingCore, suspiciousYears, conflicts, reviews, failedRuns] = await Promise.all([
-+    db.productReference.findMany({ select: { normalizedValue: true, variantId: true, displayValue: true } }),
-+    db.productVariant.findMany({
-+      where: { OR: [{ references: { none: {} } }, { name: null }] },
-+      select: { id: true, canonicalKey: true, name: true, references: { select: { displayValue: true } } },
-+    }),
-+    db.productVariant.findMany({
-+      where: { OR: [{ releaseYear: { lt: 1974 } }, { releaseYear: { gt: new Date().getUTCFullYear() + 1 } }, { discontinuedYear: { lt: 1974 } }] },
-+      select: { id: true, canonicalKey: true, releaseYear: true, discontinuedYear: true },
-+    }),
-+    db.conflict.findMany({
-+      where: { status: "OPEN" },
-+      select: { id: true, entityType: true, entityId: true, field: true, createdAt: true, values: { select: { sourceValue: { select: { normalizedValue: true, source: { select: { key: true } } } } } } },
-+    }),
-+    db.reviewTask.findMany({ where: { status: "OPEN" }, select: { id: true, kind: true, entityType: true, entityId: true, reason: true, payload: true, createdAt: true } }),
-+    db.importRun.findMany({ where: { OR: [{ errors: { gt: 0 } }, { inaccessible: { gt: 0 } }, { status: { in: ["FAILED", "PARTIAL"] } }] }, orderBy: { startedAt: "asc" } }),
-+  ]);
-+
-+  const byReference = new Map<string, Array<{ variantId: string; displayValue: string }>>();
-+  for (const reference of references) {
-+    const values = byReference.get(reference.normalizedValue) ?? [];
-+    values.push({ variantId: reference.variantId, displayValue: reference.displayValue });
-+    byReference.set(reference.normalizedValue, values);
++  case "identities:reclassify": {
++    const db = createDatabaseClient();
++    try { console.log(JSON.stringify(await reclassifyIdentities(db, process.argv.includes("--apply")), null, 2)); }
++    finally { await db.$disconnect(); }
++    break;
 +  }
-+  const repeatedReferences = [...byReference.entries()]
-+    .filter(([, values]) => new Set(values.map((value) => value.variantId)).size > 1)
-+    .map(([reference, values]) => ({ reference, variants: values }))
-+    .sort((a, b) => b.variants.length - a.variants.length || a.reference.localeCompare(b.reference));
+   case "import:klickypedia": {
+     const db = createDatabaseClient();
+     const mode = process.argv.includes("--full") ? "full" : "sample";
+@@ -47,6 +54,6 @@ switch (command) {
+     break;
+   }
+   default:
+-    console.error("Usage: pnpm source:audit | pnpm import:klickypedia:index | pnpm import:klickypedia:sample | pnpm import:klickypedia:full | pnpm import:playmobil -- --limit=20 | pnpm report");
++    console.error("Usage: pnpm source:audit | pnpm import:klickypedia:index | pnpm import:klickypedia:sample | pnpm import:klickypedia:full | pnpm import:playmobil -- --limit=20 | pnpm identities:reclassify -- [--apply] | pnpm report");
+     process.exitCode = 1;
+ }
+diff --git a/src/domain/identity.ts b/src/domain/identity.ts
+new file mode 100644
+index 0000000..6063f2f
+--- /dev/null
++++ b/src/domain/identity.ts
+@@ -0,0 +1,198 @@
++import { createHash } from "node:crypto";
++import type { ParsedReference } from "./reference.js";
++import type { RawCollectible } from "../importers/types.js";
 +
++export type ReferenceIdentityClass = "ASSIGNED" | "PLACEHOLDER" | "REUSED" | "AMBIGUOUS";
++export type IdentityRelationship = "MATCH" | "DISTINCT" | "AMBIGUOUS";
++
++export interface IdentitySnapshot {
++  id?: string;
++  productId?: string;
++  productKey?: string;
++  variantKey?: string;
++  name: string | null;
++  releaseYear: number | null;
++  themes: string[];
++  productKind?: string | null;
++  format?: string | null;
++  referenceClass?: ReferenceIdentityClass;
++}
++
++const comparable = (value: string | undefined | null) => value
++  ?.normalize("NFKD")
++  .replace(/\p{Diacritic}/gu, "")
++  .toLowerCase()
++  .replace(/[^a-z0-9]+/g, " ")
++  .trim() || null;
++
++const tokens = (value: string) => new Set(value.split(" ").filter((token) => token.length > 1));
++
++function tokenSimilarity(left: string, right: string): number {
++  const a = tokens(left);
++  const b = tokens(right);
++  if (a.size === 0 || b.size === 0) return left === right ? 1 : 0;
++  const intersection = [...a].filter((token) => b.has(token)).length;
++  return intersection / new Set([...a, ...b]).size;
++}
++
++const qualifierParts = (name: string) => {
++  const match = name.match(/^(.*?)\s*[([]\s*([^\])]+)\s*[)\]]\s*$/);
++  return match?.[1] && match[2]
++    ? { stem: comparable(match[1]), qualifier: comparable(match[2]) }
++    : null;
++};
++
++const kindFamily = (kind?: string | null, format?: string | null) => {
++  const signal = `${kind ?? ""} ${format ?? ""}`.toLowerCase();
++  if (/catalog|catalogue|leaflet/.test(signal)) return "CATALOGUE";
++  if (/magazine|comic|book/.test(signal)) return "PERIODICAL";
++  if (/figure|character/.test(signal)) return "FIGURE";
++  return "OTHER";
++};
++
++const issueDescriptor = (name: string) => name.match(/\b(?:heft|folge|issue|no|nr)\.?\s*\d+\b|\b\d+\/\d{4}\b/i)?.[0]?.toLowerCase() ?? null;
++
++/**
++ * Placeholder detection is intentionally anchored to the complete normalized
++ * value. Legitimate references such as 0001 and 0104-SCH are never matched.
++ */
++export function isPlaceholderReference(value: string): boolean {
++  const normalized = value.normalize("NFKC").replace(/\s+/g, "").toUpperCase();
++  return /^0+(?:V\d+)?(?:-[A-Z0-9-]+)?$/.test(normalized)
++    || /^N\/?A(?:-[A-Z0-9-]+)?$/.test(normalized);
++}
++
++export function stableRecordQualifier(source: string, externalId: string): string {
++  return createHash("sha256").update(`${source}:${externalId}`).digest("hex").slice(0, 16);
++}
++
++export function snapshotFromItem(item: RawCollectible, productKind: string): IdentitySnapshot {
 +  return {
-+    generatedAt: new Date().toISOString(),
-+    summary: {
-+      missingCoreFields: missingCore.length,
-+      suspiciousYears: suspiciousYears.length,
-+      repeatedReferenceValues: repeatedReferences.length,
-+      openConflicts: conflicts.length,
-+      openReviewTasks: reviews.length,
-+      importRunsWithIssues: failedRuns.length,
-+    },
-+    missingCore, suspiciousYears, repeatedReferences, conflicts, reviews,
-+    importRunsWithIssues: failedRuns.map((run) => ({
-+      id: run.id, mode: run.mode, status: run.status, scanned: run.scanned, errors: run.errors,
-+      inaccessible: run.inaccessible, startedAt: run.startedAt, finishedAt: run.finishedAt,
-+      cursor: run.cursor, errorSummary: run.errorSummary,
-+    })),
++    name: item.name ?? null,
++    releaseYear: item.releaseYear ?? null,
++    themes: item.themes ?? (item.theme ? [item.theme] : []),
++    productKind,
++    format: item.format ?? null,
 +  };
 +}
 +
-+export async function buildExportBundle(db: PrismaClient) {
-+  const [coverage, anomalies, sourceRecords, importRuns] = await Promise.all([
-+    buildCoverageReport(db), buildAnomalyReport(db),
-+    db.sourceRecord.findMany({
-+      orderBy: [{ sourceId: "asc" }, { externalId: "asc" }],
-+      select: { source: { select: { key: true } }, externalId: true, sourceUrl: true, contentHash: true, sourceUpdatedAt: true, firstSeenAt: true, lastSeenAt: true, lastCheckedAt: true },
-+    }),
-+    db.importRun.findMany({ orderBy: { startedAt: "asc" } }),
-+  ]);
-+  return { generatedAt: new Date().toISOString(), coverage, anomalies, sourceRecords, importRuns };
++/**
++ * Conservative three-way comparison. MATCH requires aligned positive signals;
++ * DISTINCT requires more than a mere spelling difference. Everything else is
++ * deliberately left AMBIGUOUS for human review.
++ */
++export function compareIdentitySignals(incoming: IdentitySnapshot, existing: IdentitySnapshot): IdentityRelationship {
++  const incomingName = comparable(incoming.name);
++  const existingName = comparable(existing.name);
++  const bothNames = Boolean(incomingName && existingName);
++  const sameName = bothNames && incomingName === existingName;
++  const bothYears = incoming.releaseYear !== null && existing.releaseYear !== null;
++  const sameYear = bothYears && incoming.releaseYear === existing.releaseYear;
++  const yearDiffers = bothYears && !sameYear;
++  const incomingThemes = incoming.themes.map(comparable).filter((value): value is string => Boolean(value));
++  const existingThemes = existing.themes.map(comparable).filter((value): value is string => Boolean(value));
++  const bothThemes = incomingThemes.length > 0 && existingThemes.length > 0;
++  const themesOverlap = bothThemes && incomingThemes.some((theme) => existingThemes.includes(theme));
++  const themesDiffer = bothThemes && !themesOverlap;
++
++  // An identical label alone is not enough: generic names are commonly reused.
++  // Require at least one aligned secondary signal before merging two records.
++  if (sameName && !yearDiffers && !themesDiffer && (sameYear || themesOverlap)) return "MATCH";
++  if (!bothNames) return "AMBIGUOUS";
++
++  const similarity = tokenSimilarity(incomingName!, existingName!);
++  const incomingQualifier = qualifierParts(incoming.name!);
++  const existingQualifier = qualifierParts(existing.name!);
++  const explicitQualifierDiffers = Boolean(
++    incomingQualifier?.stem
++    && incomingQualifier.stem === existingQualifier?.stem
++    && incomingQualifier.qualifier !== existingQualifier.qualifier,
++  );
++  if (explicitQualifierDiffers && (!bothYears || sameYear)) return "DISTINCT";
++
++  const incomingFamily = kindFamily(incoming.productKind, incoming.format);
++  const existingFamily = kindFamily(existing.productKind, existing.format);
++  const sameSpecialFamily = incomingFamily === existingFamily && incomingFamily !== "OTHER";
++  if (sameSpecialFamily && incomingFamily === "FIGURE" && similarity < 0.8) return "DISTINCT";
++  if (sameSpecialFamily && (incomingFamily === "CATALOGUE" || incomingFamily === "PERIODICAL") && yearDiffers) return "DISTINCT";
++  const incomingIssue = issueDescriptor(incoming.name!);
++  const existingIssue = issueDescriptor(existing.name!);
++  if (sameSpecialFamily && incomingFamily === "PERIODICAL" && incomingIssue && existingIssue && incomingIssue !== existingIssue) return "DISTINCT";
++
++  if ((yearDiffers || themesDiffer) && similarity < 0.75) return "DISTINCT";
++  return "AMBIGUOUS";
 +}
++
++export interface IdentityResolution {
++  productKey: string;
++  variantKey: string;
++  matchedCandidate?: IdentitySnapshot;
++  referenceClass: ReferenceIdentityClass;
++  needsReview: boolean;
++  reason: "assigned-reference" | "placeholder-reference" | "reused-reference" | "true-identity-conflict";
++}
++
++export function resolveIdentityKeys(
++  item: RawCollectible,
++  parsed: ParsedReference,
++  candidates: IdentitySnapshot[] = [],
++): IdentityResolution {
++  const defaultProductKey = `ref:${parsed.base}`;
++  const defaultVariantKey = `ref:${parsed.normalized}`;
++  const qualifier = stableRecordQualifier(item.source, item.externalId);
++  const qualified = {
++    productKey: `${defaultProductKey}:record:${qualifier}`,
++    variantKey: `${defaultVariantKey}:record:${qualifier}`,
++  };
++
++  if (isPlaceholderReference(parsed.normalized)) return {
++    ...qualified,
++    referenceClass: "PLACEHOLDER",
++    needsReview: false,
++    reason: "placeholder-reference",
++  };
++  if (candidates.length === 0) return {
++    productKey: defaultProductKey,
++    variantKey: defaultVariantKey,
++    referenceClass: "ASSIGNED",
++    needsReview: false,
++    reason: "assigned-reference",
++  };
++
++  const incoming = snapshotFromItem(item, inferIdentityProductKind(item));
++  const relationships = candidates.map((candidate) => ({ candidate, relationship: compareIdentitySignals(incoming, candidate) }));
++  const matches = relationships.filter(({ relationship }) => relationship === "MATCH");
++  const ambiguous = relationships.filter(({ relationship }) => relationship === "AMBIGUOUS");
++  if (matches.length === 1 && ambiguous.length === 0) {
++    const candidate = matches[0]!.candidate;
++    return {
++      productKey: candidate.productKey ?? defaultProductKey,
++      variantKey: candidate.variantKey ?? defaultVariantKey,
++      matchedCandidate: candidate,
++      referenceClass: candidate.referenceClass === "REUSED" ? "REUSED" : "ASSIGNED",
++      needsReview: false,
++      reason: candidate.referenceClass === "REUSED" ? "reused-reference" : "assigned-reference",
++    };
++  }
++  if (matches.length === 0 && ambiguous.length === 0) return {
++    ...qualified,
++    referenceClass: "REUSED",
++    needsReview: false,
++    reason: "reused-reference",
++  };
++  return {
++    ...qualified,
++    referenceClass: "AMBIGUOUS",
++    needsReview: true,
++    reason: "true-identity-conflict",
++  };
++}
++
++function inferIdentityProductKind(item: RawCollectible): string {
++  const signal = [item.format, ...(item.tags ?? [])].filter(Boolean).join(" ").toLowerCase();
++  if (/catalog/.test(signal)) return "CATALOGUE";
++  if (/merch|sticker|book|magazine|multimedia/.test(signal)) return "MERCHANDISE";
++  if (/promotional|promotion/.test(signal) || item.isPromotion) return "PROMOTIONAL_ITEM";
++  if (/figure/.test(signal)) return "FIGURE";
++  return "SET";
++}
+diff --git a/src/jobs/reclassify-identities.ts b/src/jobs/reclassify-identities.ts
+new file mode 100644
+index 0000000..840a8e9
+--- /dev/null
++++ b/src/jobs/reclassify-identities.ts
+@@ -0,0 +1,158 @@
++import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
++import { compareIdentitySignals, isPlaceholderReference, type IdentitySnapshot, type ReferenceIdentityClass } from "../domain/identity.js";
++
++const json = (value: unknown) => value as Prisma.InputJsonValue;
++
++const precedence: Record<ReferenceIdentityClass, number> = {
++  ASSIGNED: 0,
++  PLACEHOLDER: 1,
++  REUSED: 2,
++  AMBIGUOUS: 3,
++};
++
++export interface IdentityReclassificationResult {
++  dryRun: boolean;
++  referenceRows: number;
++  referenceGroups: number;
++  classifications: Record<ReferenceIdentityClass, number>;
++  reusedReferenceGroups: number;
++  ambiguousReferenceGroups: number;
++  sourceRecordsLinked: number;
++  sourceRecordsUnlinked: number;
++  reviewsResolved: number;
++  reviewsCreated: number;
++  predictedTrueIdentityVariants: number;
++  trueIdentityReviewsOpen: number;
++}
++
++export async function reclassifyIdentities(db: PrismaClient, apply = false): Promise<IdentityReclassificationResult> {
++  const references = await db.productReference.findMany({
++    include: {
++      variant: {
++        select: {
++          id: true, canonicalKey: true, name: true, releaseYear: true, format: true,
++          product: { select: { id: true, canonicalKey: true, kind: true } },
++          themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
++        },
++      },
++    },
++  });
++  const groups = new Map<string, typeof references>();
++  for (const reference of references) {
++    const group = groups.get(reference.normalizedValue) ?? [];
++    group.push(reference);
++    groups.set(reference.normalizedValue, group);
++  }
++
++  const classifications: Record<ReferenceIdentityClass, number> = { ASSIGNED: 0, PLACEHOLDER: 0, REUSED: 0, AMBIGUOUS: 0 };
++  const assignments = new Map<string, { identityClass: ReferenceIdentityClass; identityReason: string }>();
++  const variantClasses = new Map<string, ReferenceIdentityClass>();
++  const ambiguousVariantGroups: string[][] = [];
++  let reusedReferenceGroups = 0;
++  let ambiguousReferenceGroups = 0;
++
++  for (const [normalizedValue, group] of groups) {
++    if (isPlaceholderReference(normalizedValue)) {
++      for (const reference of group) assignments.set(reference.id, { identityClass: "PLACEHOLDER", identityReason: "syntactic-placeholder-reference" });
++      continue;
++    }
++    const distinctVariants = [...new Map(group.map((reference) => [reference.variant.id, reference])).values()];
++    if (distinctVariants.length === 1) {
++      assignments.set(group[0]!.id, { identityClass: "ASSIGNED", identityReason: "unique-assigned-reference" });
++      continue;
++    }
++    const snapshots = distinctVariants.map((reference): IdentitySnapshot => ({
++      id: reference.variant.id,
++      productId: reference.variant.product.id,
++      productKey: reference.variant.product.canonicalKey,
++      variantKey: reference.variant.canonicalKey,
++      name: reference.variant.name,
++      releaseYear: reference.variant.releaseYear,
++      themes: reference.variant.themes.map((row) => row.theme.name),
++      productKind: reference.variant.product.kind,
++      format: reference.variant.format,
++    }));
++    const safelyReused = snapshots.every((snapshot, index) => snapshots
++      .filter((_, otherIndex) => otherIndex !== index)
++      .every((other) => compareIdentitySignals(snapshot, other) === "DISTINCT"));
++    const identityClass: ReferenceIdentityClass = safelyReused ? "REUSED" : "AMBIGUOUS";
++    const identityReason = safelyReused ? "distinct-objects-reuse-reference" : "true-identity-conflict";
++    if (safelyReused) reusedReferenceGroups += 1;
++    else {
++      ambiguousReferenceGroups += 1;
++      ambiguousVariantGroups.push(distinctVariants.map((reference) => reference.variant.id));
++    }
++    for (const reference of group) assignments.set(reference.id, { identityClass, identityReason });
++  }
++
++  for (const reference of references) {
++    const assignment = assignments.get(reference.id) ?? { identityClass: "ASSIGNED" as const, identityReason: "unique-assigned-reference" };
++    classifications[assignment.identityClass] += 1;
++    const previous = variantClasses.get(reference.variantId);
++    if (!previous || precedence[assignment.identityClass] > precedence[previous]) variantClasses.set(reference.variantId, assignment.identityClass);
++  }
++
++  let reviewsResolved = 0;
++  let reviewsCreated = 0;
++  if (apply) await db.$transaction(async (tx) => {
++    for (const [id, assignment] of assignments) await tx.productReference.update({ where: { id }, data: assignment });
++    for (const [variantId, identityClass] of variantClasses) {
++      if (identityClass === "PLACEHOLDER" || identityClass === "REUSED") {
++        const result = await tx.reviewTask.updateMany({
++          where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, status: { in: ["OPEN", "IN_REVIEW"] } },
++          data: {
++            status: "RESOLVED",
++            reason: identityClass === "PLACEHOLDER" ? "placeholder-reference" : "reused-reference",
++            resolvedAt: new Date(),
++            resolutionNote: identityClass === "PLACEHOLDER"
++              ? "Expected non-unique placeholder; SourceRecord-qualified identity retained."
++              : "Reference reuse confirmed by distinct identity signals; variants remain separate.",
++          },
++        });
++        reviewsResolved += result.count;
++      } else if (identityClass === "AMBIGUOUS") {
++        await tx.reviewTask.updateMany({
++          where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, status: { in: ["OPEN", "IN_REVIEW"] } },
++          data: { reason: "true-identity-conflict", resolutionNote: null },
++        });
++      }
++    }
++    // One task represents one ambiguous reference group. Existing tasks are
++    // retained; a missing task is attached to a stable representative variant.
++    for (const variantIds of ambiguousVariantGroups) {
++      const existing = await tx.reviewTask.findFirst({
++        where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: { in: variantIds }, status: { in: ["OPEN", "IN_REVIEW"] } },
++      });
++      if (existing) continue;
++      const variantId = [...variantIds].sort()[0]!;
++      const reference = references.find((row) => row.variantId === variantId);
++      await tx.reviewTask.create({
++        data: {
++          kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variantId, reason: "true-identity-conflict",
++          payload: json({ reference: reference?.displayValue, normalizedReference: reference?.normalizedValue, classification: "AMBIGUOUS", relatedVariantIds: variantIds }),
++        },
++      });
++      reviewsCreated += 1;
++    }
++  });
++
++  const [sourceRecordsLinked, sourceRecordsUnlinked, trueIdentityReviewsOpen] = await Promise.all([
++    db.sourceRecord.count({ where: { recordType: "collectible", variantId: { not: null } } }),
++    db.sourceRecord.count({ where: { recordType: "collectible", variantId: null } }),
++    db.reviewTask.count({ where: { status: "OPEN", kind: "ambiguous-reference", reason: "true-identity-conflict" } }),
++  ]);
++  return {
++    dryRun: !apply,
++    referenceRows: references.length,
++    referenceGroups: groups.size,
++    classifications,
++    reusedReferenceGroups,
++    ambiguousReferenceGroups,
++    sourceRecordsLinked,
++    sourceRecordsUnlinked,
++    reviewsResolved,
++    reviewsCreated,
++    predictedTrueIdentityVariants: [...variantClasses.values()].filter((identityClass) => identityClass === "AMBIGUOUS").length,
++    trueIdentityReviewsOpen,
++  };
++}
+diff --git a/src/pipeline/import-record.ts b/src/pipeline/import-record.ts
+index 320fe68..4d799fe 100644
+--- a/src/pipeline/import-record.ts
++++ b/src/pipeline/import-record.ts
+@@ -1,6 +1,7 @@
+ import { createHash } from "node:crypto";
+ import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
+-import { canonicalProductKey, canonicalVariantKey, parseReference } from "../domain/reference.js";
++import { parseReference } from "../domain/reference.js";
++import { resolveIdentityKeys, type IdentitySnapshot } from "../domain/identity.js";
+ import { resolveCandidates } from "../domain/resolver.js";
+ import { klickypediaThemeSlug } from "../importers/klickypedia.js";
+ import type { RawCollectible } from "../importers/types.js";
+@@ -8,7 +9,7 @@ import type { RawCollectible } from "../importers/types.js";
+ const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+ const json = (value: unknown) => value as Prisma.InputJsonValue;
+ 
+-function inferProductKind(item: RawCollectible) {
++export function inferProductKind(item: RawCollectible) {
+   const signal = [item.format, ...(item.tags ?? [])].filter(Boolean).join(" ").toLowerCase();
+   if (/catalog/.test(signal)) return "CATALOGUE" as const;
+   if (/merch|sticker|book|magazine|multimedia/.test(signal)) return "MERCHANDISE" as const;
+@@ -25,41 +26,6 @@ function variantKind(signal: ReturnType<typeof parseReference>["signal"], item:
+   return "STANDARD" as const;
+ }
+ 
+-type ExistingIdentity = { name: string | null; releaseYear: number | null; themes: Array<{ theme: { name: string } }> };
+-
+-const comparable = (value: string | undefined | null) => value?.normalize("NFKD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim() || null;
+-
+-/**
+- * Some Klickypedia objects deliberately share placeholder references such as
+- * `0000` and `00000`. Those values are valid display references, but they are
+- * not globally unique identities. We retain the reference and derive a stable,
+- * source-record-qualified identity instead of silently merging unrelated items.
+- */
+-export function resolveIdentityKeys(
+-  item: RawCollectible,
+-  parsed: ReturnType<typeof parseReference>,
+-  existing?: ExistingIdentity | null,
+-) {
+-  const productKey = canonicalProductKey(parsed);
+-  const variantKey = canonicalVariantKey(parsed);
+-  const placeholderReference = /^0+$/.test(parsed.base);
+-  const existingTheme = existing?.themes.find((row) => comparable(row.theme.name) === comparable(item.theme))?.theme.name
+-    ?? existing?.themes[0]?.theme.name;
+-  const nameDiffers = Boolean(existing?.name && item.name && comparable(existing.name) !== comparable(item.name));
+-  const yearDiffers = Boolean(existing?.releaseYear && item.releaseYear && existing.releaseYear !== item.releaseYear);
+-  const themeDiffers = Boolean(existingTheme && item.theme && comparable(existingTheme) !== comparable(item.theme));
+-  const materiallyDifferent = Boolean(existing && nameDiffers && (yearDiffers || themeDiffers));
+-  if (!placeholderReference && !materiallyDifferent) return { productKey, variantKey, ambiguous: false, reason: null };
+-
+-  const qualifier = createHash("sha256").update(`${item.source}:${item.externalId}`).digest("hex").slice(0, 16);
+-  return {
+-    productKey: `${productKey}:record:${qualifier}`,
+-    variantKey: `${variantKey}:record:${qualifier}`,
+-    ambiguous: true,
+-    reason: placeholderReference ? "non-unique-placeholder-reference" : "conflicting-identity-signals",
+-  };
+-}
+-
+ const sourceFacts = (item: RawCollectible) => [
+   ["reference", item.reference],
+   ["name", item.locale ? undefined : item.name],
+@@ -116,12 +82,46 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
+   const previous = await db.sourceRecord.findUnique({ where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } } });
+ 
+   return db.$transaction(async (tx) => {
+-    const defaultVariantKey = canonicalVariantKey(parsed);
+-    const existingIdentity = await tx.productVariant.findUnique({
+-      where: { canonicalKey: defaultVariantKey },
+-      select: { name: true, releaseYear: true, themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } } },
++    const record = await tx.sourceRecord.upsert({
++      where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } },
++      create: { sourceId: source.id, externalId: item.externalId, sourceUrl: item.sourceUrl, recordType: "collectible", rawPayload: json(item.raw), contentHash: hash, sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
++      update: { sourceUrl: item.sourceUrl, rawPayload: json(item.raw), contentHash: hash, lastSeenAt: new Date(), lastCheckedAt: new Date(), sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
+     });
+-    const identity = resolveIdentityKeys(item, parsed, existingIdentity);
++    const candidateRows = record.variantId
++      ? await tx.productVariant.findMany({ where: { id: record.variantId }, select: {
++        id: true, productId: true, canonicalKey: true, name: true, releaseYear: true, format: true,
++        product: { select: { canonicalKey: true, kind: true } },
++        themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
++        references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
++      } })
++      : await tx.productVariant.findMany({ where: { references: { some: { normalizedValue: parsed.normalized } } }, select: {
++        id: true, productId: true, canonicalKey: true, name: true, releaseYear: true, format: true,
++        product: { select: { canonicalKey: true, kind: true } },
++        themes: { select: { theme: { select: { name: true } } }, orderBy: { isPrimary: "desc" } },
++        references: { where: { normalizedValue: parsed.normalized }, take: 1, select: { identityClass: true } },
++      } });
++    const candidates: IdentitySnapshot[] = candidateRows.map((candidate) => ({
++      id: candidate.id,
++      productId: candidate.productId,
++      productKey: candidate.product.canonicalKey,
++      variantKey: candidate.canonicalKey,
++      name: candidate.name,
++      releaseYear: candidate.releaseYear,
++      themes: candidate.themes.map((row) => row.theme.name),
++      productKind: candidate.product.kind,
++      format: candidate.format,
++      referenceClass: candidate.references[0]?.identityClass ?? "ASSIGNED",
++    }));
++    const identity = record.variantId && candidates[0]
++      ? {
++        productKey: candidates[0].productKey!, variantKey: candidates[0].variantKey!, matchedCandidate: candidates[0],
++        referenceClass: candidates[0].referenceClass ?? "ASSIGNED", needsReview: false as const,
++        reason: candidates[0].referenceClass === "PLACEHOLDER" ? "placeholder-reference" as const
++          : candidates[0].referenceClass === "REUSED" ? "reused-reference" as const
++            : candidates[0].referenceClass === "AMBIGUOUS" ? "true-identity-conflict" as const
++              : "assigned-reference" as const,
++      }
++      : resolveIdentityKeys(item, parsed, candidates);
+     const product = await tx.product.upsert({
+       where: { canonicalKey: identity.productKey },
+       create: { canonicalKey: identity.productKey, baseReference: parsed.base, kind: inferProductKind(item), name: item.name ?? null, releaseYear: item.releaseYear ?? null, discontinuedYear: item.discontinuedYear ?? null },
+@@ -152,26 +152,26 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
+         lastSeenAt: new Date(), lastCheckedAt: new Date(),
+       },
+     });
+-    if (identity.ambiguous) {
++    if (identity.needsReview) {
+       const existingReview = await tx.reviewTask.findFirst({ where: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variant.id, status: "OPEN" } });
+       if (!existingReview) await tx.reviewTask.create({
+         data: {
+           kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variant.id,
+-          reason: identity.reason ?? "ambiguous-reference",
++          reason: "true-identity-conflict",
+           payload: json({ reference: item.reference, source: item.source, externalId: item.externalId, sourceUrl: item.sourceUrl }),
+         },
+       });
+     }
+     await tx.productReference.upsert({
+       where: { variantId_normalizedValue: { variantId: variant.id, normalizedValue: parsed.normalized } },
+-      create: { variantId: variant.id, displayValue: parsed.display, normalizedValue: parsed.normalized, baseValue: parsed.base, suffix: parsed.suffix, isPrimary: true, sourceId: source.id },
+-      update: { displayValue: parsed.display, sourceId: source.id },
++      create: { variantId: variant.id, displayValue: parsed.display, normalizedValue: parsed.normalized, baseValue: parsed.base, suffix: parsed.suffix, isPrimary: true, sourceId: source.id, identityClass: identity.referenceClass, identityReason: identity.reason },
++      update: { displayValue: parsed.display, sourceId: source.id, identityClass: identity.referenceClass, identityReason: identity.reason },
+     });
+-    const record = await tx.sourceRecord.upsert({
+-      where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } },
+-      create: { sourceId: source.id, externalId: item.externalId, sourceUrl: item.sourceUrl, recordType: "collectible", rawPayload: json(item.raw), contentHash: hash, sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
+-      update: { sourceUrl: item.sourceUrl, rawPayload: json(item.raw), contentHash: hash, lastSeenAt: new Date(), lastCheckedAt: new Date(), sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
++    if (identity.referenceClass === "REUSED") await tx.productReference.updateMany({
++      where: { normalizedValue: parsed.normalized, identityClass: { not: "AMBIGUOUS" } },
++      data: { identityClass: "REUSED", identityReason: "reused-reference" },
+     });
++    await tx.sourceRecord.update({ where: { id: record.id }, data: { variantId: variant.id } });
+ 
+     await tx.sourceValue.deleteMany({ where: { sourceRecordId: record.id } });
+     const fields: string[] = [];
 diff --git a/src/report/coverage.ts b/src/report/coverage.ts
-index f58d3bf..ea35db9 100644
+index f58d3bf..7cf06cd 100644
 --- a/src/report/coverage.ts
 +++ b/src/report/coverage.ts
-@@ -8,6 +8,7 @@ export async function buildCoverageReport(db: PrismaClient) {
+@@ -7,12 +7,13 @@ export async function buildCoverageReport(db: PrismaClient) {
+   const [
      products, variants, sourceRecords, referenceRows, names, namesFr, years, discontinued, themes, mainImages, boxFront, boxBack,
      instructions, figureCounts, pieceCounts, linkedParts, fullPartsInventory, openConflicts, openReviews, sourceStats, yearRows, sourceReferenceValues,
-     productKinds, variantKinds, promotions, exclusives, variantPartRows,
-+    translations, mediaAssets, instructionRows, figureRows, partRows, variantFigureRows,
+-    productKinds, variantKinds, promotions, exclusives, variantPartRows,
++    productKinds, variantKinds, promotions, exclusives, variantPartRows, referenceIdentityKinds, linkedRecordsByVariant,
++    unlinkedSourceRecords, openReviewsByReason,
    ] = await Promise.all([
      db.product.count(),
      db.productVariant.count(),
-@@ -36,6 +37,12 @@ export async function buildCoverageReport(db: PrismaClient) {
+     db.sourceRecord.count({ where: { recordType: "collectible" } }),
+-    db.productReference.findMany({ select: { normalizedValue: true, variantId: true } }),
++    db.productReference.findMany({ select: { normalizedValue: true, variantId: true, identityClass: true } }),
+     db.productVariant.count({ where: { OR: [{ name: { not: null } }, { translations: { some: { name: { not: null } } } }] } }),
+     db.productVariant.count({ where: { translations: { some: { locale: "fr", name: { not: null } } } } }),
+     db.productVariant.count({ where: { releaseYear: { not: null } } }),
+@@ -36,10 +37,24 @@ export async function buildCoverageReport(db: PrismaClient) {
      db.productVariant.count({ where: { isPromotion: true } }),
      db.productVariant.count({ where: { isExclusive: true } }),
      db.variantPart.count(),
-+    db.variantTranslation.count(),
-+    db.mediaAsset.count(),
-+    db.instruction.count(),
-+    db.figure.count(),
-+    db.part.count(),
-+    db.variantFigure.count(),
++    db.productReference.groupBy({ by: ["identityClass"], _count: { _all: true } }),
++    db.sourceRecord.groupBy({ by: ["variantId"], where: { recordType: "collectible", variantId: { not: null } }, _count: { _all: true } }),
++    db.sourceRecord.count({ where: { recordType: "collectible", variantId: null } }),
++    db.reviewTask.groupBy({ by: ["reason"], where: { status: "OPEN" }, _count: { _all: true } }),
    ]);
  
    const normalizedReferenceCount = new Set(referenceRows.map((row) => row.normalizedValue)).size;
-@@ -66,6 +73,13 @@ export async function buildCoverageReport(db: PrismaClient) {
+   const referencedVariants = new Set(referenceRows.map((row) => row.variantId)).size;
++  const deduplicatedSourceRecords = linkedRecordsByVariant.reduce((total, row) => total + Math.max(0, row._count._all - 1), 0);
++  const referenceGroups = new Map<string, { variants: Set<string>; classes: Set<string> }>();
++  for (const row of referenceRows) {
++    const group = referenceGroups.get(row.normalizedValue) ?? { variants: new Set<string>(), classes: new Set<string>() };
++    group.variants.add(row.variantId);
++    group.classes.add(row.identityClass);
++    referenceGroups.set(row.normalizedValue, group);
++  }
++  const reusedReferenceGroups = [...referenceGroups.values()].filter((group) => group.variants.size > 1 && group.classes.has("REUSED")).length;
++  const ambiguousReferenceGroups = [...referenceGroups.values()].filter((group) => group.variants.size > 1 && group.classes.has("AMBIGUOUS")).length;
+ 
+   const decadeMap = new Map<number, number>();
+   for (const row of yearRows) if (row.releaseYear) decadeMap.set(Math.floor(row.releaseYear / 10) * 10, (decadeMap.get(Math.floor(row.releaseYear / 10) * 10) ?? 0) + 1);
+@@ -62,9 +77,17 @@ export async function buildCoverageReport(db: PrismaClient) {
+       products,
+       variants,
+       collectibleObjects: variants,
+-      duplicatesMerged: Math.max(0, sourceRecords - variants),
++      // Kept for report compatibility, but now counts only additional source
++      // records explicitly linked to an already represented variant.
++      duplicatesMerged: deduplicatedSourceRecords,
++      deduplicatedSourceRecords,
++      unlinkedSourceRecords,
        openConflicts,
        openReviewTasks: openReviews,
++      openReviewTasksByReason: Object.fromEntries(openReviewsByReason.map((row) => [row.reason, row._count._all])),
++      referenceIdentityClasses: Object.fromEntries(referenceIdentityKinds.map((row) => [row.identityClass, row._count._all])),
++      reusedReferenceGroups,
++      ambiguousReferenceGroups,
        referencesOnlyInOneSource: onlyOneSource,
-+      translations,
-+      images: mediaAssets,
-+      instructions: instructionRows,
-+      figures: figureRows,
-+      parts: partRows,
-+      variantFigureRelations: variantFigureRows,
-+      variantPartRelations: variantPartRows,
      },
      coverage: [
-       metric("reference", referencedVariants, variants), metric("name", names, variants), metric("name_fr", namesFr, variants),
-diff --git a/tests/parsers.test.ts b/tests/parsers.test.ts
-index f2058ca..63a6fc5 100644
---- a/tests/parsers.test.ts
-+++ b/tests/parsers.test.ts
-@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
- import { parseKlickypediaSet } from "../src/importers/klickypedia.js";
- import { parsePlaymobilProduct } from "../src/importers/playmobil.js";
- import { parsePlaymoDbStats } from "../src/importers/playmodb.js";
-+import { selectBatchEntries } from "../src/jobs/import-klickypedia.js";
- 
- const fixture = (name: string) => readFileSync(fileURLToPath(new URL(`./fixtures/${name}`, import.meta.url)), "utf8");
- 
-@@ -28,3 +29,19 @@ describe("source parsers", () => {
-     expect(parsePlaymoDbStats(`<body>Sets: now 7718 sets in the database Parts: now 68711 parts in the database, appearing in 6023 sets Who's that Klicky? now 7706 klickies annotated</body>`)).toEqual({ sets: 7718, parts: 68711, inventoriedSets: 6023, figures: 7706 });
-   });
- });
+diff --git a/tests/identity-reclassification.test.ts b/tests/identity-reclassification.test.ts
+new file mode 100644
+index 0000000..e074aaa
+--- /dev/null
++++ b/tests/identity-reclassification.test.ts
+@@ -0,0 +1,101 @@
++import { mkdtemp, rm } from "node:fs/promises";
++import { tmpdir } from "node:os";
++import { join } from "node:path";
++import { afterEach, describe, expect, it } from "vitest";
++import { createEmbeddedDatabaseClient } from "../src/db/embedded.js";
++import { reclassifyIdentities } from "../src/jobs/reclassify-identities.js";
++import { importRecord } from "../src/pipeline/import-record.js";
 +
-+describe("sequential import batches", () => {
-+  const entries = Array.from({ length: 14_466 }, (_, index) => ({ loc: `https://example.test/sets/${index}/` }));
++const directories: string[] = [];
++afterEach(async () => {
++  await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })));
++});
 +
-+  it("covers the complete sitemap exactly once in eight 1,900-entry batches", () => {
-+    const batches = Array.from({ length: 8 }, (_, index) => selectBatchEntries(entries, index * 1_900, 1_900));
-+    const urls = batches.flat().map((entry) => entry.loc);
-+    expect(urls).toHaveLength(14_466);
-+    expect(new Set(urls).size).toBe(14_466);
-+    expect(batches.map((batch) => batch.length)).toEqual([1_900, 1_900, 1_900, 1_900, 1_900, 1_900, 1_900, 1_166]);
++describe("identity reclassification", () => {
++  it("resolves expected placeholders and reused references without deleting variants", async () => {
++    const directory = await mkdtemp(join(tmpdir(), "playmobil-identity-"));
++    directories.push(directory);
++    const { db, database } = await createEmbeddedDatabaseClient(directory);
++    try {
++      const source = await db.source.create({ data: { key: "test", name: "Test", baseUrl: "https://example.test", kind: "COMMUNITY_DATABASE" } });
++      const theme = await db.theme.create({ data: { slug: "police", name: "Police" } });
++      const createVariant = async (key: string, reference: string, name: string, releaseYear: number | null, kind: "SET" | "FIGURE" | "CATALOGUE" = "SET") => {
++        const product = await db.product.create({ data: { canonicalKey: `${key}:product`, baseReference: reference, kind } });
++        const variant = await db.productVariant.create({ data: { canonicalKey: key, productId: product.id, name, releaseYear } });
++        await db.productReference.create({ data: { variantId: variant.id, displayValue: reference, normalizedValue: reference.toUpperCase(), isPrimary: true, sourceId: source.id } });
++        return variant;
++      };
++      const old3133 = await createVariant("ref:3133", "3133", "Go karts", 1980);
++      const new3133 = await createVariant("ref:3133:record:new", "3133", "Special Edition 25 Years Pirates", 2003);
++      const placeholder = await createVariant("ref:00000:record:a", "00000", "Knight", null);
++      const police = await createVariant("ref:1234", "1234", "Police car", 2001);
++      const policeNearMatch = await createVariant("ref:1234:record:b", "1234", "Police car set", 2001);
++      await db.variantTheme.createMany({ data: [
++        { variantId: police.id, themeId: theme.id, isPrimary: true },
++        { variantId: policeNearMatch.id, themeId: theme.id, isPrimary: true },
++      ] });
++      for (const variant of [new3133, placeholder, policeNearMatch]) await db.reviewTask.create({
++        data: { kind: "ambiguous-reference", entityType: "ProductVariant", entityId: variant.id, reason: "conflicting-identity-signals" },
++      });
++
++      const dryRun = await reclassifyIdentities(db, false);
++      expect(dryRun).toMatchObject({ dryRun: true, reusedReferenceGroups: 1, ambiguousReferenceGroups: 1, reviewsResolved: 0 });
++      expect(await db.reviewTask.count({ where: { status: "OPEN" } })).toBe(3);
++
++      const applied = await reclassifyIdentities(db, true);
++      expect(applied).toMatchObject({ dryRun: false, reusedReferenceGroups: 1, ambiguousReferenceGroups: 1, reviewsResolved: 2 });
++      expect(await db.productVariant.count()).toBe(5);
++      expect(await db.product.count()).toBe(5);
++      expect(await db.productReference.count({ where: { identityClass: "REUSED" } })).toBe(2);
++      expect(await db.productReference.count({ where: { identityClass: "PLACEHOLDER" } })).toBe(1);
++      expect(await db.productReference.count({ where: { identityClass: "AMBIGUOUS" } })).toBe(2);
++      expect(await db.reviewTask.count({ where: { status: "OPEN", reason: "true-identity-conflict" } })).toBe(1);
++      expect(await db.reviewTask.count({ where: { status: "RESOLVED" } })).toBe(2);
++      expect(await db.productVariant.findUnique({ where: { id: old3133.id } })).not.toBeNull();
++    } finally {
++      await db.$disconnect();
++      await database.close();
++    }
 +  });
 +
-+  it("caps an accidental oversized batch at 2,000 pages", () => {
-+    expect(selectBatchEntries(entries, 0, 9_000)).toHaveLength(2_000);
++  it("keeps a SourceRecord attached to the same variant across changed reimports", async () => {
++    const directory = await mkdtemp(join(tmpdir(), "playmobil-identity-resume-"));
++    directories.push(directory);
++    const { db, database } = await createEmbeddedDatabaseClient(directory);
++    try {
++      await db.source.create({
++        data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" },
++      });
++      const first = await importRecord(db, {
++        source: "klickypedia",
++        externalId: "https://www.klickypedia.com/sets/5555-farm/",
++        sourceUrl: "https://www.klickypedia.com/sets/5555-farm/",
++        reference: "5555",
++        name: "Farm",
++        releaseYear: 1990,
++        theme: "Farm",
++        raw: { version: 1 },
++      });
++      const second = await importRecord(db, {
++        source: "klickypedia",
++        externalId: "https://www.klickypedia.com/sets/5555-farm/",
++        sourceUrl: "https://www.klickypedia.com/sets/5555-farm/",
++        reference: "5555",
++        name: "Farm corrected",
++        releaseYear: 1991,
++        theme: "Country",
++        raw: { version: 2 },
++      });
++
++      expect(second.variantId).toBe(first.variantId);
++      expect(await db.productVariant.count()).toBe(1);
++      expect(await db.reviewTask.count()).toBe(0);
++      const record = await db.sourceRecord.findFirstOrThrow();
++      expect(record.variantId).toBe(first.variantId);
++      expect(record.contentHash).not.toBeNull();
++    } finally {
++      await db.$disconnect();
++      await database.close();
++    }
 +  });
 +});
+diff --git a/tests/reference.test.ts b/tests/reference.test.ts
+index 318d9b2..228635b 100644
+--- a/tests/reference.test.ts
++++ b/tests/reference.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, expect, it } from "vitest";
+ import { canonicalProductKey, parseReference } from "../src/domain/reference.js";
+-import { resolveIdentityKeys } from "../src/pipeline/import-record.js";
++import { isPlaceholderReference, resolveIdentityKeys, type IdentitySnapshot } from "../src/domain/identity.js";
+ 
+ describe("parseReference", () => {
+   it.each([
+@@ -31,24 +31,68 @@ describe("resolveIdentityKeys", () => {
+   it("never merges distinct placeholder references", () => {
+     const first = resolveIdentityKeys(item("00000", "catalogue-1974"), parseReference("00000"));
+     const second = resolveIdentityKeys(item("00000", "stickers-2000"), parseReference("00000"));
+-    expect(first.ambiguous).toBe(true);
++    expect(first.needsReview).toBe(false);
+     expect(first.variantKey).not.toBe(second.variantKey);
+-    expect(first.reason).toBe("non-unique-placeholder-reference");
++    expect(first).toMatchObject({ referenceClass: "PLACEHOLDER", reason: "placeholder-reference" });
++  });
++
++  it.each(["0", "00", "0000", "00000", "0-ger", "0-gre", "0000v1-esp", "0000v2-esp", "N/A", "N/A-ita"])(
++    "classifies %s as an anchored placeholder",
++    (reference) => expect(isPlaceholderReference(reference)).toBe(true),
++  );
++
++  it.each(["0001", "0104-sch", "10000", "N-A", "PM0000"])(
++    "does not misclassify legitimate-looking reference %s",
++    (reference) => expect(isPlaceholderReference(reference)).toBe(false),
++  );
++
++  const candidate = (overrides: Partial<IdentitySnapshot> = {}): IdentitySnapshot => ({
++    id: "existing", productId: "product", productKey: "ref:1234", variantKey: "ref:1234",
++    name: "Example", releaseYear: 2000, themes: ["Example theme"], productKind: "SET", format: "Set",
++    referenceClass: "ASSIGNED", ...overrides,
+   });
+ 
+   it("keeps ordinary duplicate records on the same canonical variant", () => {
+-    const resolved = resolveIdentityKeys(item("70733v1", "70733-01-gymnast", "Gymnast"), parseReference("70733v1"), {
+-      name: "Gymnast", releaseYear: 2021, themes: [{ theme: { name: "Figures" } }],
+-    });
+-    expect(resolved).toMatchObject({ variantKey: "ref:70733V1", ambiguous: false });
+-  });
+-
+-  it("separates an exact reference when several identity signals disagree", () => {
+-    const resolved = resolveIdentityKeys({ ...item("1234", "different-object", "Space Set"), releaseYear: 2002, theme: "Space" }, parseReference("1234"), {
+-      name: "Farm Set", releaseYear: 1991, themes: [{ theme: { name: "Farm" } }],
+-    });
+-    expect(resolved.ambiguous).toBe(true);
+-    expect(resolved.reason).toBe("conflicting-identity-signals");
++    const resolved = resolveIdentityKeys({ ...item("70733v1", "70733-01-gymnast", "Gymnast"), releaseYear: 2021, theme: "Figures" }, parseReference("70733v1"), [candidate({
++      productKey: "ref:70733", variantKey: "ref:70733V1", name: "Gymnast", releaseYear: 2021, themes: ["Figures"],
++    })]);
++    expect(resolved).toMatchObject({ variantKey: "ref:70733V1", needsReview: false, referenceClass: "ASSIGNED" });
++  });
++
++  it("classifies 3133 in 1980 and 2003 as a reused reference", () => {
++    const resolved = resolveIdentityKeys({ ...item("3133", "3133-special-edition", "Special Edition 25 Years Pirates"), releaseYear: 2003, theme: "Pirates" }, parseReference("3133"), [candidate({
++      productKey: "ref:3133", variantKey: "ref:3133", name: "Go karts", releaseYear: 1980, themes: ["Racing"],
++    })]);
++    expect(resolved).toMatchObject({ referenceClass: "REUSED", needsReview: false, reason: "reused-reference" });
++    expect(resolved.variantKey).toMatch(/^ref:3133:record:/);
++  });
++
++  it("classifies 30803590-ger character names as reused figure identities", () => {
++    const resolved = resolveIdentityKeys({ ...item("30803590-ger", "captain", "Captain"), releaseYear: 2000, theme: "Pirates", format: "Figures" }, parseReference("30803590-ger"), [candidate({
++      productKey: "ref:30803590", variantKey: "ref:30803590-GER", name: "Clown", releaseYear: 2000, themes: ["Circus"], productKind: "FIGURE", format: "Figures",
++    })]);
++    expect(resolved).toMatchObject({ referenceClass: "REUSED", needsReview: false });
++  });
++
++  it("classifies 30840256-ger catalogues from different years as reused", () => {
++    const resolved = resolveIdentityKeys({ ...item("30840256-ger", "catalogue-2022", "Main Catalogue 2022"), releaseYear: 2022, format: "Catalogue" }, parseReference("30840256-ger"), [candidate({
++      productKey: "ref:30840256", variantKey: "ref:30840256-GER", name: "Main Catalogue 2004", releaseYear: 2004, themes: [], productKind: "CATALOGUE", format: "Catalogue",
++    })]);
++    expect(resolved).toMatchObject({ referenceClass: "REUSED", needsReview: false });
++  });
++
++  it("uses explicit red/green qualifiers as distinct signals for 30825013-ger", () => {
++    const resolved = resolveIdentityKeys({ ...item("30825013-ger", "share-smile-red", "Playmobil Share the Smile 40º (red)"), releaseYear: 2014 }, parseReference("30825013-ger"), [candidate({
++      productKey: "ref:30825013", variantKey: "ref:30825013-GER", name: "Playmobil Share the Smile 40º (green)", releaseYear: 2014, themes: [],
++    })]);
++    expect(resolved).toMatchObject({ referenceClass: "REUSED", needsReview: false });
++  });
++
++  it("keeps a genuinely ambiguous near-match in human review", () => {
++    const resolved = resolveIdentityKeys({ ...item("1234", "police-car-set", "Police car set"), releaseYear: 2001, theme: "Police" }, parseReference("1234"), [candidate({
++      name: "Police car", releaseYear: 2001, themes: ["Police"],
++    })]);
++    expect(resolved).toMatchObject({ referenceClass: "AMBIGUOUS", needsReview: true, reason: "true-identity-conflict" });
+     expect(resolved.variantKey).toMatch(/^ref:1234:record:/);
+   });
+ });
 -- 
 2.51.1
 
