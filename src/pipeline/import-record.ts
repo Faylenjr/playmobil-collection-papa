@@ -81,6 +81,7 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
   const parsed = parseReference(item.reference);
   const source = await db.source.findUniqueOrThrow({ where: { key: item.source } });
   const hash = item.contentHash ?? digest(item.raw);
+  const productImages = (item.images ?? []).filter((candidate) => !isGenericSourceMedia(candidate.url));
   const previous = await db.sourceRecord.findUnique({ where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } } });
 
   return db.$transaction(async (tx) => {
@@ -88,6 +89,11 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
       where: { sourceId_externalId: { sourceId: source.id, externalId: item.externalId } },
       create: { sourceId: source.id, externalId: item.externalId, sourceUrl: item.sourceUrl, recordType: "collectible", rawPayload: json(item.raw), contentHash: hash, sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
       update: { sourceUrl: item.sourceUrl, rawPayload: json(item.raw), contentHash: hash, lastSeenAt: new Date(), lastCheckedAt: new Date(), sourceUpdatedAt: item.sourceUpdatedAt ? new Date(item.sourceUpdatedAt) : null },
+    });
+    for (const image of productImages) await tx.sourceMediaObservation.upsert({
+      where: { sourceRecordId_sourceUrl_kind: { sourceRecordId: record.id, sourceUrl: image.url, kind: image.kind } },
+      create: { sourceRecordId: record.id, sourceUrl: image.url, kind: image.kind, pageContentHash: hash },
+      update: { observedAt: new Date(), pageContentHash: hash },
     });
     const candidateRows = record.variantId
       ? await tx.productVariant.findMany({ where: { id: record.variantId }, select: {
@@ -226,7 +232,7 @@ export async function importRecord(db: PrismaClient, item: RawCollectible): Prom
       await tx.variantMarket.upsert({ where: { variantId_marketId: { variantId: variant.id, marketId: market.id } }, create: { variantId: variant.id, marketId: market.id }, update: {} });
     }
 
-    for (const image of (item.images ?? []).filter((candidate) => !isGenericSourceMedia(candidate.url))) await tx.mediaAsset.upsert({
+    for (const image of productImages) await tx.mediaAsset.upsert({
       where: { variantId_sourceUrl: { variantId: variant.id, sourceUrl: image.url } },
       create: { variantId: variant.id, sourceId: source.id, kind: image.kind, sourceUrl: image.url, author: image.author ?? null, copyrightOwner: image.copyrightOwner ?? null, license: image.license ?? null, canDisplay: image.canDisplay ?? null, canRehost: image.canRehost ?? null, lastVerifiedAt: new Date() },
       update: { kind: image.kind, ...(image.author !== undefined ? { author: image.author } : {}), ...(image.copyrightOwner !== undefined ? { copyrightOwner: image.copyrightOwner } : {}), ...(image.license !== undefined ? { license: image.license } : {}), ...(image.canDisplay !== undefined ? { canDisplay: image.canDisplay } : {}), ...(image.canRehost !== undefined ? { canRehost: image.canRehost } : {}), lastVerifiedAt: new Date() },

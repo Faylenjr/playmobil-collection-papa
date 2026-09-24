@@ -29,6 +29,12 @@ La valeur canonique est recalculée par priorité de source sans perdre l'opinio
 
 `media_assets` et `instructions` ne supposent aucun droit de réhébergement. `can_rehost` et `can_display` sont tri-états : `NULL` signifie non vérifié, pas autorisé. L'URL source, l'auteur, le titulaire du copyright, la licence et la dernière vérification sont conservés.
 
+`source_media_observations` est la couche de provenance many-to-many en amont des assets
+canoniques. Une ligne affirme uniquement qu'un `SourceRecord` a effectivement référencé une URL
+avec un type donné, à une date donnée et depuis un contenu de page identifié par hash. Plusieurs
+fiches peuvent observer la même URL. Cette table ne déclare jamais à elle seule qu'un média
+appartient exclusivement à une variante et aucun backfill n'est déduit des relations historiques.
+
 ## Évolutivité
 
 Le schéma contient déjà les figures, pièces, marchés, thèmes, traductions, collections et wishlists. Ces tables ne justifient toutefois pas encore un import massif tant que leurs règles de correspondance ne sont pas validées.

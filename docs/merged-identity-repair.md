@@ -63,12 +63,19 @@ reste donc idempotente même lorsque la distinction reposait sur les traductions
 
 ## Relations historiques sans provenance
 
-Le schéma historique ne relie pas `MediaAsset`, `Instruction`, `VariantFigure` ou `VariantPart`
-à un `SourceRecord`. Les anciens payloads Klickypedia conservent seulement des compteurs, pas
-les listes d'URL ou d'entités. Le job refuse donc d'inventer une attribution :
+Le schéma historique ne reliait pas `MediaAsset`, `Instruction`, `VariantFigure` ou `VariantPart`
+à un `SourceRecord`. Le modèle additif `SourceMediaObservation` conserve désormais le fait
+source « cette fiche a référencé cette URL et ce type de média », sans déclarer que le média
+canonique appartient exclusivement à ce variant. Le job refuse toujours d'inventer une
+attribution :
 
-- un média ou une notice est déplaçable seulement si son `sourceId` n'apparaît que dans un seul
-  cluster du groupe ;
+- un média réel est attribuable seulement si au moins un `SourceMediaObservation` appartenant
+  aux `SourceRecord` du groupe prouve son URL ;
+- plusieurs observations dans un même cluster produisent un seul asset canonique dans ce
+  cluster ;
+- si plusieurs clusters ont explicitement observé la même URL, chacun reçoit un asset. Cette
+  duplication est prouvée et conserve les métadonnées historiques ;
+- une notice reste déplaçable seulement si son `sourceId` n'apparaît que dans un seul cluster ;
 - toute figurine, pièce, relation Product correspondante, collection ou wishlist ambiguë bloque
   le groupe concerné ;
 - le dry-run conserve `DISTINCT / CONSISTENT / SPLIT`, mais ajoute par groupe
@@ -97,18 +104,26 @@ ID. La reconnaissance est une égalité exacte ; aucun motif fondé sur `logo`, 
 l'extension ou `/wp-content/` n'est utilisé. Le parser et le pipeline d'import empêchent sa
 matérialisation lors des futurs imports, sans nettoyer les lignes historiques.
 
-### Évolution recommandée des futurs imports
+### Enrichissement ciblé de la provenance
 
-Une future migration additive devrait introduire `MediaAsset.sourceRecordId?` et
-`Instruction.sourceRecordId?`, ainsi qu'une provenance équivalente (colonne ou table de lien)
-pour `VariantFigure` et `VariantPart`. Les importeurs devront renseigner ces liens au moment de
-l'ingestion. Aucun backfill historique ne doit inventer un `sourceRecordId` : les anciennes
-lignes restent bloquantes tant qu'une provenance certaine n'a pas été collectée ou validée
-humainement.
+```bash
+pnpm media:enrich-source-provenance -- \
+  --plan reports/merged-identity-audit-v2.json
+```
+
+La commande est en dry-run par défaut. Elle réexécute le preflight, sélectionne seulement les
+groupes `SPLIT` encore `BLOCKED_UNATTRIBUTED_RELATIONS`, puis visite uniquement leurs
+`SourceRecord` Klickypedia. Elle n'utilise ni sitemap ni découverte de liens. `--apply` insère
+les observations prouvées avec `skipDuplicates`, sans modifier les variants, assets, conflits,
+revues ou hashes historiques. Une URL actuelle absente des `MediaAsset` est signalée dans
+`newMediaObserved`, mais n'est pas matérialisée comme asset canonique.
+
+La provenance équivalente pour `Instruction`, `VariantFigure` et `VariantPart` reste une
+évolution ultérieure. Aucun backfill ne devra inventer son origine.
 
 ## Transaction
 
 Tous les groupes éligibles sont appliqués dans une transaction unique avec un timeout de 120
 secondes et un verrou `pg_advisory_xact_lock`. Une collision ou une erreur sur le dernier groupe
-éligible annule les précédents. Aucune migration de schéma n'est requise par cette version
-conservatrice.
+éligible annule les précédents. La provenance média nécessite la migration additive
+`20260923230000_source_media_observations` avant le prochain preflight.

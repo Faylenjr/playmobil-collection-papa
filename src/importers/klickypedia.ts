@@ -86,6 +86,30 @@ export async function listKlickypediaSetUrls(client = new PoliteHttpClient()): P
   return entries;
 }
 
+function extractKlickypediaImages($: CheerioAPI, article: Cheerio<any>, sourceUrl: string): NonNullable<RawCollectible["images"]> {
+  const seenImages = new Set<string>();
+  const images: NonNullable<RawCollectible["images"]> = [];
+  const addImage = (kind: string, url?: string) => {
+    if (!url) return;
+    const normalized = absoluteUrl(url, sourceUrl);
+    if (normalized.includes("summary-sets-images") || isGenericSourceMedia(normalized) || seenImages.has(normalized)) return;
+    seenImages.add(normalized);
+    images.push({ kind, url: normalized, copyrightOwner: "unknown — review required", canRehost: false });
+  };
+  addImage("main", article.find(".set_image").first().closest("a").attr("href") ?? $("meta[property='og:image']").attr("content"));
+  article.find("a[rel^='lightbox[set]']").each((_, element) => {
+    const anchor = $(element);
+    const label = clean(`${anchor.attr("title") ?? ""} ${anchor.find("img").attr("title") ?? ""} ${anchor.find("img").attr("alt") ?? ""}`).toLowerCase();
+    addImage(/\bback\b|rear/.test(label) ? "box_back" : /\bbox\b|front/.test(label) ? "box_front" : "gallery", anchor.attr("href"));
+  });
+  return images;
+}
+
+export function parseKlickypediaMedia(html: string, sourceUrl: string): NonNullable<RawCollectible["images"]> {
+  const $ = load(html);
+  return extractKlickypediaImages($, $("article.type-sets").first(), sourceUrl);
+}
+
 export function parseKlickypediaSet(html: string, sourceUrl: string, contentHash = createHash("sha256").update(html).digest("hex")): RawCollectible {
   const $ = load(html);
   const article = $("article.type-sets").first();
@@ -114,21 +138,7 @@ export function parseKlickypediaSet(html: string, sourceUrl: string, contentHash
   const markets = marketField.links.filter((href) => href.includes("/export-markets/")).map((href) => decodeURIComponent(new URL(href, sourceUrl).pathname.split("/").filter(Boolean).at(-1) ?? "")).filter(Boolean);
   if (markets.length === 0 && marketField.text) markets.push(...marketField.text.split(/[,/]/).map(clean).filter((value) => value && !/^none$/i.test(value)));
 
-  const seenImages = new Set<string>();
-  const images: NonNullable<RawCollectible["images"]> = [];
-  const addImage = (kind: string, url?: string) => {
-    if (!url) return;
-    const normalized = absoluteUrl(url, sourceUrl);
-    if (normalized.includes("summary-sets-images") || isGenericSourceMedia(normalized) || seenImages.has(normalized)) return;
-    seenImages.add(normalized);
-    images.push({ kind, url: normalized, copyrightOwner: "unknown — review required", canRehost: false });
-  };
-  addImage("main", article.find(".set_image").first().closest("a").attr("href") ?? $("meta[property='og:image']").attr("content"));
-  article.find("a[rel^='lightbox[set]']").each((_, element) => {
-    const anchor = $(element);
-    const label = clean(`${anchor.attr("title") ?? ""} ${anchor.find("img").attr("title") ?? ""} ${anchor.find("img").attr("alt") ?? ""}`).toLowerCase();
-    addImage(/\bback\b|rear/.test(label) ? "box_back" : /\bbox\b|front/.test(label) ? "box_front" : "gallery", anchor.attr("href"));
-  });
+  const images = extractKlickypediaImages($, article, sourceUrl);
 
   const instructions = article.find("a[href]").map((_, element) => {
     const anchor = $(element);

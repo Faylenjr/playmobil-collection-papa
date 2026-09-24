@@ -372,26 +372,41 @@ model Source {
 }
 
 model SourceRecord {
-  id              String          @id @default(uuid()) @db.Uuid
-  sourceId        String          @map("source_id") @db.Uuid
-  variantId       String?         @map("variant_id") @db.Uuid
-  externalId      String          @map("external_id")
-  sourceUrl       String          @map("source_url")
-  recordType      String          @map("record_type")
-  rawPayload      Json?           @map("raw_payload")
-  contentHash     String          @map("content_hash")
-  sourceUpdatedAt DateTime?       @map("source_updated_at")
-  firstSeenAt     DateTime        @default(now()) @map("first_seen_at")
-  lastSeenAt      DateTime        @default(now()) @map("last_seen_at")
-  lastCheckedAt   DateTime        @default(now()) @map("last_checked_at")
-  source          Source          @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  variant         ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  values          SourceValue[]
+  id                String                   @id @default(uuid()) @db.Uuid
+  sourceId          String                   @map("source_id") @db.Uuid
+  variantId         String?                  @map("variant_id") @db.Uuid
+  externalId        String                   @map("external_id")
+  sourceUrl         String                   @map("source_url")
+  recordType        String                   @map("record_type")
+  rawPayload        Json?                    @map("raw_payload")
+  contentHash       String                   @map("content_hash")
+  sourceUpdatedAt   DateTime?                @map("source_updated_at")
+  firstSeenAt       DateTime                 @default(now()) @map("first_seen_at")
+  lastSeenAt        DateTime                 @default(now()) @map("last_seen_at")
+  lastCheckedAt     DateTime                 @default(now()) @map("last_checked_at")
+  source            Source                   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  variant           ProductVariant?          @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  values            SourceValue[]
+  mediaObservations SourceMediaObservation[]
 
   @@unique([sourceId, externalId])
   @@index([contentHash])
   @@index([variantId])
   @@map("source_records")
+}
+
+model SourceMediaObservation {
+  id              String       @id @default(uuid()) @db.Uuid
+  sourceRecordId  String       @map("source_record_id") @db.Uuid
+  sourceUrl       String       @map("source_url")
+  kind            String
+  observedAt      DateTime     @default(now()) @map("observed_at")
+  pageContentHash String?      @map("page_content_hash")
+  sourceRecord    SourceRecord @relation(fields: [sourceRecordId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceRecordId, sourceUrl, kind])
+  @@index([sourceUrl])
+  @@map("source_media_observations")
 }
 
 model SourceValue {

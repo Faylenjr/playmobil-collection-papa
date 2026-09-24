@@ -77,6 +77,8 @@ PGLITE_DIR=./.data/pglite pnpm report:embedded
 | `pnpm identities:audit-merged` | Audite en lecture seule les variants ayant plusieurs SourceRecords |
 | `pnpm identities:repair-merged -- --plan <rapport.json>` | Valide en lecture seule un plan de réparation des merges historiques |
 | `pnpm identities:repair-merged -- --plan <rapport.json> --apply` | Applique atomiquement les groupes éligibles et laisse inchangés ceux dont les relations sont sans provenance |
+| `pnpm media:enrich-source-provenance -- --plan <rapport.json>` | Récupère en dry-run uniquement les pages des groupes SPLIT bloqués et mesure leur provenance média |
+| `pnpm media:enrich-source-provenance -- --plan <rapport.json> --apply` | Enregistre uniquement les observations média prouvées par les pages ciblées |
 | `pnpm report` | Calcule la couverture réelle de PostgreSQL |
 
 ## Documentation

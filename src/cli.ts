@@ -9,6 +9,7 @@ import { reclassifyIdentities } from "./jobs/reclassify-identities.js";
 import { auditMergedIdentities } from "./jobs/audit-merged-identities.js";
 import { repairMergedIdentities } from "./jobs/repair-merged-identities.js";
 import { loadMergedRepairPlan } from "./domain/merged-repair-plan.js";
+import { enrichSourceMediaProvenance } from "./jobs/enrich-source-media-provenance.js";
 
 const command = process.argv[2];
 
@@ -73,6 +74,20 @@ switch (command) {
     } finally { await db.$disconnect(); }
     break;
   }
+  case "media:enrich-source-provenance": {
+    const planFlagIndex = process.argv.findIndex((argument) => argument === "--plan");
+    const inlinePlan = process.argv.find((argument) => argument.startsWith("--plan="))?.slice("--plan=".length);
+    const planPath = inlinePlan ?? (planFlagIndex >= 0 ? process.argv[planFlagIndex + 1] : undefined);
+    if (!planPath || planPath.startsWith("--")) throw new Error("media:enrich-source-provenance requires --plan <audit-report.json>");
+    const plan = await loadMergedRepairPlan(planPath);
+    const db = createDatabaseClient();
+    try {
+      console.log(JSON.stringify(await enrichSourceMediaProvenance(db, plan, {
+        apply: process.argv.includes("--apply"),
+      }), null, 2));
+    } finally { await db.$disconnect(); }
+    break;
+  }
   case "import:klickypedia": {
     const db = createDatabaseClient();
     const mode = process.argv.includes("--full") ? "full" : "sample";
@@ -97,6 +112,6 @@ switch (command) {
     break;
   }
   default:
-    console.error("Usage: pnpm source:audit | pnpm import:klickypedia:index | pnpm import:klickypedia:sample | pnpm import:klickypedia:full | pnpm import:playmobil -- --limit=20 | pnpm identities:reclassify -- [--apply] | pnpm identities:audit-merged | pnpm identities:repair-merged -- --plan <report.json> [--apply] | pnpm report");
+    console.error("Usage: pnpm source:audit | pnpm import:klickypedia:index | pnpm import:klickypedia:sample | pnpm import:klickypedia:full | pnpm import:playmobil -- --limit=20 | pnpm identities:reclassify -- [--apply] | pnpm identities:audit-merged | pnpm identities:repair-merged -- --plan <report.json> [--apply] | pnpm media:enrich-source-provenance -- --plan <report.json> [--apply] | pnpm report");
     process.exitCode = 1;
 }

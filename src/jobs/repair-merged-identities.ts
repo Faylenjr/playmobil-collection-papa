@@ -11,13 +11,13 @@ const REPAIR_ADVISORY_LOCK = 7_074_337_231;
 const REPAIR_LOCKED_TABLES = [
   "source_records", "source_values", "products", "product_variants", "product_references",
   "translations", "variant_translations", "themes", "product_themes", "variant_themes",
-  "markets", "variant_markets", "media_assets", "instructions", "variant_figures", "variant_parts",
+  "markets", "variant_markets", "media_assets", "source_media_observations", "instructions", "variant_figures", "variant_parts",
   "product_figures", "product_parts", "collection_items", "wishlist_items",
   "conflicts", "conflict_values", "review_tasks",
 ].join(", ");
 
 type RepairReadClient = Pick<Prisma.TransactionClient,
-  "sourceRecord" | "sourceValue" | "productVariant" | "product" | "conflict" | "reviewTask" | "mediaAsset" | "instruction"
+  "sourceRecord" | "sourceValue" | "productVariant" | "product" | "conflict" | "reviewTask" | "mediaAsset" | "instruction" | "sourceMediaObservation"
 >;
 
 export interface MergedRepairExpectedCounts {
@@ -67,6 +67,7 @@ export interface MergedRepairReport {
   reviewTasksExpectedToChange: number;
   canonicalRekeysPlanned: number;
   mediaAssetsToMove: number;
+  mediaAssetsToDuplicate: number;
   instructionsToMove: number;
   genericMediaIgnored: number;
   relationAttributionBlockers: RelationAttributionBlocker[];
@@ -79,6 +80,7 @@ export interface MergedRepairReport {
   conflictsResolved: number;
   conflictsCreated: number;
   canonicalRekeysApplied: number;
+  mediaAssetsDuplicated: number;
 }
 
 export interface UnattributableRelationCounts {
@@ -122,7 +124,7 @@ interface ExpectedGroup {
   clusters: ExpectedCluster[];
   state: "PENDING" | "APPLIED";
   blockers: RelationAttributionBlocker[];
-  mediaAssignments: RelationAssignment[];
+  mediaDistributions: MediaDistribution[];
   instructionAssignments: RelationAssignment[];
   genericMediaIgnored: number;
 }
@@ -131,6 +133,7 @@ interface CurrentSourceRecord extends RebuildSourceRecord {
   variantId: string | null;
   externalId: string;
   contentHash: string;
+  mediaObservations: Array<{ sourceUrl: string }>;
 }
 
 interface RelationAssignment {
@@ -139,11 +142,29 @@ interface RelationAssignment {
   targetClusterId: string;
 }
 
+interface MediaDistribution {
+  media: {
+    id: string;
+    sourceId: string;
+    kind: string;
+    sourceUrl: string;
+    author: string | null;
+    copyrightOwner: string | null;
+    license: string | null;
+    canRehost: boolean | null;
+    canDisplay: boolean | null;
+    lastVerifiedAt: Date | null;
+    contentHash: string | null;
+  };
+  currentVariantId: string;
+  targetClusterIds: string[];
+}
+
 interface RepairInspection {
   currentVariantCount: number;
   groups: ExpectedGroup[];
   blockers: RelationAttributionBlocker[];
-  mediaAssignments: RelationAssignment[];
+  mediaDistributions: MediaDistribution[];
   instructionAssignments: RelationAssignment[];
   sourceRecordsToMove: number;
   sourceValuesToReassign: number;
@@ -234,6 +255,7 @@ async function inspectRepairState(
           include: { source: { select: { key: true } } },
           orderBy: [{ field: "asc" }, { retrievedAt: "desc" }],
         },
+        mediaObservations: { select: { sourceUrl: true } },
       },
     }),
     db.productVariant.findMany({
@@ -241,7 +263,11 @@ async function inspectRepairState(
       select: {
         id: true, productId: true, canonicalKey: true,
         product: { select: { id: true, canonicalKey: true, _count: { select: { variants: true, figures: true, parts: true } } } },
-        media: { select: { id: true, sourceId: true, sourceUrl: true } },
+        media: { select: {
+          id: true, sourceId: true, kind: true, sourceUrl: true, author: true,
+          copyrightOwner: true, license: true, canRehost: true, canDisplay: true,
+          lastVerifiedAt: true, contentHash: true,
+        } },
         instructions: { select: { id: true, sourceId: true } },
         figures: { select: { figureId: true } },
         parts: { select: { partId: true } },
@@ -274,7 +300,7 @@ async function inspectRepairState(
     }).sort((left, right) => compareText(left.stableAnchor, right.stableAnchor));
     clusters[0]!.retainsVariantId = true;
     clusters[0]!.targetVariantId = detail.currentVariantId;
-    return { plan: detail, clusters, state: "PENDING", blockers: [], mediaAssignments: [], instructionAssignments: [], genericMediaIgnored: 0 };
+    return { plan: detail, clusters, state: "PENDING", blockers: [], mediaDistributions: [], instructionAssignments: [], genericMediaIgnored: 0 };
   });
 
   const expectedVariantKeys = expectedGroups.flatMap((group) => group.clusters.map((cluster) => cluster.keys.variantKey));
@@ -331,11 +357,17 @@ async function inspectRepairState(
         group.genericMediaIgnored += 1;
         continue;
       }
-      const clusterId = targetBySource.get(media.sourceId);
-      if (clusterId) {
-        const assignment = { id: media.id, currentVariantId: current.id, targetClusterId: clusterId };
-        group.mediaAssignments.push(assignment);
-      } else group.blockers.push({ currentVariantId: current.id, relation: "MediaAsset", count: 1, reason: "Its Source is represented in multiple clusters; no SourceRecord provenance exists." });
+      const targetClusterIds = group.clusters
+        .filter((cluster) => cluster.records.some((record) => record.mediaObservations.some((observation) => observation.sourceUrl === media.sourceUrl)))
+        .map((cluster) => cluster.id);
+      if (targetClusterIds.length > 0) {
+        group.mediaDistributions.push({ media, currentVariantId: current.id, targetClusterIds });
+      } else group.blockers.push({
+        currentVariantId: current.id,
+        relation: "MediaAsset",
+        count: 1,
+        reason: "No SourceMediaObservation from this SPLIT group proves which cluster referenced this URL.",
+      });
     }
     for (const instruction of current.instructions) {
       const clusterId = targetBySource.get(instruction.sourceId);
@@ -372,7 +404,7 @@ async function inspectRepairState(
     currentVariantCount,
     groups: expectedGroups,
     blockers: compactBlockers,
-    mediaAssignments: eligibleGroups.flatMap((group) => group.mediaAssignments),
+    mediaDistributions: eligibleGroups.flatMap((group) => group.mediaDistributions),
     instructionAssignments: eligibleGroups.flatMap((group) => group.instructionAssignments),
     sourceRecordsToMove: nonAnchorRecords.length,
     sourceValuesToReassign: nonAnchorRecords.reduce((total, record) => total + record.values.length, 0),
@@ -436,7 +468,8 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
     conflictsExpectedToResolve: inspection.conflictsExpectedToResolve,
     reviewTasksExpectedToChange: 0,
     canonicalRekeysPlanned: inspection.canonicalRekeysPlanned,
-    mediaAssetsToMove: inspection.mediaAssignments.length,
+    mediaAssetsToMove: inspection.mediaDistributions.length,
+    mediaAssetsToDuplicate: inspection.mediaDistributions.reduce((total, distribution) => total + Math.max(0, distribution.targetClusterIds.length - 1), 0),
     instructionsToMove: inspection.instructionAssignments.length,
     genericMediaIgnored: inspection.groups.reduce((total, group) => total + group.genericMediaIgnored, 0),
     relationAttributionBlockers: inspection.blockers,
@@ -449,6 +482,7 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
     conflictsResolved: 0,
     conflictsCreated: 0,
     canonicalRekeysApplied: 0,
+    mediaAssetsDuplicated: 0,
   };
 }
 
@@ -501,6 +535,7 @@ export async function repairMergedIdentities(
     let conflictsResolved = 0;
     let conflictsCreated = 0;
     let canonicalRekeysApplied = 0;
+    let mediaAssetsDuplicated = 0;
     let completedGroups = 0;
 
     for (const group of eligibleGroups) {
@@ -563,9 +598,36 @@ export async function repairMergedIdentities(
         canonicalRekeysApplied += 1;
       }
 
-      for (const assignment of group.mediaAssignments) {
-        const variantId = targetVariantByCluster.get(`${group.plan.currentVariantId}\0${assignment.targetClusterId}`);
-        if (variantId) await tx.mediaAsset.update({ where: { id: assignment.id }, data: { variantId } });
+      for (const distribution of group.mediaDistributions) {
+        const orderedTargets = group.clusters.filter((cluster) => distribution.targetClusterIds.includes(cluster.id));
+        const retainedTarget = orderedTargets.find((cluster) => cluster.retainsVariantId) ?? orderedTargets[0];
+        if (!retainedTarget) throw new Error(`Media distribution has no target for ${distribution.media.sourceUrl}`);
+        const retainedVariantId = targetVariantByCluster.get(`${group.plan.currentVariantId}\0${retainedTarget.id}`);
+        if (!retainedVariantId) throw new Error(`Missing target variant for media ${distribution.media.sourceUrl}`);
+        await tx.mediaAsset.update({ where: { id: distribution.media.id }, data: { variantId: retainedVariantId } });
+        for (const cluster of orderedTargets) {
+          if (cluster.id === retainedTarget.id) continue;
+          const variantId = targetVariantByCluster.get(`${group.plan.currentVariantId}\0${cluster.id}`);
+          if (!variantId) throw new Error(`Missing target variant for duplicated media ${distribution.media.sourceUrl}`);
+          await tx.mediaAsset.upsert({
+            where: { variantId_sourceUrl: { variantId, sourceUrl: distribution.media.sourceUrl } },
+            create: {
+              variantId,
+              sourceId: distribution.media.sourceId,
+              kind: distribution.media.kind,
+              sourceUrl: distribution.media.sourceUrl,
+              author: distribution.media.author,
+              copyrightOwner: distribution.media.copyrightOwner,
+              license: distribution.media.license,
+              canRehost: distribution.media.canRehost,
+              canDisplay: distribution.media.canDisplay,
+              lastVerifiedAt: distribution.media.lastVerifiedAt,
+              contentHash: distribution.media.contentHash,
+            },
+            update: {},
+          });
+          mediaAssetsDuplicated += 1;
+        }
       }
       for (const assignment of group.instructionAssignments) {
         const variantId = targetVariantByCluster.get(`${group.plan.currentVariantId}\0${assignment.targetClusterId}`);
@@ -593,6 +655,7 @@ export async function repairMergedIdentities(
         conflictsResolved,
         conflictsCreated,
         canonicalRekeysApplied,
+        mediaAssetsDuplicated,
       },
     };
   }, { timeout: REPAIR_TRANSACTION_TIMEOUT_MS, maxWait: 10_000 });

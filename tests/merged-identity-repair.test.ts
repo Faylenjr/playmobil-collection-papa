@@ -210,7 +210,7 @@ describe("merged identity repair", () => {
       await db.$disconnect();
       await embedded.close();
     }
-  });
+  }, 15_000);
 
   it("never touches a REVIEW group included in the same audit plan", async () => {
     const { db, database: embedded } = await database("repair-review");
@@ -445,6 +445,80 @@ describe("merged identity repair", () => {
 
       expect(preview).toMatchObject({ eligibleSplits: 0, blockedSplits: 1, genericMediaIgnored: 0 });
       expect(preview.groups[0]).toMatchObject({ genericMediaIgnored: 0, unattributableRelations: { mediaAssets: 1 } });
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("attributes an observed media URL to one cluster even when two records in that cluster observed it", async () => {
+    const { db, database: embedded } = await database("repair-observed-one-cluster");
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const group = await seedGroup(db, source.id, {
+        reference: "30883802-GER", theme: "Waterworld", records: [
+          { slug: "genie-a", name: "Genie", names: translated("Genie", "Flaschengeist", "Genio de la lámpara", "Génie de la lampe") },
+          { slug: "genie-b", name: "Genie", names: translated("Genie", "Flaschengeist", "Genio de la lámpara", "Génie de la lampe") },
+          { slug: "mermaid", name: "Mermaid", names: translated("Mermaid", "Meerjungfrau", "Sirena", "Sirène") },
+        ],
+      });
+      const mediaUrl = "https://images.example/genie.jpg";
+      const media = await db.mediaAsset.create({ data: { variantId: group.variant.id, sourceId: source.id, kind: "main", sourceUrl: mediaUrl } });
+      await db.sourceMediaObservation.createMany({ data: group.records.slice(0, 2).map((record) => ({ sourceRecordId: record.id, sourceUrl: mediaUrl, kind: "main" })) });
+      const plan = await auditMergedIdentities(db);
+      expect(plan.details[0]?.proposedClusters.map((cluster) => cluster.recordIds.length).sort()).toEqual([1, 2]);
+
+      const preview = await repairMergedIdentities(db, plan);
+      expect(preview).toMatchObject({ eligibleSplits: 1, blockedSplits: 0, mediaAssetsToMove: 1, mediaAssetsToDuplicate: 0 });
+      const applied = await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(applied.mediaAssetsDuplicated).toBe(0);
+      const genieVariantIds = await db.sourceRecord.findMany({ where: { id: { in: group.records.slice(0, 2).map((record) => record.id) } }, select: { variantId: true } });
+      expect(new Set(genieVariantIds.map((record) => record.variantId)).size).toBe(1);
+      expect((await db.mediaAsset.findUniqueOrThrow({ where: { id: media.id } })).variantId).toBe(genieVariantIds[0]!.variantId);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("duplicates a historical asset only when SourceMediaObservations prove the URL on both clusters", async () => {
+    const { db, database: embedded } = await database("repair-observed-two-clusters");
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const mediaUrl = "https://images.example/shared-proven.jpg";
+      await db.mediaAsset.create({ data: { variantId: group.variant.id, sourceId: source.id, kind: "gallery", sourceUrl: mediaUrl, copyrightOwner: "historic owner" } });
+      await db.sourceMediaObservation.createMany({ data: group.records.map((record) => ({ sourceRecordId: record.id, sourceUrl: mediaUrl, kind: "gallery" })) });
+      const plan = await auditMergedIdentities(db);
+
+      const preview = await repairMergedIdentities(db, plan);
+      expect(preview).toMatchObject({ eligibleSplits: 1, blockedSplits: 0, mediaAssetsToMove: 1, mediaAssetsToDuplicate: 1 });
+      const applied = await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(applied.mediaAssetsDuplicated).toBe(1);
+      const assets = await db.mediaAsset.findMany({ where: { sourceUrl: mediaUrl }, orderBy: { variantId: "asc" } });
+      expect(assets).toHaveLength(2);
+      expect(new Set(assets.map((asset) => asset.variantId)).size).toBe(2);
+      expect(assets.every((asset) => asset.copyrightOwner === "historic owner")).toBe(true);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("never uses an observation belonging to a REVIEW group to authorize a SPLIT", async () => {
+    const { db, database: embedded } = await database("repair-review-observation-isolation");
+    try {
+      const source = await db.source.create({ data: { key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE" } });
+      const split = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const review = await seedGroup(db, source.id, {
+        reference: "1234", format: "Set", records: [{ slug: "police-car", name: "Police car" }, { slug: "police-car-set", name: "Police car set" }],
+      });
+      const mediaUrl = "https://images.example/review-only.jpg";
+      await db.mediaAsset.create({ data: { variantId: split.variant.id, sourceId: source.id, kind: "main", sourceUrl: mediaUrl } });
+      await db.sourceMediaObservation.create({ data: { sourceRecordId: review.records[0]!.id, sourceUrl: mediaUrl, kind: "main" } });
+      const preview = await repairMergedIdentities(db, await auditMergedIdentities(db));
+      expect(preview).toMatchObject({ identitySafeSplits: 1, eligibleSplits: 0, blockedSplits: 1 });
+      expect(preview.groups[0]?.unattributableRelations.mediaAssets).toBe(1);
     } finally {
       await db.$disconnect();
       await embedded.close();

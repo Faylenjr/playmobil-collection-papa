@@ -26,6 +26,7 @@
     "identities:reclassify": "pnpm --silent build && node dist/src/cli.js identities:reclassify",
     "identities:audit-merged": "pnpm --silent build && node dist/src/cli.js identities:audit-merged",
     "identities:repair-merged": "pnpm --silent build && node dist/src/cli.js identities:repair-merged",
+    "media:enrich-source-provenance": "pnpm --silent build && node dist/src/cli.js media:enrich-source-provenance",
     "report:embedded": "pnpm --silent build && node dist/src/embedded-cli.js report",
     "report": "pnpm --silent build && node dist/src/cli.js report"
   },
