@@ -1,46 +1,44 @@
 import { Prisma } from "../generated/prisma/client";
 
 /**
- * Explainable collector-first ranking. It deliberately uses only catalogue
- * facts: product kind, size, figures, commercial reference and format words.
+ * Collector importance is an ordinal category, not a popularity score.
+ * The catalogue orders by this category first and by release date second.
+ * Production data is sparse, so this uses only present catalogue facts.
  */
 export const collectorPrioritySql = Prisma.sql`
-  (CASE p."kind"::text
-    WHEN 'SET' THEN 100
-    WHEN 'PROMOTIONAL_ITEM' THEN 45
-    WHEN 'MERCHANDISE' THEN 35
-    WHEN 'CATALOGUE' THEN 25
-    WHEN 'FIGURE' THEN 10
-    WHEN 'ACCESSORY' THEN 0
-    WHEN 'PART' THEN -20
-    ELSE 15
-  END)
-  + (CASE
-      WHEN pv."piece_count" >= 300 THEN 40
-      WHEN pv."piece_count" >= 150 THEN 30
-      WHEN pv."piece_count" >= 75 THEN 20
-      WHEN pv."piece_count" >= 20 THEN 10
-      WHEN pv."piece_count" BETWEEN 1 AND 4 THEN -12
-      ELSE 0
-    END)
-  + (CASE
-      WHEN pv."figure_count" >= 4 THEN 12
-      WHEN pv."figure_count" >= 2 THEN 7
-      ELSE 0
-    END)
-  + (CASE WHEN pv."variant_kind"::text IN ('BOX', 'EDITION', 'REISSUE') THEN 8 ELSE 0 END)
-  + (CASE
-      WHEN LOWER(COALESCE(pv."format", '')) ~ '(large|box|boxed|building|vehicle|playset|set)' THEN 12
-      WHEN LOWER(COALESCE(pv."format", '')) ~ '(figure|animal)' THEN -15
-      WHEN LOWER(COALESCE(pv."format", '')) ~ '(part|accessor)' THEN -22
-      ELSE 0
-    END)
-  + (CASE WHEN EXISTS (
+  CASE
+    WHEN NOT EXISTS (
       SELECT 1 FROM "product_references" pr
       WHERE pr."variant_id" = pv."id"
         AND pr."identity_class"::text = 'ASSIGNED'
         AND pr."normalized_value" !~ '^(0+|N/?A)'
-    ) THEN 15 ELSE -20 END)
+    ) THEN 0
+    WHEN p."kind"::text = 'PART'
+      OR LOWER(COALESCE(pv."format", '')) ~ '(part|spare)' THEN 10
+    WHEN p."kind"::text IN ('ACCESSORY', 'MERCHANDISE', 'CATALOGUE', 'PROMOTIONAL_ITEM')
+      OR LOWER(COALESCE(pv."format", '')) ~ '(accessor|keychain|puzzle|magazin|catalog|calendar|decoration|pillow|bag|easter egg)'
+      OR LOWER(COALESCE(pv."name", p."name", '')) ~ '(^|[^a-z])(accessories|accessory|extension|fence|replacement|spare parts|furniture|rock landscape|rock form|supplement)([^a-z]|$)' THEN 20
+    WHEN (
+        p."kind"::text = 'FIGURE'
+        OR LOWER(COALESCE(pv."format", '')) ~ '(animal)'
+        OR LOWER(COALESCE(pv."name", p."name", '')) ~ '^(animal|animals|horse|horses|pony|ponies|cow|cows|pig|pigs|sheep|lamb|rabbit|bunny|dog|dogs|cat|cats|chicken|chickens|duck|ducks|goat|goats|deer|fox|foxes)([^a-z]|$)'
+      )
+      AND LOWER(CONCAT_WS(' ', pv."format", COALESCE(pv."name", p."name"))) ~ '(^|[^a-z])(animal|animals|horse|horses|pony|ponies|cow|cows|pig|pigs|sheep|lamb|rabbit|bunny|dog|dogs|cat|cats|chicken|chickens|duck|ducks|goat|goats|deer|fox|foxes)([^a-z]|$)'
+      AND COALESCE(pv."figure_count", 0) <= 1 THEN 30
+    WHEN p."kind"::text = 'FIGURE'
+      OR LOWER(COALESCE(pv."format", '')) ~ '(figures|singleklicky|playmo-friends|duo pack|special|blister)' THEN 40
+    WHEN pv."piece_count" >= 300
+      OR LOWER(COALESCE(pv."name", p."name", '')) ~ '(^|[^a-z])(large|grand|mega)([^a-z]|$)'
+      OR LOWER(COALESCE(pv."name", p."name", '')) ~ '(^|[^a-z])(superset|super set|mega-set|mega set|complete set)([^a-z]|$)' THEN 100
+    WHEN pv."piece_count" >= 150
+      OR LOWER(COALESCE(pv."name", p."name", '')) ~ '(^|[^a-z])(castle|farmhouse|barn|hospital|school|station|headquarters|fort|fortress|house|home|restaurant|hotel|zoo|playground|playset|camp|market|room|ward|tower|palace|ranch|harbour|harbor|airport|stable|shop)([^a-z]|$)' THEN 90
+    WHEN pv."piece_count" >= 75
+      OR LOWER(COALESCE(pv."name", p."name", '')) ~ '(^|[^a-z])(train|ship|boat|truck|helicopter|ambulance|tractor|carriage|wagon|vehicle|camper|motorhome|bus|van|car|plane|aircraft|bulldozer|excavator|loader|crane|fire engine)([^a-z]|$)' THEN 80
+    WHEN LOWER(COALESCE(pv."name", p."name", '')) ~ '(^|[^a-z])(my figures|figure|figures|farmer|shepherd|policeman|policewoman|fireman|firefighter|doctor|nurse|cowboy|knight|princess|child|children|girl|boy|man|woman|family)([^a-z]|$)' THEN 40
+    WHEN pv."piece_count" >= 20 OR pv."figure_count" >= 4 THEN 70
+    WHEN p."kind"::text = 'SET' THEN 60
+    ELSE 50
+  END
 `;
 
 export type RankingFacts = {
@@ -49,36 +47,48 @@ export type RankingFacts = {
   figureCount?: number | null;
   variantKind?: string | null;
   format?: string | null;
+  name?: string | null;
+  productName?: string | null;
   hasAssignedReference?: boolean;
 };
 
-export function explainCollectorPriority(facts: RankingFacts) {
-  const reasons: string[] = [];
-  const kindScores = { SET: 100, PROMOTIONAL_ITEM: 45, MERCHANDISE: 35, CATALOGUE: 25, UNKNOWN: 15, FIGURE: 10, ACCESSORY: 0, PART: -20 };
-  let score = kindScores[facts.productKind];
-  reasons.push(`type ${facts.productKind}: ${score >= 0 ? "+" : ""}${score}`);
+type RankingExplanation = { score: number; category: string; reasons: string[] };
 
-  const pieces = facts.pieceCount ?? 0;
-  const pieceScore = pieces >= 300 ? 40 : pieces >= 150 ? 30 : pieces >= 75 ? 20 : pieces >= 20 ? 10 : pieces >= 1 && pieces <= 4 ? -12 : 0;
-  score += pieceScore;
-  if (pieceScore) reasons.push(`taille: ${pieceScore > 0 ? "+" : ""}${pieceScore}`);
-
-  const figures = facts.figureCount ?? 0;
-  const figureScore = figures >= 4 ? 12 : figures >= 2 ? 7 : 0;
-  score += figureScore;
-  if (figureScore) reasons.push(`figurines incluses: +${figureScore}`);
-
-  const variantScore = ["BOX", "EDITION", "REISSUE"].includes(facts.variantKind ?? "") ? 8 : 0;
-  score += variantScore;
-  if (variantScore) reasons.push("édition commerciale: +8");
-
+export function explainCollectorPriority(facts: RankingFacts): RankingExplanation {
+  const name = (facts.name ?? facts.productName ?? "").toLowerCase();
   const format = (facts.format ?? "").toLowerCase();
-  const formatScore = /(large|box|boxed|building|vehicle|playset|set)/.test(format) ? 12 : /(figure|animal)/.test(format) ? -15 : /(part|accessor)/.test(format) ? -22 : 0;
-  score += formatScore;
-  if (formatScore) reasons.push(`format: ${formatScore > 0 ? "+" : ""}${formatScore}`);
+  const pieces = facts.pieceCount ?? 0;
+  const figures = facts.figureCount ?? 0;
+  const result = (score: number, category: string, reason: string): RankingExplanation => ({ score, category, reasons: [reason] });
 
-  const referenceScore = facts.hasAssignedReference ? 15 : -20;
-  score += referenceScore;
-  reasons.push(`référence commerciale: ${referenceScore > 0 ? "+" : ""}${referenceScore}`);
-  return { score, reasons };
+  if (!facts.hasAssignedReference) return result(0, "référence douteuse", "aucune référence commerciale assignée");
+  if (facts.productKind === "PART" || /(part|spare)/.test(format)) return result(10, "pièce détachée", "type ou format de pièce détachée");
+  if (["ACCESSORY", "MERCHANDISE", "CATALOGUE", "PROMOTIONAL_ITEM"].includes(facts.productKind)
+    || /(accessor|keychain|puzzle|magazin|catalog|calendar|decoration|pillow|bag|easter egg)/.test(format)
+    || /\b(accessories|accessory|extension|fence|replacement|spare parts|furniture|rock landscape|rock form|supplement)\b/.test(name)) {
+    return result(20, "accessoire ou objet secondaire", "type ou format secondaire explicite");
+  }
+  const animalSignal = /\b(animal|animals|horse|horses|pony|ponies|cow|cows|pig|pigs|sheep|lamb|rabbit|bunny|dog|dogs|cat|cats|chicken|chickens|duck|ducks|goat|goats|deer|fox|foxes)\b/;
+  if ((facts.productKind === "FIGURE" || /animal/.test(format) || animalSignal.test(name.split(/\s+/).slice(0, 1).join(" ")))
+    && animalSignal.test(`${format} ${name}`) && figures <= 1) {
+    return result(30, "animal", "nom ou format animal avec au plus une figurine");
+  }
+  if (facts.productKind === "FIGURE" || /(figures|singleklicky|playmo-friends|duo pack|special|blister)/.test(format)) {
+    return result(40, "figurine", "type ou format de figurine");
+  }
+  if (pieces >= 300 || /\b(large|grand|mega)\b/.test(name) || /\b(superset|super set|mega-set|mega set|complete set)\b/.test(name)) {
+    return result(100, "grand set", pieces >= 300 ? "au moins 300 pièces" : "vocabulaire explicite de grand ensemble");
+  }
+  if (pieces >= 150 || /\b(castle|farmhouse|barn|hospital|school|station|headquarters|fort|fortress|house|home|restaurant|hotel|zoo|playground|playset|camp|market|room|ward|tower|palace|ranch|harbour|harbor|airport|stable|shop)\b/.test(name)) {
+    return result(90, "bâtiment ou playset", pieces >= 150 ? "au moins 150 pièces" : "nom de bâtiment ou playset");
+  }
+  if (pieces >= 75 || /\b(train|ship|boat|truck|helicopter|ambulance|tractor|carriage|wagon|vehicle|camper|motorhome|bus|van|car|plane|aircraft|bulldozer|excavator|loader|crane|fire engine)\b/.test(name)) {
+    return result(80, "véhicule important", pieces >= 75 ? "au moins 75 pièces" : "nom de véhicule");
+  }
+  if (/\b(my figures|figure|figures|farmer|shepherd|policeman|policewoman|fireman|firefighter|doctor|nurse|cowboy|knight|princess|child|children|girl|boy|man|woman|family)\b/.test(name)) {
+    return result(40, "figurine", "type, format ou nom de figurine");
+  }
+  if (pieces >= 20 || figures >= 4) return result(70, "set moyen", pieces >= 20 ? "au moins 20 pièces" : "au moins quatre figurines");
+  if (facts.productKind === "SET") return result(60, "petit set", "set sans signal de taille supérieure");
+  return result(50, "objet collectionnable", "aucun signal plus précis");
 }

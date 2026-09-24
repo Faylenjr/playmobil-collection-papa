@@ -24,10 +24,11 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             <Link href="/">Accueil</Link>
             <Link href="/collection">Ma collection</Link>
             <Link href="/catalogue">Catalogue</Link>
+            <Link href="/nouveautes">Nouveautés</Link>
             <Link href="/recherches">Mes recherches</Link>
             <Link href="/themes">Thèmes</Link>
           </nav>
-          <details className="mobile-menu"><summary>Menu</summary><nav aria-label="Navigation mobile"><Link href="/">Accueil</Link><Link href="/collection">Ma collection</Link><Link href="/catalogue">Catalogue</Link><Link href="/recherches">Mes recherches</Link><Link href="/themes">Thèmes</Link></nav></details>
+          <details className="mobile-menu"><summary>Menu</summary><nav aria-label="Navigation mobile"><Link href="/">Accueil</Link><Link href="/collection">Ma collection</Link><Link href="/catalogue">Catalogue</Link><Link href="/nouveautes">Nouveautés</Link><Link href="/recherches">Mes recherches</Link><Link href="/themes">Thèmes</Link></nav></details>
         </header>
         <main>{children}</main>
         <footer>Catalogue personnel non commercial · Données issues des sources référencées</footer>

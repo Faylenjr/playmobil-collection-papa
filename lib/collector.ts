@@ -81,8 +81,12 @@ function collectionSearchWhere(query: string, theme: string): Prisma.ProductVari
   const filters: Prisma.ProductVariantWhereInput[] = [];
   if (query) filters.push({ OR: [
     { name: { contains: query, mode: "insensitive" } },
+    { canonicalKey: { contains: query, mode: "insensitive" } },
     { product: { name: { contains: query, mode: "insensitive" } } },
+    { product: { canonicalKey: { contains: query, mode: "insensitive" } } },
     { references: { some: { displayValue: { contains: query, mode: "insensitive" } } } },
+    { translations: { some: { name: { contains: query, mode: "insensitive" } } } },
+    { product: { translations: { some: { name: { contains: query, mode: "insensitive" } } } } },
   ] });
   if (theme) filters.push({ OR: [
     { themes: { some: { theme: { slug: theme } } } },

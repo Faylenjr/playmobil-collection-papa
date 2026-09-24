@@ -30,7 +30,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const [variant, collectorState] = await Promise.all([getVariant(id), getVariantCollectorState(id)]);
   if (!variant) notFound();
 
-  const name = variant.name ?? variant.product.name ?? "Nom non renseigné";
+  const name = variant.displayName;
   const reference = variant.references[0]?.displayValue ?? variant.product.baseReference;
   const year = variant.releaseYear ?? variant.product.releaseYear;
   const primaryImage = variant.media[0];
