@@ -141,6 +141,8 @@ describe("merged identity repair", () => {
         dryRun: true, planValidated: true, variantsToSplit: 8, clustersToMaterialize: 23,
         newVariantsPlanned: 15, currentVariantCount: 8, predictedVariantCount: 23,
         conflictsExpectedToResolve: 1, reviewTasksExpectedToChange: 0, applyBlocked: false,
+        productsToCreate: 15, productsToKeep: 8, productsToReuse: 0,
+        productsToClone: 0, sharedProductsPreserved: 0, productCanonicalCollisions: [],
       });
       expect(await db.productVariant.count()).toBe(8);
 
@@ -211,6 +213,157 @@ describe("merged identity repair", () => {
       await embedded.close();
     }
   }, 15_000);
+
+  it.each([2, 4, 12])("preserves a Product shared by %i variants and detaches every repaired cluster", async (variantCount) => {
+    const { db, database: embedded } = await database(`repair-shared-product-${variantCount}`);
+    try {
+      const source = await db.source.create({ data: {
+        key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE",
+      } });
+      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const historicalProductKey = group.product.canonicalKey;
+      for (let index = 1; index < variantCount; index += 1) await db.productVariant.create({ data: {
+        productId: group.product.id,
+        canonicalKey: `outside:${variantCount}:${index}:${fixtureSequence}`,
+        name: `Outside variant ${index}`,
+      } });
+      const outsideVariantIds = (await db.productVariant.findMany({
+        where: { productId: group.product.id, id: { not: group.variant.id } },
+        select: { id: true },
+      })).map((variant) => variant.id);
+      const plan = await auditMergedIdentities(db);
+
+      const preview = await repairMergedIdentities(db, plan);
+      expect(preview).toMatchObject({
+        eligibleSplits: 1,
+        blockedSplits: 0,
+        productsToCreate: 2,
+        productsToKeep: 0,
+        productsToClone: 0,
+        sharedProductsPreserved: 1,
+        productCanonicalCollisions: [],
+      });
+      expect(preview.groups[0]?.productPlan).toEqual(expect.arrayContaining([
+        expect.objectContaining({ action: "CREATE", reason: "preserve-shared-historical-product-and-create-qualified-product" }),
+        expect.objectContaining({ action: "CREATE", reason: "preserve-shared-historical-product-and-create-qualified-product" }),
+      ]));
+
+      await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect((await db.product.findUniqueOrThrow({ where: { id: group.product.id } })).canonicalKey).toBe(historicalProductKey);
+      expect(await db.productVariant.count({ where: { id: { in: outsideVariantIds }, productId: group.product.id } })).toBe(variantCount - 1);
+      const repairedRecords = await db.sourceRecord.findMany({
+        where: { id: { in: group.records.map((record) => record.id) } },
+        select: { variant: { select: { productId: true, product: { select: { canonicalKey: true } } } } },
+      });
+      expect(repairedRecords.every((record) => record.variant?.productId !== group.product.id)).toBe(true);
+      expect(new Set(repairedRecords.map((record) => record.variant?.productId)).size).toBe(2);
+      expect(repairedRecords.every((record) => record.variant?.product.canonicalKey.includes(":record:"))).toBe(true);
+      const second = await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(second).toMatchObject({ alreadyApplied: true, variantsCreated: 0, productsCreated: 0 });
+      expect(second.productsToReuse).toBe(2);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("blocks an existing Product canonical key collision during preflight without writing", async () => {
+    const { db, database: embedded } = await database("repair-product-external-collision");
+    try {
+      const source = await db.source.create({ data: {
+        key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE",
+      } });
+      const group = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const records = [...group.records].sort((left, right) => left.externalId.localeCompare(right.externalId));
+      const collisionKey = qualifiedIdentityKeys("30883802", "30883802-GER", [{
+        sourceKey: "klickypedia", externalId: records[1]!.externalId,
+      }]).productKey;
+      const external = await db.product.create({ data: { canonicalKey: collisionKey, name: "Unrelated existing product" } });
+      const plan = await auditMergedIdentities(db);
+      const before = { products: await db.product.count(), variants: await db.productVariant.count() };
+
+      const preview = await repairMergedIdentities(db, plan);
+      expect(preview).toMatchObject({
+        eligibleSplits: 0,
+        blockedSplits: 1,
+        variantsToSplit: 0,
+        productsToCreate: 0,
+        productCanonicalCollisions: [expect.objectContaining({
+          canonicalKey: collisionKey,
+          existingProductId: external.id,
+          reason: "EXISTING_PRODUCT_OUTSIDE_PLAN",
+        })],
+      });
+      expect(preview.groups[0]?.applyEligibility).toBe("BLOCKED_PRODUCT_CANONICAL_COLLISION");
+      const attempted = await repairMergedIdentities(db, plan, { apply: true, skipAdvisoryLock: true });
+      expect(attempted).toMatchObject({ variantsCreated: 0, productsCreated: 0 });
+      expect(await db.product.count()).toBe(before.products);
+      expect(await db.productVariant.count()).toBe(before.variants);
+      expect(await db.sourceRecord.count({ where: { variantId: group.variant.id } })).toBe(2);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("detects a Product key occupied by another repair group's historical Product", async () => {
+    const { db, database: embedded } = await database("repair-product-cross-group-collision");
+    try {
+      const source = await db.source.create({ data: {
+        key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE",
+      } });
+      const first = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const second = await seedGroup(db, source.id, approvedFixtures[6]!);
+      const ordered = [...first.records].sort((left, right) => left.externalId.localeCompare(right.externalId));
+      const occupiedKey = qualifiedIdentityKeys("30883802", "30883802-GER", [{
+        sourceKey: "klickypedia", externalId: ordered[1]!.externalId,
+      }]).productKey;
+      await db.product.update({ where: { id: second.product.id }, data: { canonicalKey: occupiedKey } });
+
+      const preview = await repairMergedIdentities(db, await auditMergedIdentities(db));
+      expect(preview.productCanonicalCollisions).toContainEqual(expect.objectContaining({
+        canonicalKey: occupiedKey,
+        existingProductId: second.product.id,
+        reason: "EXISTING_PRODUCT_OUTSIDE_PLAN",
+      }));
+      expect(preview).toMatchObject({ eligibleSplits: 1, blockedSplits: 1 });
+      expect(preview.groups.find((group) => group.currentVariantId === first.variant.id)?.applyEligibility)
+        .toBe("BLOCKED_PRODUCT_CANONICAL_COLLISION");
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
+
+  it("rolls back all earlier groups when an unexpected Product collision appears after transactional preflight", async () => {
+    const { db, database: embedded } = await database("repair-product-late-collision");
+    try {
+      const source = await db.source.create({ data: {
+        key: "klickypedia", name: "Klickypedia", baseUrl: "https://www.klickypedia.com", kind: "COMMUNITY_DATABASE",
+      } });
+      const first = await seedGroup(db, source.id, approvedFixtures[1]!);
+      const second = await seedGroup(db, source.id, approvedFixtures[6]!);
+      const plan = await auditMergedIdentities(db);
+      const before = { products: await db.product.count(), variants: await db.productVariant.count() };
+      let calls = 0;
+
+      await expect(repairMergedIdentities(db, plan, {
+        apply: true,
+        skipAdvisoryLock: true,
+        beforeProductMaterialization: async (context, tx) => {
+          calls += 1;
+          if (calls === 3) await tx.product.create({ data: { canonicalKey: context.canonicalKey, name: "Injected collision" } });
+        },
+      })).rejects.toThrow();
+      expect(await db.product.count()).toBe(before.products);
+      expect(await db.productVariant.count()).toBe(before.variants);
+      expect(await db.sourceRecord.count({ where: { variantId: first.variant.id } })).toBe(2);
+      expect(await db.sourceRecord.count({ where: { variantId: second.variant.id } })).toBe(2);
+    } finally {
+      await db.$disconnect();
+      await embedded.close();
+    }
+  });
 
   it("never touches a REVIEW group included in the same audit plan", async () => {
     const { db, database: embedded } = await database("repair-review");

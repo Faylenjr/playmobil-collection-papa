@@ -35,6 +35,11 @@ export interface MergedRepairOptions {
   skipAdvisoryLock?: boolean;
   /** Tests only: throws after a committed-in-memory group, before transaction commit. */
   afterGroup?: (completedGroups: number) => void | Promise<void>;
+  /** Tests only: injects a failure/race after transactional preflight. */
+  beforeProductMaterialization?: (
+    context: { currentVariantId: string; clusterId: string; canonicalKey: string },
+    tx: Prisma.TransactionClient,
+  ) => void | Promise<void>;
 }
 
 export interface RelationAttributionBlocker {
@@ -70,6 +75,12 @@ export interface MergedRepairReport {
   mediaAssetsToDuplicate: number;
   instructionsToMove: number;
   genericMediaIgnored: number;
+  productsToCreate: number;
+  productsToKeep: number;
+  productsToReuse: number;
+  productsToClone: number;
+  sharedProductsPreserved: number;
+  productCanonicalCollisions: ProductCanonicalCollision[];
   relationAttributionBlockers: RelationAttributionBlocker[];
   groups: MergedRepairGroupReport[];
   applyBlocked: boolean;
@@ -103,10 +114,29 @@ export interface MergedRepairGroupReport {
   sourceConsistency: "CONSISTENT";
   safeAction: "SPLIT";
   relationAttribution: "COMPLETE" | "INCOMPLETE";
-  applyEligibility: "ELIGIBLE" | "BLOCKED_UNATTRIBUTED_RELATIONS";
+  applyEligibility: "ELIGIBLE" | "BLOCKED_UNATTRIBUTED_RELATIONS" | "BLOCKED_PRODUCT_CANONICAL_COLLISION";
   unattributableRelations: UnattributableRelationCounts;
   eligibleNewVariants: number;
   genericMediaIgnored: number;
+  productPlan: ProductPlanReport[];
+}
+
+export type ProductPlanAction = "CREATE" | "KEEP" | "REUSE";
+
+export interface ProductPlanReport {
+  clusterId: string;
+  action: ProductPlanAction;
+  resultingProductId: string | null;
+  canonicalKey: string;
+  reason: string;
+}
+
+export interface ProductCanonicalCollision {
+  canonicalKey: string;
+  currentVariantIds: string[];
+  clusterIds: string[];
+  existingProductId: string | null;
+  reason: "DUPLICATE_PLANNED_KEY" | "EXISTING_PRODUCT_OUTSIDE_PLAN";
 }
 
 interface ExpectedCluster {
@@ -117,6 +147,7 @@ interface ExpectedCluster {
   stableAnchor: string;
   retainsVariantId: boolean;
   targetVariantId: string | null;
+  productPlan: ProductPlanReport;
 }
 
 interface ExpectedGroup {
@@ -127,6 +158,8 @@ interface ExpectedGroup {
   mediaDistributions: MediaDistribution[];
   instructionAssignments: RelationAssignment[];
   genericMediaIgnored: number;
+  productCanonicalCollisions: ProductCanonicalCollision[];
+  historicalProductShared: boolean;
 }
 
 interface CurrentSourceRecord extends RebuildSourceRecord {
@@ -171,6 +204,11 @@ interface RepairInspection {
   conflictsExpectedToResolve: number;
   canonicalRekeysPlanned: number;
   eligibleNewVariants: number;
+  productCanonicalCollisions: ProductCanonicalCollision[];
+  productsToCreate: number;
+  productsToKeep: number;
+  productsToReuse: number;
+  sharedProductsPreserved: number;
 }
 
 const compareText = (left: string, right: string) => left < right ? -1 : left > right ? 1 : 0;
@@ -296,17 +334,42 @@ async function inspectRepairState(
       const anchor = records
         .map((record) => `${record.source.key}\0${record.externalId}`)
         .sort(compareText)[0]!;
-      return { id: plannedCluster.id, recordIds: [...plannedCluster.recordIds].sort(compareText), records, keys, stableAnchor: anchor, retainsVariantId: false, targetVariantId: null };
+      return {
+        id: plannedCluster.id,
+        recordIds: [...plannedCluster.recordIds].sort(compareText),
+        records,
+        keys,
+        stableAnchor: anchor,
+        retainsVariantId: false,
+        targetVariantId: null,
+        productPlan: {
+          clusterId: plannedCluster.id,
+          action: "CREATE",
+          resultingProductId: null,
+          canonicalKey: keys.productKey,
+          reason: "distinct-object-requires-qualified-product",
+        },
+      };
     }).sort((left, right) => compareText(left.stableAnchor, right.stableAnchor));
     clusters[0]!.retainsVariantId = true;
     clusters[0]!.targetVariantId = detail.currentVariantId;
-    return { plan: detail, clusters, state: "PENDING", blockers: [], mediaDistributions: [], instructionAssignments: [], genericMediaIgnored: 0 };
+    return {
+      plan: detail,
+      clusters,
+      state: "PENDING",
+      blockers: [],
+      mediaDistributions: [],
+      instructionAssignments: [],
+      genericMediaIgnored: 0,
+      productCanonicalCollisions: [],
+      historicalProductShared: false,
+    };
   });
 
   const expectedVariantKeys = expectedGroups.flatMap((group) => group.clusters.map((cluster) => cluster.keys.variantKey));
   const targetVariants = await db.productVariant.findMany({
     where: { canonicalKey: { in: expectedVariantKeys } },
-    select: { id: true, canonicalKey: true },
+    select: { id: true, canonicalKey: true, productId: true, product: { select: { canonicalKey: true } } },
   });
   const targetByKey = new Map(targetVariants.map((variant) => [variant.canonicalKey, variant.id]));
   for (const group of expectedGroups) for (const cluster of group.clusters) {
@@ -326,9 +389,93 @@ async function inspectRepairState(
       const target = targetVariants.find((variant) => variant.id === targetId)
         ?? (cluster.retainsVariantId ? variants.find((variant) => variant.id === targetId) : undefined);
       if (!target || target.canonicalKey !== cluster.keys.variantKey) throw new Error(`Drift detected: repaired canonical key missing for cluster ${cluster.id}`);
+      if (target.product.canonicalKey !== cluster.keys.productKey) throw new Error(`Drift detected: repaired Product canonical key missing for cluster ${cluster.id}`);
+      cluster.productPlan = {
+        clusterId: cluster.id,
+        action: "REUSE",
+        resultingProductId: target.productId,
+        canonicalKey: cluster.keys.productKey,
+        reason: "already-materialized-by-this-repair-plan",
+      };
     }
     if (pending) for (const cluster of group.clusters) {
-      if (!cluster.retainsVariantId && cluster.targetVariantId) throw new Error(`Canonical variant key collision: ${cluster.keys.variantKey}`);
+      if (cluster.targetVariantId && (!cluster.retainsVariantId || cluster.targetVariantId !== group.plan.currentVariantId)) {
+        throw new Error(`Canonical variant key collision: ${cluster.keys.variantKey}`);
+      }
+    }
+  }
+
+  const variantsById = new Map(variants.map((variant) => [variant.id, variant]));
+  for (const group of expectedGroups.filter((candidate) => candidate.state === "PENDING")) {
+    const current = variantsById.get(group.plan.currentVariantId);
+    if (!current) throw new Error(`Drift detected: missing ProductVariant ${group.plan.currentVariantId}`);
+    group.historicalProductShared = current.product._count.variants > 1;
+    for (const cluster of group.clusters) {
+      if (cluster.retainsVariantId && !group.historicalProductShared) {
+        cluster.productPlan = {
+          clusterId: cluster.id,
+          action: "KEEP",
+          resultingProductId: current.product.id,
+          canonicalKey: cluster.keys.productKey,
+          reason: "exclusive-historical-product-rebuilt-for-retained-cluster",
+        };
+      } else {
+        cluster.productPlan = {
+          clusterId: cluster.id,
+          action: "CREATE",
+          resultingProductId: null,
+          canonicalKey: cluster.keys.productKey,
+          reason: group.historicalProductShared
+            ? "preserve-shared-historical-product-and-create-qualified-product"
+            : "create-qualified-product-for-new-distinct-cluster",
+        };
+      }
+    }
+  }
+
+  // Product identity is planned globally before eligibility is decided. A
+  // DISTINCT cluster may never reuse a Product merely because its key happens
+  // to exist; only its exclusive historical Product (KEEP) or an already
+  // materialized plan (REUSE) is accepted.
+  const allProductPlans = expectedGroups.flatMap((group) => group.clusters.map((cluster) => ({ group, cluster, plan: cluster.productPlan })));
+  const plansByKey = new Map<string, typeof allProductPlans>();
+  for (const item of allProductPlans) {
+    const rows = plansByKey.get(item.plan.canonicalKey) ?? [];
+    rows.push(item);
+    plansByKey.set(item.plan.canonicalKey, rows);
+  }
+  const existingProducts = await db.product.findMany({
+    where: { canonicalKey: { in: [...plansByKey.keys()] } },
+    select: { id: true, canonicalKey: true },
+  });
+  const existingProductByKey = new Map(existingProducts.map((product) => [product.canonicalKey, product.id]));
+  const productCanonicalCollisions: ProductCanonicalCollision[] = [];
+  for (const [canonicalKey, items] of plansByKey) {
+    if (items.length > 1) {
+      const collision: ProductCanonicalCollision = {
+        canonicalKey,
+        currentVariantIds: [...new Set(items.map((item) => item.group.plan.currentVariantId))].sort(compareText),
+        clusterIds: items.map((item) => item.cluster.id).sort(compareText),
+        existingProductId: existingProductByKey.get(canonicalKey) ?? null,
+        reason: "DUPLICATE_PLANNED_KEY",
+      };
+      productCanonicalCollisions.push(collision);
+      for (const item of items) item.group.productCanonicalCollisions.push(collision);
+      continue;
+    }
+    const item = items[0]!;
+    const existingProductId = existingProductByKey.get(canonicalKey);
+    const expectedProductId = item.plan.resultingProductId;
+    if (existingProductId && existingProductId !== expectedProductId) {
+      const collision: ProductCanonicalCollision = {
+        canonicalKey,
+        currentVariantIds: [item.group.plan.currentVariantId],
+        clusterIds: [item.cluster.id],
+        existingProductId,
+        reason: "EXISTING_PRODUCT_OUTSIDE_PLAN",
+      };
+      productCanonicalCollisions.push(collision);
+      item.group.productCanonicalCollisions.push(collision);
     }
   }
 
@@ -346,7 +493,6 @@ async function inspectRepairState(
     }
   }
 
-  const variantsById = new Map(variants.map((variant) => [variant.id, variant]));
   const blockers: RelationAttributionBlocker[] = [];
   for (const group of expectedGroups.filter((candidate) => candidate.state === "PENDING")) {
     const current = variantsById.get(group.plan.currentVariantId);
@@ -395,7 +541,7 @@ async function inspectRepairState(
         .reduce((total, candidate) => total + candidate.count, 0),
     }))
     .sort((left, right) => compareText(`${left.currentVariantId}\0${left.relation}`, `${right.currentVariantId}\0${right.relation}`));
-  const eligibleGroups = expectedGroups.filter((group) => group.state === "PENDING" && group.blockers.length === 0);
+  const eligibleGroups = expectedGroups.filter((group) => group.state === "PENDING" && group.blockers.length === 0 && group.productCanonicalCollisions.length === 0);
   const nonAnchorRecords = eligibleGroups.flatMap((group) => group.clusters.filter((cluster) => !cluster.retainsVariantId).flatMap((cluster) => cluster.records));
   const conflictsExpectedToResolve = await db.conflict.count({
     where: { entityType: "ProductVariant", entityId: { in: eligibleGroups.map((group) => group.plan.currentVariantId) }, status: "OPEN" },
@@ -411,13 +557,18 @@ async function inspectRepairState(
     conflictsExpectedToResolve,
     canonicalRekeysPlanned: eligibleGroups.reduce((total, group) => total + group.clusters.length, 0),
     eligibleNewVariants: eligibleGroups.reduce((total, group) => total + group.clusters.length - 1, 0),
+    productCanonicalCollisions: productCanonicalCollisions.sort((left, right) => compareText(left.canonicalKey, right.canonicalKey)),
+    productsToCreate: eligibleGroups.flatMap((group) => group.clusters).filter((cluster) => cluster.productPlan.action === "CREATE").length,
+    productsToKeep: eligibleGroups.flatMap((group) => group.clusters).filter((cluster) => cluster.productPlan.action === "KEEP").length,
+    productsToReuse: expectedGroups.filter((group) => group.state === "APPLIED").flatMap((group) => group.clusters).filter((cluster) => cluster.productPlan.action === "REUSE").length,
+    sharedProductsPreserved: eligibleGroups.filter((group) => group.historicalProductShared).length,
   };
 }
 
 function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply: boolean): MergedRepairReport {
   const details = splitDetails(plan);
-  const eligibleGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length === 0);
-  const blockedGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length > 0);
+  const eligibleGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length === 0 && group.productCanonicalCollisions.length === 0);
+  const blockedGroups = inspection.groups.filter((group) => group.state === "PENDING" && (group.blockers.length > 0 || group.productCanonicalCollisions.length > 0));
   const appliedGroups = inspection.groups.filter((group) => group.state === "APPLIED");
   const relationCounts = (group: ExpectedGroup): UnattributableRelationCounts => {
     const count = (relation: RelationAttributionBlocker["relation"]) => group.blockers
@@ -439,10 +590,15 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
     sourceConsistency: "CONSISTENT",
     safeAction: "SPLIT",
     relationAttribution: group.blockers.length === 0 ? "COMPLETE" : "INCOMPLETE",
-    applyEligibility: group.blockers.length === 0 ? "ELIGIBLE" : "BLOCKED_UNATTRIBUTED_RELATIONS",
+    applyEligibility: group.productCanonicalCollisions.length > 0
+      ? "BLOCKED_PRODUCT_CANONICAL_COLLISION"
+      : group.blockers.length === 0 ? "ELIGIBLE" : "BLOCKED_UNATTRIBUTED_RELATIONS",
     unattributableRelations: relationCounts(group),
-    eligibleNewVariants: group.state === "PENDING" && group.blockers.length === 0 ? group.clusters.length - 1 : 0,
+    eligibleNewVariants: group.state === "PENDING" && group.blockers.length === 0 && group.productCanonicalCollisions.length === 0
+      ? group.clusters.length - 1
+      : 0,
     genericMediaIgnored: group.genericMediaIgnored,
+    productPlan: group.clusters.map((cluster) => cluster.productPlan),
   }));
   const eligibleClusters = eligibleGroups.reduce((total, group) => total + group.clusters.length, 0);
   const allApplied = appliedGroups.length === details.length;
@@ -472,6 +628,12 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
     mediaAssetsToDuplicate: inspection.mediaDistributions.reduce((total, distribution) => total + Math.max(0, distribution.targetClusterIds.length - 1), 0),
     instructionsToMove: inspection.instructionAssignments.length,
     genericMediaIgnored: inspection.groups.reduce((total, group) => total + group.genericMediaIgnored, 0),
+    productsToCreate: inspection.productsToCreate,
+    productsToKeep: inspection.productsToKeep,
+    productsToReuse: inspection.productsToReuse,
+    productsToClone: 0,
+    sharedProductsPreserved: inspection.sharedProductsPreserved,
+    productCanonicalCollisions: inspection.productCanonicalCollisions,
     relationAttributionBlockers: inspection.blockers,
     groups,
     applyBlocked: eligibleGroups.length === 0 && blockedGroups.length > 0,
@@ -486,21 +648,22 @@ function baseReport(plan: MergedRepairPlan, inspection: RepairInspection, apply:
   };
 }
 
-async function createProductForCluster(
+async function materializePlannedProduct(
   tx: Prisma.TransactionClient,
   group: ExpectedGroup,
   cluster: ExpectedCluster,
-  oldProduct: { id: string; canonicalKey: string; variantCount: number },
 ): Promise<{ productId: string; created: boolean }> {
-  if (cluster.retainsVariantId && oldProduct.variantCount === 1) return { productId: oldProduct.id, created: false };
-  const existing = await tx.product.findUnique({ where: { canonicalKey: cluster.keys.productKey }, select: { id: true } });
-  if (existing) throw new Error(`Canonical product key collision: ${cluster.keys.productKey}`);
+  if (cluster.productPlan.action === "KEEP" || cluster.productPlan.action === "REUSE") {
+    if (!cluster.productPlan.resultingProductId) throw new Error(`Product plan ${cluster.productPlan.action} has no Product id for ${cluster.id}`);
+    return { productId: cluster.productPlan.resultingProductId, created: false };
+  }
   const plannedReference = referenceForCluster(group.plan, cluster.records);
   const product = await tx.product.create({ data: {
-    canonicalKey: cluster.keys.productKey,
+    canonicalKey: cluster.productPlan.canonicalKey,
     baseReference: plannedReference.base,
     kind: "UNKNOWN",
   } });
+  cluster.productPlan.resultingProductId = product.id;
   return { productId: product.id, created: true };
 }
 
@@ -524,7 +687,7 @@ export async function repairMergedIdentities(
       await tx.$executeRawUnsafe(`LOCK TABLE ${REPAIR_LOCKED_TABLES} IN SHARE ROW EXCLUSIVE MODE`);
     }
     const inspection = await inspectRepairState(tx, plan, true);
-    const eligibleGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length === 0);
+    const eligibleGroups = inspection.groups.filter((group) => group.state === "PENDING" && group.blockers.length === 0 && group.productCanonicalCollisions.length === 0);
     if (eligibleGroups.length === 0) return { report: { ...baseReport(plan, inspection, true), resultingVariantCount: inspection.currentVariantCount } };
 
     const targetVariantByCluster = new Map<string, string>();
@@ -539,13 +702,13 @@ export async function repairMergedIdentities(
     let completedGroups = 0;
 
     for (const group of eligibleGroups) {
-      const current = await tx.productVariant.findUniqueOrThrow({
-        where: { id: group.plan.currentVariantId },
-        select: { productId: true, product: { select: { id: true, canonicalKey: true, _count: { select: { variants: true } } } } },
-      });
-      const oldProduct = { id: current.product.id, canonicalKey: current.product.canonicalKey, variantCount: current.product._count.variants };
       for (const cluster of group.clusters) {
-        const product = await createProductForCluster(tx, group, cluster, oldProduct);
+        await options.beforeProductMaterialization?.({
+          currentVariantId: group.plan.currentVariantId,
+          clusterId: cluster.id,
+          canonicalKey: cluster.productPlan.canonicalKey,
+        }, tx);
+        const product = await materializePlannedProduct(tx, group, cluster);
         if (product.created) productsCreated += 1;
         let variantId = group.plan.currentVariantId;
         if (!cluster.retainsVariantId) {
@@ -559,6 +722,14 @@ export async function repairMergedIdentities(
           variantId = created.id;
           variantsCreated += 1;
         }
+        // The retained historical variant must also follow the Product plan.
+        // This is essential when its old Product is shared by variants outside
+        // the repair group: rebuild must target the new qualified Product, not
+        // rename the shared parent.
+        if (cluster.retainsVariantId) await tx.productVariant.update({
+          where: { id: variantId },
+          data: { productId: product.productId },
+        });
         targetVariantByCluster.set(`${group.plan.currentVariantId}\0${cluster.id}`, variantId);
         cluster.targetVariantId = variantId;
       }
@@ -586,7 +757,8 @@ export async function repairMergedIdentities(
           data: { entityId: variantId, isSelected: false },
         });
         if (!cluster.retainsVariantId) sourceValuesReassigned += reassigned.count;
-        const productId = (await tx.productVariant.findUniqueOrThrow({ where: { id: variantId }, select: { productId: true } })).productId;
+        const productId = cluster.productPlan.resultingProductId;
+        if (!productId) throw new Error(`Missing planned Product id for cluster ${cluster.id}`);
         const rebuilt = await rebuildCanonicalVariantFromSourceRecords(tx, {
           variantId,
           productId,

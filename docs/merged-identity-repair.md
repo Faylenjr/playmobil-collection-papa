@@ -27,7 +27,8 @@ vérifie :
 - la couverture exacte et sans doublon des clusters ;
 - le maintien de `DISTINCT / CONSISTENT / SPLIT` par l'algorithme courant ;
 - le nombre global de variants attendu ;
-- l'absence de collision des clés canoniques déterministes.
+- l'absence de collision des clés canoniques déterministes des ProductVariant **et** des
+  Product, dans la base et entre tous les groupes du plan.
 
 Le dry-run affiche `planHash`. Il est recommandé de le recopier dans l'apply avec
 `--expect-plan-hash=<sha256>` afin de garantir que le fichier validé n'a pas été modifié entre
@@ -61,6 +62,37 @@ La passe `identities:reclassify` reconnaît ensuite un groupe déjà validé lor
 références sont `REUSED` et que ses clés qualifiées correspondent exactement à ses ancres. Elle
 reste donc idempotente même lorsque la distinction reposait sur les traductions multilingues.
 
+### Plan Product
+
+`Product.canonicalKey` reste volontairement plus générale que la clé du variant : la base de
+référence est utilisée, puis le même qualificateur `:record:<stableQualifier>` que l'identité
+du cluster. Deux objets `DISTINCT` portant la même référence obtiennent donc deux Product
+qualifiés ; ils ne sont jamais regroupés sur le seul critère de la référence.
+
+Le preflight construit le plan Product complet avant toute mutation :
+
+- `KEEP` : le cluster conservant l'ID du variant peut reconstruire son Product historique
+  uniquement si ce Product ne possède aucun autre variant ;
+- `CREATE` : les autres clusters reçoivent un Product vide puis entièrement reconstruit depuis
+  leur seule provenance ;
+- lorsqu'un Product historique est partagé avec des variants extérieurs au split, il n'est
+  jamais renommé ni reconstruit. Tous les clusters réparés en sont détachés vers des Product
+  qualifiés créés séparément ;
+- `REUSE` est réservé à la reconnaissance idempotente d'un cluster déjà matérialisé par ce
+  plan. Un Product préexistant portant la bonne clé n'est pas réutilisé sans cette preuve.
+
+Le JSON expose `productsToCreate`, `productsToKeep`, `productsToReuse`,
+`sharedProductsPreserved`, le `productPlan` de chaque cluster et
+`productCanonicalCollisions`. Une collision externe ou entre deux entrées du plan marque le
+groupe `BLOCKED_PRODUCT_CANONICAL_COLLISION` avant toute écriture.
+
+L'ancien apply créait correctement un nouveau Product pour le cluster conservant l'ancien
+`ProductVariant.id` lorsque son parent était partagé, mais relisait ensuite le `productId`
+historique avant le rebuild. Il tentait alors de renommer le parent partagé avec la clé déjà
+créée, d'où une violation de `products_canonical_key_key`. Le nouvel apply transporte le
+`resultingProductId` validé par le preflight et rattache explicitement le variant conservé à ce
+Product avant reconstruction.
+
 ## Relations historiques sans provenance
 
 Le schéma historique ne reliait pas `MediaAsset`, `Instruction`, `VariantFigure` ou `VariantPart`
@@ -80,7 +112,8 @@ attribution :
   le groupe concerné ;
 - le dry-run conserve `DISTINCT / CONSISTENT / SPLIT`, mais ajoute par groupe
   `relationAttribution: COMPLETE | INCOMPLETE`,
-  `applyEligibility: ELIGIBLE | BLOCKED_UNATTRIBUTED_RELATIONS` et les compteurs précis dans
+  `applyEligibility: ELIGIBLE | BLOCKED_UNATTRIBUTED_RELATIONS | BLOCKED_PRODUCT_CANONICAL_COLLISION`
+  et les compteurs précis dans
   `unattributableRelations` ;
 - les agrégats `identitySafeSplits`, `eligibleSplits`, `blockedSplits` et
   `eligibleNewVariants` séparent la validité sémantique de la possibilité matérielle de réparer ;
