@@ -32,7 +32,7 @@ services:
       DATABASE_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
       DIRECT_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
     ports:
-      - "3000:3000"
+      - "3003:3000"
     depends_on:
       migrate:
         condition: service_completed_successfully
