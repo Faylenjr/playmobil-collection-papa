@@ -2,7 +2,7 @@ import { mkdir, readFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { PrismaPGlite } from "pglite-prisma-adapter";
-import { PrismaClient } from "../../generated/prisma/client.js";
+import { PrismaClient } from "../../generated/prisma/client";
 
 /**
  * Workspace/CI fallback when a PostgreSQL daemon or Docker is unavailable.

@@ -19,6 +19,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:seed:demo": "tsx scripts/seed-demo.ts",
     "source:audit": "pnpm --silent build:cli && node dist/src/cli.js source:audit",
     "import:klickypedia:index": "pnpm --silent build:cli && node dist/src/cli.js import:klickypedia-index",
     "import:klickypedia:sample": "pnpm --silent build:cli && node dist/src/cli.js import:klickypedia --limit=200 --resume",
