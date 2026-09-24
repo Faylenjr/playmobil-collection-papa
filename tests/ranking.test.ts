@@ -1,37 +1,50 @@
 import { describe, expect, it } from "vitest";
-import { explainCollectorPriority } from "../lib/ranking";
+import { classifyCollectorItem, explainCollectorPriority } from "../lib/ranking";
 
-describe("collector-first catalogue ranking", () => {
-  it("ranks a complete farm above a farmer, animal and accessory", () => {
-    const largeFarm = explainCollectorPriority({ productKind: "SET", pieceCount: 312, figureCount: 5, format: "Large boxed set", hasAssignedReference: true });
-    const farmer = explainCollectorPriority({ productKind: "FIGURE", pieceCount: 7, figureCount: 1, format: "Figure", name: "Farmer", hasAssignedReference: true });
-    const cow = explainCollectorPriority({ productKind: "FIGURE", pieceCount: 1, format: "Animal", name: "Cow", hasAssignedReference: true });
-    const bucket = explainCollectorPriority({ productKind: "ACCESSORY", pieceCount: 1, format: "Accessory", hasAssignedReference: true });
-    expect(largeFarm.score).toBeGreaterThan(farmer.score);
-    expect(farmer.score).toBeGreaterThan(cow.score);
-    expect(cow.score).toBeGreaterThan(bucket.score);
+describe("structured collector classification", () => {
+  it("ranks a main set above a figure, animal and accessory", () => {
+    const main = explainCollectorPriority({ productKind: "SET", pieceCount: 312, figureCount: 5, format: "Standard Box", hasAssignedReference: true });
+    const figure = explainCollectorPriority({ productKind: "FIGURE", figureCount: 1, format: "Figures", tags: ["farmers"], hasAssignedReference: true });
+    const animal = explainCollectorPriority({ productKind: "SET", figureCount: 0, format: "DS", tags: ["domestic animals"], hasAssignedReference: true });
+    const accessory = explainCollectorPriority({ productKind: "ACCESSORY", format: "DS", hasAssignedReference: true });
+    expect(main.score).toBeGreaterThan(figure.score);
+    expect(figure.score).toBeGreaterThan(animal.score);
+    expect(animal.score).toBeGreaterThan(accessory.score);
   });
 
-  it("does not use popularity or sales signals", () => {
-    const result = explainCollectorPriority({ productKind: "SET", pieceCount: 100, hasAssignedReference: true });
-    expect(result.reasons.join(" ")).not.toMatch(/popular|vente/i);
+  it("ranks structured buildings and vehicles above figures", () => {
+    const building = explainCollectorPriority({ productKind: "SET", format: "Standard Box", tags: ["buildings"], hasAssignedReference: true });
+    const vehicle = explainCollectorPriority({ productKind: "SET", format: "Standard Box", tags: ["cars"], hasAssignedReference: true });
+    const figure = explainCollectorPriority({ productKind: "FIGURE", format: "Figures", figureCount: 1, hasAssignedReference: true });
+    expect(building.category).toBe("BUILDING_SET");
+    expect(vehicle.category).toBe("VEHICLE_SET");
+    expect(building.score).toBeGreaterThan(figure.score);
+    expect(vehicle.score).toBeGreaterThan(figure.score);
   });
 
-  it("keeps buildings and vehicles above figure assortments despite edition metadata", () => {
-    const restaurant = explainCollectorPriority({ productKind: "SET", name: "Burger King Restaurant", format: "Standard Box", figureCount: 4, hasAssignedReference: true });
-    const tractor = explainCollectorPriority({ productKind: "SET", name: "Tractor with Hay Bales", format: "Standard Box", hasAssignedReference: true });
-    const figures = explainCollectorPriority({ productKind: "SET", name: "My Figures: Shopping", format: "Standard Box", figureCount: 4, variantKind: "EDITION", hasAssignedReference: true });
-    expect(restaurant.category).toBe("bâtiment ou playset");
-    expect(tractor.category).toBe("véhicule important");
-    expect(figures.category).toBe("figurine");
-    expect(restaurant.score).toBeGreaterThan(tractor.score);
-    expect(tractor.score).toBeGreaterThan(figures.score);
+  it("ranks single figures above accessories and animals above parts", () => {
+    const figure = explainCollectorPriority({ productKind: "FIGURE", format: "Figures", figureCount: 1, hasAssignedReference: true });
+    const accessory = explainCollectorPriority({ productKind: "ACCESSORY", hasAssignedReference: true });
+    const animal = explainCollectorPriority({ productKind: "SET", format: "DS", tags: ["wild animals"], hasAssignedReference: true });
+    const part = explainCollectorPriority({ productKind: "PART", hasAssignedReference: true });
+    expect(figure.score).toBeGreaterThan(accessory.score);
+    expect(animal.score).toBeGreaterThan(part.score);
   });
 
-  it("places unassigned references last", () => {
-    const uncertainCastle = explainCollectorPriority({ productKind: "SET", name: "Large Castle", hasAssignedReference: false });
-    const accessory = explainCollectorPriority({ productKind: "ACCESSORY", format: "Accessory", hasAssignedReference: true });
-    expect(uncertainCastle.score).toBe(0);
-    expect(accessory.score).toBeGreaterThan(uncertainCastle.score);
+  it("penalizes placeholder or unassigned references", () => {
+    const uncertain = explainCollectorPriority({ productKind: "SET", format: "Standard Box", tags: ["castle"], hasAssignedReference: false });
+    expect(uncertain.category).toBe("UNKNOWN");
+    expect(uncertain.score).toBe(0);
+  });
+
+  it("returns UNKNOWN when structured evidence is insufficient", () => {
+    expect(classifyCollectorItem({ productKind: "UNKNOWN", format: "Other", hasAssignedReference: true })).toBe("UNKNOWN");
+    expect(classifyCollectorItem({ productKind: "SET", format: "Other", hasAssignedReference: true })).toBe("UNKNOWN");
+  });
+
+  it("does not use popularity, sales or product-name keywords", () => {
+    const result = explainCollectorPriority({ productKind: "SET", format: "Other", hasAssignedReference: true });
+    expect(result.category).toBe("UNKNOWN");
+    expect(result.reasons.join(" ")).not.toMatch(/popular|vente|large|mega/i);
   });
 });

@@ -2,7 +2,11 @@ import { Prisma } from "../generated/prisma/client";
 import { cache } from "react";
 import { getDatabaseClient } from "./db";
 import { getOfficialFrenchNames, getPreferredDisplayName } from "./display-name";
-import { collectorPrioritySql } from "./ranking";
+import {
+  collectorFactsCtesSql,
+  collectorFactsJoinsSql,
+  collectorPriorityFromFactsSql,
+} from "./ranking";
 
 export const PAGE_SIZE = 36;
 export const KLICKYPEDIA_PLACEHOLDER =
@@ -115,10 +119,25 @@ export async function getCatalogue(
   year?: number,
 ) {
   const db = await getDatabaseClient();
+  const usesCollectorClassification = sort === "recommended";
+  const collectorCtes = usesCollectorClassification
+    ? Prisma.sql`${collectorFactsCtesSql},`
+    : Prisma.empty;
+  const collectorJoins = usesCollectorClassification ? collectorFactsJoinsSql : Prisma.empty;
+  const priority = usesCollectorClassification
+    ? collectorPriorityFromFactsSql
+    : sort === "reference"
+      ? Prisma.sql`CASE WHEN EXISTS (
+          SELECT 1 FROM "product_references" pr
+          WHERE pr."variant_id" = pv."id"
+            AND pr."identity_class"::text = 'ASSIGNED'
+            AND pr."normalized_value" !~ '^(0+|N/?A)'
+        ) THEN 1 ELSE 0 END`
+      : Prisma.sql`0`;
   const rows = await db.$queryRaw<{ id: string; priority: number; total: number }[]>(Prisma.sql`
-    WITH scored AS (
+    WITH ${collectorCtes} scored AS (
       SELECT pv."id",
-             (${collectorPrioritySql})::int AS "priority",
+             (${priority})::int AS "priority",
              COALESCE(pv."release_date", MAKE_DATE(COALESCE(pv."release_year", p."release_year"), 1, 1)) AS "effective_date",
              LOWER(COALESCE(
                (SELECT pr."display_value" FROM "product_references" pr WHERE pr."variant_id" = pv."id" ORDER BY pr."is_primary" DESC, pr."display_value" ASC LIMIT 1),
@@ -126,6 +145,7 @@ export async function getCatalogue(
              )) AS "reference_sort"
       FROM "product_variants" pv
       JOIN "products" p ON p."id" = pv."product_id"
+      ${collectorJoins}
       ${rankingWhereSql(query, themeSlug, year)}
     ), counted AS (
       SELECT *, (COUNT(*) OVER())::int AS "total"
@@ -209,12 +229,15 @@ export async function getThemeNavigation(slug: string) {
 
 export async function getLatestReleases(yearLimit = 3, perYear = 24) {
   const db = await getDatabaseClient();
-  const rows = await db.$queryRaw<{ id: string; releaseYear: number; priority: number }[]>(Prisma.sql`
+  const rows = await db.$queryRaw<{ id: string; releaseYear: number }[]>(Prisma.sql`
     WITH releases AS (
       SELECT pv."id",
              COALESCE(pv."release_year", p."release_year")::int AS "releaseYear",
              COALESCE(pv."release_date", MAKE_DATE(COALESCE(pv."release_year", p."release_year"), 1, 1)) AS "effective_date",
-             (${collectorPrioritySql})::int AS "priority"
+             LOWER(COALESCE(
+               (SELECT pr."display_value" FROM "product_references" pr WHERE pr."variant_id" = pv."id" ORDER BY pr."is_primary" DESC, pr."display_value" ASC LIMIT 1),
+               p."base_reference", pv."canonical_key"
+             )) AS "reference_sort"
       FROM "product_variants" pv
       JOIN "products" p ON p."id" = pv."product_id"
       WHERE COALESCE(pv."release_year", p."release_year") IS NOT NULL
@@ -223,15 +246,15 @@ export async function getLatestReleases(yearLimit = 3, perYear = 24) {
     ), ranked AS (
       SELECT releases.*, ROW_NUMBER() OVER (
         PARTITION BY "releaseYear"
-        ORDER BY "effective_date" DESC NULLS LAST, "priority" DESC, "id" ASC
+        ORDER BY "effective_date" DESC NULLS LAST, "reference_sort" ASC, "id" ASC
       ) AS row_number
       FROM releases
       JOIN latest_years USING ("releaseYear")
     )
-    SELECT "id", "releaseYear", "priority"
+    SELECT "id", "releaseYear"
     FROM ranked
     WHERE row_number <= ${perYear}
-    ORDER BY "releaseYear" DESC, "effective_date" DESC NULLS LAST, "priority" DESC, "id" ASC
+    ORDER BY "releaseYear" DESC, "effective_date" DESC NULLS LAST, "reference_sort" ASC, "id" ASC
   `);
   const variants = await getVariantsInOrder(rows.map(({ id }) => id));
   const rowById = new Map(rows.map((row) => [row.id, row]));

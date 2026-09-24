@@ -1,5 +1,7 @@
 # Calibration du catalogue collectionneur
 
+> Historique : cette première calibration par score a été remplacée par la classification structurée décrite dans `docs/collector-classification.md`.
+
 Audit effectué le 24 septembre 2026 en lecture seule sur la base de production (14 397 variantes).
 
 ## Cause du classement précédent
