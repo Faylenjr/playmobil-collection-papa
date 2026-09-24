@@ -25,5 +25,17 @@ services:
       postgres:
         condition: service_healthy
 
+  web:
+    build: .
+    command: ["pnpm", "start", "--hostname", "0.0.0.0"]
+    environment:
+      DATABASE_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
+      DIRECT_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
+    ports:
+      - "3000:3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
 volumes:
   postgres_data:

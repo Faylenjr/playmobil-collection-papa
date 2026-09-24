@@ -1,4 +1,5 @@
 node_modules/
+.next/
 dist/
 generated/
 .env
@@ -10,4 +11,5 @@ reports/*.csv
 data/raw/
 .data/
 *.log
+*.tsbuildinfo
 .DS_Store
