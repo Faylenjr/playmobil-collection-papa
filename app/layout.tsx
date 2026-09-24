@@ -13,16 +13,21 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <html lang="fr">
       <body>
         <header className="site-header">
-          <Link href="/catalogue" className="brand" aria-label="Catalogue Playmobil — accueil">
+          <Link href="/" className="brand" aria-label="Mon carnet Playmobil — accueil">
             <span className="brand-mark" aria-hidden="true">P</span>
             <span>
-              <strong>Catalogue Playmobil</strong>
-              <small>La collection, pièce par pièce</small>
+              <strong>Mon carnet Playmobil</strong>
+              <small>Ma collection, simplement</small>
             </span>
           </Link>
-          <nav aria-label="Navigation principale">
+          <nav className="desktop-nav" aria-label="Navigation principale">
+            <Link href="/">Accueil</Link>
+            <Link href="/collection">Ma collection</Link>
             <Link href="/catalogue">Catalogue</Link>
+            <Link href="/recherches">Mes recherches</Link>
+            <Link href="/themes">Thèmes</Link>
           </nav>
+          <details className="mobile-menu"><summary>Menu</summary><nav aria-label="Navigation mobile"><Link href="/">Accueil</Link><Link href="/collection">Ma collection</Link><Link href="/catalogue">Catalogue</Link><Link href="/recherches">Mes recherches</Link><Link href="/themes">Thèmes</Link></nav></details>
         </header>
         <main>{children}</main>
         <footer>Catalogue personnel non commercial · Données issues des sources référencées</footer>

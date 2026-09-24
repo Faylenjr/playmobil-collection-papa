@@ -1,16 +1,18 @@
 import Link from "next/link";
-import { getCatalogue, PAGE_SIZE } from "../../lib/catalogue";
-import { ProductImage } from "../../components/ProductImage";
+import { getCatalogue, getTheme, PAGE_SIZE } from "../../lib/catalogue";
+import { getCollectorStatuses } from "../../lib/collector";
+import { ProductCard } from "../../components/ProductCard";
 
 type CataloguePageProps = {
-  searchParams: Promise<{ q?: string; page?: string }>;
+  searchParams: Promise<{ q?: string; page?: string; theme?: string }>;
 };
 
 export const dynamic = "force-dynamic";
 
-function pageHref(page: number, query: string) {
+function pageHref(page: number, query: string, theme: string) {
   const params = new URLSearchParams();
   if (query) params.set("q", query);
+  if (theme) params.set("theme", theme);
   if (page > 1) params.set("page", String(page));
   const suffix = params.toString();
   return suffix ? `/catalogue?${suffix}` : "/catalogue";
@@ -24,14 +26,16 @@ function paginationWindow(current: number, total: number) {
 export default async function CataloguePage({ searchParams }: CataloguePageProps) {
   const params = await searchParams;
   const query = (params.q ?? "").trim();
+  const themeSlug = (params.theme ?? "").trim();
   const requestedPage = Number.parseInt(params.page ?? "1", 10);
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const result = await getCatalogue(query, page);
+  const [result, theme] = await Promise.all([getCatalogue(query, page, themeSlug), themeSlug ? getTheme(themeSlug) : null]);
   const currentPage = Math.min(page, result.pages);
+  const statuses = await getCollectorStatuses(result.variants.map(({ id }) => id));
 
   if (page !== currentPage) {
     const { redirect } = await import("next/navigation");
-    redirect(pageHref(currentPage, query));
+    redirect(pageHref(currentPage, query, themeSlug));
   }
 
   const first = result.total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
@@ -41,8 +45,8 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
     <div className="page-shell catalogue-page">
       <section className="catalogue-intro">
         <div>
-          <span className="eyebrow">Collection Playmobil</span>
-          <h1>Trouver un set, une figurine ou une édition</h1>
+          <span className="eyebrow">{theme ? `Thème · ${theme.name}` : "Collection Playmobil"}</span>
+          <h1>{theme ? `Explorer ${theme.name}` : "Trouver un set, une figurine ou une édition"}</h1>
         </div>
         <p className="catalogue-count">
           <strong>{result.total.toLocaleString("fr-FR")}</strong>
@@ -51,7 +55,8 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
       </section>
 
       <form className="search-form" action="/catalogue" method="get" role="search">
-        <label htmlFor="catalogue-search">Rechercher dans le catalogue</label>
+        <label htmlFor="catalogue-search">{theme ? `Rechercher dans ${theme.name}` : "Rechercher dans le catalogue"}</label>
+        {themeSlug && <input type="hidden" name="theme" value={themeSlug} />}
         <div className="search-row">
           <input
             id="catalogue-search"
@@ -62,7 +67,8 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
             autoComplete="off"
           />
           <button type="submit">Rechercher</button>
-          {query && <Link className="clear-search" href="/catalogue">Effacer</Link>}
+          {(query || themeSlug) && <Link className="clear-search" href={themeSlug ? `/catalogue?theme=${encodeURIComponent(themeSlug)}` : "/catalogue"}>{query ? "Effacer la recherche" : ""}</Link>}
+          {themeSlug && <Link className="clear-search" href="/themes">Changer de thème</Link>}
         </div>
       </form>
 
@@ -81,38 +87,23 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
               const theme = variant.themes[0]?.theme.name;
               const market = variant.markets.map(({ market: item }) => item.code).join(" · ");
 
-              return (
-                <article className="product-card" key={variant.id}>
-                  <Link href={`/sets/${variant.id}`} className="card-image" aria-label={`Voir ${name}`}>
-                    <ProductImage src={variant.media[0]?.sourceUrl ?? null} alt={name} />
-                    {year && <span className="year-badge">{year}</span>}
-                  </Link>
-                  <div className="card-body">
-                    <p className="reference">{reference}</p>
-                    <h2><Link href={`/sets/${variant.id}`}>{name}</Link></h2>
-                    <div className="card-meta">
-                      {theme && <span>{theme}</span>}
-                      {market && <span>{market}</span>}
-                      {variant.variantLabel && <span>{variant.variantLabel}</span>}
-                    </div>
-                  </div>
-                </article>
-              );
+              const status = statuses.get(variant.id)!;
+              return <ProductCard key={variant.id} data={{ id: variant.id, name, reference, year: year ?? null, theme: theme ?? null, market, variantLabel: variant.variantLabel, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} />;
             })}
           </section>
 
           {result.pages > 1 && (
             <nav className="pagination" aria-label="Pagination du catalogue">
-              {currentPage > 1 ? <Link href={pageHref(currentPage - 1, query)}>← Précédente</Link> : <span aria-disabled="true">← Précédente</span>}
+              {currentPage > 1 ? <Link href={pageHref(currentPage - 1, query, themeSlug)}>← Précédente</Link> : <span aria-disabled="true">← Précédente</span>}
               <div>
                 {paginationWindow(currentPage, result.pages).map((value, index, values) => (
                   <span key={value} className="page-number-wrap">
                     {index > 0 && value - values[index - 1]! > 1 && <i>…</i>}
-                    <Link className={value === currentPage ? "active" : ""} aria-current={value === currentPage ? "page" : undefined} href={pageHref(value, query)}>{value}</Link>
+                    <Link className={value === currentPage ? "active" : ""} aria-current={value === currentPage ? "page" : undefined} href={pageHref(value, query, themeSlug)}>{value}</Link>
                   </span>
                 ))}
               </div>
-              {currentPage < result.pages ? <Link href={pageHref(currentPage + 1, query)}>Suivante →</Link> : <span aria-disabled="true">Suivante →</span>}
+              {currentPage < result.pages ? <Link href={pageHref(currentPage + 1, query, themeSlug)}>Suivante →</Link> : <span aria-disabled="true">Suivante →</span>}
             </nav>
           )}
         </>

@@ -1,20 +1,24 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductImage } from "../../../components/ProductImage";
+import { CollectionControls } from "../../../components/CollectionControls";
 import { getVariant } from "../../../lib/catalogue";
+import { getVariantCollectorState } from "../../../lib/collector";
+import { updateCollectionItem } from "../../actions/collector";
 
 type ProductPageProps = { params: Promise<{ id: string }> };
 
-export const dynamic = "force-dynamic";
+const conditionLabels = {
+  SEALED: "Sous blister",
+  NEW: "Neuf",
+  EXCELLENT: "Excellent",
+  GOOD: "Bon",
+  FAIR: "Correct",
+  POOR: "Usé",
+  UNKNOWN: "Non renseigné",
+} as const;
 
-export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
-  const variant = await getVariant((await params).id);
-  if (!variant) return { title: "Fiche introuvable" };
-  const name = variant.name ?? variant.product.name ?? "Produit Playmobil";
-  const reference = variant.references[0]?.displayValue ?? variant.product.baseReference;
-  return { title: reference ? `${name} ${reference}` : name };
-}
+export const dynamic = "force-dynamic";
 
 function Field({ label, value }: { label: string; value: string | number | null | undefined }) {
   if (value === null || value === undefined || value === "") return null;
@@ -22,7 +26,8 @@ function Field({ label, value }: { label: string; value: string | number | null 
 }
 
 export default async function ProductPage({ params }: ProductPageProps) {
-  const variant = await getVariant((await params).id);
+  const id = (await params).id;
+  const [variant, collectorState] = await Promise.all([getVariant(id), getVariantCollectorState(id)]);
   if (!variant) notFound();
 
   const name = variant.name ?? variant.product.name ?? "Nom non renseigné";
@@ -67,6 +72,22 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <Field label="Thème" value={themes.map(({ theme }) => theme.name).join(", ")} />
           </dl>
         </div>
+      </section>
+
+      <section className="collector-panel">
+        <div className="section-heading"><span className="eyebrow">Mon inventaire</span><h2>Ma collection</h2></div>
+        <CollectionControls variantId={variant.id} inCollection={Boolean(collectorState.item)} inWishlist={Boolean(collectorState.wanted)} />
+        {collectorState.item && <div className="owned-details">
+          <dl className="detail-grid">
+            <Field label="Quantité" value={collectorState.item.quantity} />
+            <Field label="État" value={conditionLabels[collectorState.item.condition]} />
+            <Field label="Complet" value={collectorState.item.isComplete === null ? "Non renseigné" : collectorState.item.isComplete ? "Oui" : "Non"} />
+            <Field label="Boîte" value={collectorState.item.hasBox === null ? "Non renseigné" : collectorState.item.hasBox ? "Oui" : "Non"} />
+            <Field label="Notice" value={collectorState.item.hasInstructions === null ? "Non renseigné" : collectorState.item.hasInstructions ? "Oui" : "Non"} />
+            <Field label="Notes" value={collectorState.item.notes} />
+          </dl>
+          <details className="edit-collection"><summary>Modifier les informations</summary><CollectionEditor variantId={variant.id} item={collectorState.item} /></details>
+        </div>}
       </section>
 
       {otherImages.length > 0 && (
@@ -120,4 +141,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
       </section>
     </div>
   );
+}
+
+function CollectionEditor({ variantId, item }: { variantId: string; item: NonNullable<Awaited<ReturnType<typeof getVariantCollectorState>>["item"]> }) {
+  const update = updateCollectionItem.bind(null, variantId);
+  const booleanOptions = <><option value="unknown">Non renseigné</option><option value="yes">Oui</option><option value="no">Non</option></>;
+  return <form action={update} className="collection-editor">
+    <label>Quantité<input name="quantity" type="number" min="1" max="999" defaultValue={item.quantity} /></label>
+    <label>État<select name="condition" defaultValue={item.condition}><option value="UNKNOWN">Non renseigné</option><option value="SEALED">Sous blister</option><option value="NEW">Neuf</option><option value="EXCELLENT">Excellent</option><option value="GOOD">Bon</option><option value="FAIR">Correct</option><option value="POOR">Usé</option></select></label>
+    <label>Complet<select name="isComplete" defaultValue={item.isComplete === null ? "unknown" : item.isComplete ? "yes" : "no"}>{booleanOptions}</select></label>
+    <label>Avec boîte<select name="hasBox" defaultValue={item.hasBox === null ? "unknown" : item.hasBox ? "yes" : "no"}>{booleanOptions}</select></label>
+    <label>Avec notice<select name="hasInstructions" defaultValue={item.hasInstructions === null ? "unknown" : item.hasInstructions ? "yes" : "no"}>{booleanOptions}</select></label>
+    <label className="wide">Notes<textarea name="notes" defaultValue={item.notes ?? ""} rows={3} /></label>
+    <button type="submit">Enregistrer les modifications</button>
+  </form>;
 }
