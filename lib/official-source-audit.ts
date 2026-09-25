@@ -60,8 +60,8 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
   });
   const detail = (pattern: RegExp) => [...details].find(([label]) => pattern.test(label))?.[1];
   const content = $(".pdpProductSpecifications__productContent").first().text().replace(/\s+/g, " ").trim();
-  const figures = content.match(/(?:Figuren|Personnages|Figures)\s*:\s*([^;]+)/i)?.[1];
-  const figureQuantities = figures ? [...figures.matchAll(/(?:^|,)\s*(\d+)\s+/g)] : [];
+  const figures = content.match(/(?:Figuren|Personnages|Figures)\s*:\s*(.*?)(?=(?:Tiere|Animals|Animaux|Zubehör|Accessories|Accessoires)\s*:|$)/i)?.[1];
+  const figureQuantities = figures ? [...figures.matchAll(/\b(\d+)\s+/g)] : [];
   const figureCount = figureQuantities.length ? figureQuantities.reduce((sum, match) => sum + Number(match[1]), 0) : undefined;
   const weight = detail(/Gewicht|Poids|Weight/i)?.match(/([\d.,]+)\s*(kg|g)/i);
   const weightGrams = weight ? Number(weight[1]!.replace(",", ".")) * (weight[2]!.toLowerCase() === "kg" ? 1000 : 1) : undefined;

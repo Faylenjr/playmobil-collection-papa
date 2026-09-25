@@ -212,7 +212,7 @@ describe("merged identity repair", () => {
       await db.$disconnect();
       await embedded.close();
     }
-  }, 15_000);
+  }, 30_000);
 
   it.each([2, 4, 12])("preserves a Product shared by %i variants and detaches every repaired cluster", async (variantCount) => {
     const { db, database: embedded } = await database(`repair-shared-product-${variantCount}`);

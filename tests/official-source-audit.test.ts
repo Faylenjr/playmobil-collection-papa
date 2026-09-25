@@ -27,6 +27,11 @@ describe("official PLAYMOBIL audit parsing", () => {
     expect(parseOfficialPageObservation(html, "https://example.test/72168.html", "fr-FR").figureCount).toBeUndefined();
   });
 
+  it("stops figure counting before animals and accessories", () => {
+    const html = page("fr").replace("1 femme, 1 garçon; accessoires", "1 femme 1 garçon Animaux: 3 chevaux Accessoires: 20 éléments");
+    expect(parseOfficialPageObservation(html, "https://example.test/72168.html", "fr-FR").figureCount).toBe(2);
+  });
+
   it("accepts an assigned unique numeric base including a suffixed market variant", () => {
     expect(isSafeOfficialCandidate({ identityClass: "ASSIGNED", baseValue: "72168", variantsUsingBase: 1 })).toBe(true);
   });
