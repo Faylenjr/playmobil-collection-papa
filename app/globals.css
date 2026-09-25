@@ -22,6 +22,7 @@ html { background: var(--background); scroll-behavior: smooth; }
 
 body {
   margin: 0;
+  overflow-x: hidden;
   color: var(--ink);
   background:
     radial-gradient(circle at 8% 0%, rgba(22, 133, 232, 0.13), transparent 30rem),
@@ -290,7 +291,7 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .home-page { padding-block: 42px 90px; }
 .home-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(360px, .85fr); min-height: 510px; overflow: hidden; color: white; background: linear-gradient(125deg, var(--blue-950), var(--blue-700)); border-radius: 30px; box-shadow: 0 24px 65px rgba(8,53,109,.22); }
 .home-hero::after { position: absolute; width: 240px; height: 240px; right: -70px; top: -95px; content: ""; background: var(--yellow); border-radius: 50%; opacity: .96; }
-.home-hero__copy { position: relative; z-index: 2; display: flex; justify-content: center; flex-direction: column; padding: clamp(36px, 6vw, 76px); }
+.home-hero__copy { position: relative; z-index: 2; display: flex; min-width: 0; justify-content: center; flex-direction: column; padding: clamp(36px, 6vw, 76px); }
 .home-hero .eyebrow { color: var(--yellow); }
 .home-hero h1 { max-width: 720px; font-size: clamp(2.6rem, 5vw, 5rem); }
 .home-hero p { max-width: 660px; color: #dcecff; font-size: 1.16rem; }
@@ -301,7 +302,7 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .home-search button { padding: 12px 20px; color: var(--blue-950); background: var(--yellow); border: 0; border-radius: 10px; cursor: pointer; font-weight: 900; }
 .hero-shortcuts { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 20px; }
 .hero-shortcuts a { color: white; border-bottom: 2px solid var(--yellow); font-size: .9rem; font-weight: 850; }
-.collector-showcase { position: relative; z-index: 1; display: flex; justify-content: center; flex-direction: column; padding: 65px 45px 38px 10px; }
+.collector-showcase { position: relative; z-index: 1; display: flex; min-width: 0; justify-content: center; flex-direction: column; padding: 65px 45px 38px 10px; }
 .showcase-label { align-self: flex-end; margin: 0 18px 12px 0; color: var(--blue-950); font-size: .72rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .showcase-shelf { position: relative; min-height: 310px; }
 .showcase-shelf::after { position: absolute; z-index: -1; left: 7%; right: 0; bottom: 18px; height: 22px; content: ""; background: rgba(5,24,52,.42); border-radius: 50%; filter: blur(12px); }
@@ -408,8 +409,12 @@ footer strong { color: var(--blue-900); }
   .home-hero { grid-template-columns: 1fr; }
   .home-hero::after { width: 170px; height: 170px; right: -60px; top: -75px; }
   .home-hero__copy { padding: 40px 30px 28px; }
+  .home-hero h1 { overflow-wrap: anywhere; font-size: clamp(2.35rem, 10vw, 3.25rem); }
+  .home-search > div { flex-direction: column; }
+  .home-search button { width: 100%; }
+  .hero-shortcuts { display: grid; grid-template-columns: 1fr; justify-items: start; }
   .collector-showcase { min-height: 370px; padding: 12px 30px 35px; }
-  .showcase-label { color: var(--yellow); }
+  .showcase-label { max-width: 100%; color: var(--yellow); text-align: right; white-space: normal; }
   .showcase-shelf { min-height: 300px; }
   .theme-grid, .theme-grid.compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .collector-page-heading { padding: 24px; }
