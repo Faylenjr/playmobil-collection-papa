@@ -33,7 +33,8 @@
     "media:enrich-source-provenance": "pnpm --silent build:cli && node dist/src/cli.js media:enrich-source-provenance",
     "report:embedded": "pnpm --silent build:cli && node dist/src/embedded-cli.js report",
     "report": "pnpm --silent build:cli && node dist/src/cli.js report",
-    "audit:playmodb-candidates": "tsx scripts/audit-playmodb-candidates.ts"
+    "audit:playmodb-candidates": "tsx scripts/audit-playmodb-candidates.ts",
+    "audit:official-playmobil": "tsx scripts/audit-official-playmobil.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
