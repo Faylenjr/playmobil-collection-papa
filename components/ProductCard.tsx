@@ -14,10 +14,13 @@ export type ProductCardData = {
 };
 
 export function ProductCard({ data, inCollection, inWishlist, quantity }: { data: ProductCardData; inCollection: boolean; inWishlist: boolean; quantity?: number }) {
+  const stateClass = inCollection ? "is-owned" : inWishlist ? "is-wanted" : "";
   return (
-    <article className="product-card">
+    <article className={`product-card ${stateClass}`}>
       <Link href={`/sets/${data.id}`} className="card-image" aria-label={`Voir ${data.name}`}>
         <ProductImage src={data.imageUrl ?? null} alt={data.name} />
+        {inCollection && <span className="collector-badge owned-badge">✓ Dans ma collection</span>}
+        {!inCollection && inWishlist && <span className="collector-badge wanted-badge">♡ Je recherche</span>}
         {data.year && <span className="year-badge">{data.year}</span>}
         {quantity && quantity > 1 ? <span className="quantity-badge">× {quantity}</span> : null}
       </Link>

@@ -18,7 +18,7 @@ export default async function CollectionPage({ searchParams }: Props) {
   const pageHref = (target: number) => { const search = new URLSearchParams(); if (query) search.set("q", query); if (theme) search.set("theme", theme); if (sort !== "recent") search.set("sort", sort); if (target > 1) search.set("page", String(target)); return `/collection${search.size ? `?${search}` : ""}`; };
   return (
     <div className="page-shell listing-page">
-      <section className="page-heading"><span className="eyebrow">Mon inventaire</span><h1>Ma collection</h1><p>{result.total.toLocaleString("fr-FR")} objet{result.total > 1 ? "s" : ""}</p></section>
+      <section className="page-heading collector-page-heading collection-heading"><div><span className="eyebrow">Mon inventaire</span><h1>Ma collection</h1><p>Les boîtes et objets que je possède déjà.</p></div><strong>{result.total.toLocaleString("fr-FR")}<small>objet{result.total > 1 ? "s" : ""}</small></strong></section>
       <form className="filter-form" method="get">
         <label>Rechercher<input name="q" type="search" defaultValue={query} placeholder="Nom ou référence…" /></label>
         <label>Thème<select name="theme" defaultValue={theme}><option value="">Tous les thèmes</option>{themes.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></label>
@@ -28,7 +28,7 @@ export default async function CollectionPage({ searchParams }: Props) {
       {result.items.length ? <><section className="catalogue-grid" aria-label="Objets de ma collection">{result.items.map(({ variant, quantity }) => {
         const name = getPreferredDisplayName({ frenchName: frenchNames.get(variant.id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey });
         return <ProductCard key={variant.id} data={{ id: variant.id, name, reference: variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey, year: variant.releaseYear ?? variant.product.releaseYear, theme: variant.themes[0]?.theme.name ?? null, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection inWishlist={false} quantity={quantity} />;
-      })}</section>{result.pages > 1 && <nav className="pagination simple-pagination" aria-label="Pagination de la collection">{page > 1 ? <Link href={pageHref(page - 1)}>← Précédente</Link> : <span aria-disabled="true">← Précédente</span>}<span>Page {page} sur {result.pages}</span>{page < result.pages ? <Link href={pageHref(page + 1)}>Suivante →</Link> : <span aria-disabled="true">Suivante →</span>}</nav>}</> : <section className="empty-state"><h2>Votre collection est vide</h2><p>Ajoutez vos premiers objets depuis le catalogue.</p><Link className="button" href="/catalogue">Explorer le catalogue</Link></section>}
+      })}</section>{result.pages > 1 && <nav className="pagination simple-pagination" aria-label="Pagination de la collection">{page > 1 ? <Link href={pageHref(page - 1)}>← Précédente</Link> : <span aria-disabled="true">← Précédente</span>}<span>Page {page} sur {result.pages}</span>{page < result.pages ? <Link href={pageHref(page + 1)}>Suivante →</Link> : <span aria-disabled="true">Suivante →</span>}</nav>}</> : <section className="empty-state collector-empty"><span aria-hidden="true">✓</span><h2>Votre collection est prête</h2><p>Ajoutez une première boîte depuis le catalogue pour commencer votre inventaire.</p><Link className="button" href="/catalogue">Explorer le catalogue</Link></section>}
     </div>
   );
 }

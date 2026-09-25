@@ -16,8 +16,8 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <Link href="/" className="brand" aria-label="Mon carnet Playmobil — accueil">
             <span className="brand-mark" aria-hidden="true">P</span>
             <span>
-              <strong>Mon carnet Playmobil</strong>
-              <small>Ma collection, simplement</small>
+              <small>Mon carnet</small>
+              <strong>Playmobil</strong>
             </span>
           </Link>
           <nav className="desktop-nav" aria-label="Navigation principale">
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <details className="mobile-menu"><summary>Menu</summary><nav aria-label="Navigation mobile"><Link href="/">Accueil</Link><Link href="/collection">Ma collection</Link><Link href="/catalogue">Catalogue</Link><Link href="/nouveautes">Nouveautés</Link><Link href="/recherches">Mes recherches</Link><Link href="/themes">Thèmes</Link></nav></details>
         </header>
         <main>{children}</main>
-        <footer>Catalogue personnel non commercial · Données issues des sources référencées</footer>
+        <footer><strong>Mon carnet Playmobil</strong><span>Catalogue personnel non commercial · Données issues des sources référencées</span></footer>
       </body>
     </html>
   );

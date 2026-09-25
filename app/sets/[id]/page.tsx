@@ -59,6 +59,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
         <div className="hero-copy">
           <span className="eyebrow">{variant.variantKind.replaceAll("_", " ")}</span>
+          <div className="detail-status-row">
+            {collectorState.item && <span className="detail-status owned">✓ Dans ma collection</span>}
+            {!collectorState.item && collectorState.wanted && <span className="detail-status wanted">♡ Je recherche</span>}
+          </div>
           <p className="hero-reference">{reference ?? "Référence non renseignée"}</p>
           <h1>{name}</h1>
           {(variant.description ?? variant.product.description) && <p className="description">{variant.description ?? variant.product.description}</p>}

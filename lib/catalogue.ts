@@ -164,17 +164,37 @@ export async function getCatalogue(
 
 export async function getThemes(limit = 30) {
   const db = await getDatabaseClient();
-  return db.$queryRaw<{ slug: string; name: string; count: number }[]>(Prisma.sql`
+  return db.$queryRaw<{ slug: string; name: string; count: number; imageUrl: string | null }[]>(Prisma.sql`
     WITH themed AS (
       SELECT "theme_id", "variant_id" FROM "variant_themes"
       UNION
       SELECT pt."theme_id", pv."id" AS "variant_id"
       FROM "product_themes" pt
       JOIN "product_variants" pv ON pv."product_id" = pt."product_id"
+    ), theme_media AS (
+      SELECT themed."theme_id",
+             ma."source_url",
+             ROW_NUMBER() OVER (
+               PARTITION BY themed."theme_id"
+               ORDER BY
+                 CASE LOWER(ma."kind") WHEN 'box_front' THEN 0 WHEN 'box_back' THEN 1 WHEN 'main' THEN 2 ELSE 3 END,
+                 COALESCE(pv."release_year", p."release_year") DESC NULLS LAST,
+                 s."priority" ASC,
+                 ma."source_url" ASC
+             ) AS media_rank
+      FROM themed
+      JOIN "product_variants" pv ON pv."id" = themed."variant_id"
+      JOIN "products" p ON p."id" = pv."product_id"
+      JOIN "media_assets" ma ON ma."variant_id" = pv."id"
+      JOIN "sources" s ON s."id" = ma."source_id"
+      WHERE ma."can_display" IS DISTINCT FROM FALSE
+        AND ma."source_url" NOT LIKE 'https://images.brickset.com/sets/large/0-1.jpg%'
     )
-    SELECT t."slug", t."name", COUNT(DISTINCT themed."variant_id")::int AS "count"
+    SELECT t."slug", t."name", COUNT(DISTINCT themed."variant_id")::int AS "count",
+           MAX(theme_media."source_url") FILTER (WHERE theme_media.media_rank = 1) AS "imageUrl"
     FROM "themes" t
     JOIN themed ON themed."theme_id" = t."id"
+    LEFT JOIN theme_media ON theme_media."theme_id" = t."id" AND theme_media.media_rank = 1
     WHERE t."parent_id" IS NULL
     GROUP BY t."id", t."slug", t."name"
     ORDER BY "count" DESC, t."name" ASC
