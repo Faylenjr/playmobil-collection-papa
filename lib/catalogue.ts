@@ -1,7 +1,8 @@
 import { Prisma } from "../generated/prisma/client";
 import { cache } from "react";
 import { getDatabaseClient } from "./db";
-import { getOfficialFrenchNames, getPreferredDisplayName } from "./display-name";
+import { getFrenchNames, getPreferredDisplayName } from "./display-name";
+import { orderMediaForDisplay } from "./media";
 import {
   collectorFactsCtesSql,
   collectorFactsJoinsSql,
@@ -92,7 +93,7 @@ const catalogueVariantSelect = {
   media: {
     where: visibleMediaWhere,
     orderBy: [{ source: { priority: "asc" as const } }, { kind: "asc" as const }, { sourceUrl: "asc" as const }],
-    take: 1,
+    take: 8,
     select: { sourceUrl: true, kind: true },
   },
 } satisfies Prisma.ProductVariantSelect;
@@ -100,14 +101,14 @@ const catalogueVariantSelect = {
 async function getVariantsInOrder(ids: string[]) {
   if (!ids.length) return [];
   const db = await getDatabaseClient();
-  const [unordered, officialNames] = await Promise.all([
+  const [unordered, frenchNames] = await Promise.all([
     db.productVariant.findMany({ where: { id: { in: ids } }, select: catalogueVariantSelect }),
-    getOfficialFrenchNames(ids),
+    getFrenchNames(ids),
   ]);
   const byId = new Map(unordered.map((variant) => [variant.id, variant]));
   return ids.flatMap((id) => {
     const variant = byId.get(id);
-    return variant ? [{ ...variant, displayName: getPreferredDisplayName({ officialFrenchName: officialNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }) }] : [];
+    return variant ? [{ ...variant, media: orderMediaForDisplay(variant.media), displayName: getPreferredDisplayName({ frenchName: frenchNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }) }] : [];
   });
 }
 
@@ -291,8 +292,8 @@ const getVariantCached = cache(async (id: string) => {
     },
   });
   if (!variant) return null;
-  const officialNames = await getOfficialFrenchNames([id]);
-  return { ...variant, displayName: getPreferredDisplayName({ officialFrenchName: officialNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }) };
+  const frenchNames = await getFrenchNames([id]);
+  return { ...variant, media: orderMediaForDisplay(variant.media), displayName: getPreferredDisplayName({ frenchName: frenchNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }) };
 });
 
 export function getVariant(id: string) {

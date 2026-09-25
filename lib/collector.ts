@@ -1,6 +1,7 @@
 import type { Prisma } from "../generated/prisma/client";
 import { getDatabaseClient } from "./db";
 import { PAGE_SIZE, visibleMediaWhere } from "./catalogue";
+import { orderMediaForDisplay } from "./media";
 
 export const COLLECTOR_EMAIL = "collectionneur@playmobil.local";
 export const COLLECTION_NAME = "Ma collection";
@@ -74,7 +75,7 @@ const itemVariantInclude = {
   product: { select: { name: true, baseReference: true, releaseYear: true, kind: true } },
   references: { orderBy: [{ isPrimary: "desc" as const }, { displayValue: "asc" as const }], take: 2, select: { displayValue: true } },
   themes: { orderBy: { isPrimary: "desc" as const }, take: 1, select: { theme: { select: { name: true, slug: true } } } },
-  media: { where: visibleMediaWhere, orderBy: [{ source: { priority: "asc" as const } }, { kind: "asc" as const }, { sourceUrl: "asc" as const }], take: 1, select: { sourceUrl: true } },
+  media: { where: visibleMediaWhere, orderBy: [{ source: { priority: "asc" as const } }, { kind: "asc" as const }, { sourceUrl: "asc" as const }], take: 8, select: { sourceUrl: true, kind: true } },
 } satisfies Prisma.ProductVariantInclude;
 
 function collectionSearchWhere(query: string, theme: string): Prisma.ProductVariantWhereInput {
@@ -108,7 +109,7 @@ export async function getCollectionItems(query: string, theme: string, sort: str
     db.collectionItem.count({ where }),
     db.collectionItem.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { variant: { include: itemVariantInclude } } }),
   ]);
-  return { items, total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items: items.map((item) => ({ ...item, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }
 
 export async function getWishlistItems(query: string, page: number) {
@@ -119,5 +120,5 @@ export async function getWishlistItems(query: string, page: number) {
     db.wishlistItem.count({ where }),
     db.wishlistItem.findMany({ where, orderBy: [{ priority: "desc" }, { variant: { releaseYear: { sort: "desc", nulls: "last" } } }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { variant: { include: itemVariantInclude } } }),
   ]);
-  return { items, total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items: items.map((item) => ({ ...item, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }

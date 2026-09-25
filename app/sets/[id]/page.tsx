@@ -31,6 +31,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   if (!variant) notFound();
 
   const name = variant.displayName;
+  const originalName = variant.name?.trim() || variant.product.name?.trim();
   const reference = variant.references[0]?.displayValue ?? variant.product.baseReference;
   const year = variant.releaseYear ?? variant.product.releaseYear;
   const primaryImage = variant.media[0];
@@ -63,6 +64,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {(variant.description ?? variant.product.description) && <p className="description">{variant.description ?? variant.product.description}</p>}
           <dl className="detail-grid">
             <Field label="Année" value={year} />
+            <Field label="Titre original" value={originalName && originalName !== name ? originalName : null} />
             <Field label="Marché" value={variant.markets.map(({ market }) => market.name).join(", ")} />
             <Field label="Format" value={variant.format} />
             <Field label="Variante" value={variant.variantLabel} />

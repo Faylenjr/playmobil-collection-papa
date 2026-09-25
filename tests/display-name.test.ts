@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { getPreferredDisplayName } from "../lib/display-name";
 
 describe("preferred display name", () => {
-  it("uses an explicitly official French name first", () => {
-    expect(getPreferredDisplayName({ officialFrenchName: "Grand parc pour enfants", variantName: "Park Playground" })).toBe("Grand parc pour enfants");
+  it("uses an existing French translation first", () => {
+    expect(getPreferredDisplayName({ frenchName: "Grand parc pour enfants", variantName: "Park Playground" })).toBe("Grand parc pour enfants");
   });
 
-  it("does not treat an unproven translation as official", () => {
+  it("keeps the original name when no French translation exists", () => {
     expect(getPreferredDisplayName({ variantName: "Park Playground", productName: "Playground" })).toBe("Park Playground");
   });
 

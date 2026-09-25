@@ -2,7 +2,7 @@ import Link from "next/link";
 import { addToCollection, removeFromWishlist, updateWishlistItem } from "../actions/collector";
 import { ProductImage } from "../../components/ProductImage";
 import { getWishlistItems } from "../../lib/collector";
-import { getOfficialFrenchNames, getPreferredDisplayName } from "../../lib/display-name";
+import { getFrenchNames, getPreferredDisplayName } from "../../lib/display-name";
 
 type Props = { searchParams: Promise<{ q?: string; page?: string }> };
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export default async function WishlistPage({ searchParams }: Props) {
   const query = (params.q ?? "").trim();
   const page = Math.max(1, Number.parseInt(params.page ?? "1", 10) || 1);
   const result = await getWishlistItems(query, page);
-  const officialNames = await getOfficialFrenchNames(result.items.map(({ variant }) => variant.id));
+  const frenchNames = await getFrenchNames(result.items.map(({ variant }) => variant.id));
   const pageHref = (target: number) => {
     const search = new URLSearchParams();
     if (query) search.set("q", query);
@@ -28,7 +28,7 @@ export default async function WishlistPage({ searchParams }: Props) {
       <form className="filter-form simple" method="get"><label>Rechercher<input name="q" type="search" defaultValue={query} placeholder="Nom ou référence…" /></label><button type="submit">Rechercher</button></form>
       {result.items.length ? <><section className="wishlist-list">{result.items.map((item) => {
         const variant = item.variant;
-        const name = getPreferredDisplayName({ officialFrenchName: officialNames.get(variant.id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey });
+        const name = getPreferredDisplayName({ frenchName: frenchNames.get(variant.id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey });
         const add = addToCollection.bind(null, variant.id);
         const remove = removeFromWishlist.bind(null, variant.id);
         const update = updateWishlistItem.bind(null, variant.id);
