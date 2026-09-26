@@ -9,7 +9,8 @@
   },
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm db:generate && pnpm build:cli && next build",
+    "build": "pnpm build:next && pnpm build:vinext",
+    "build:next": "pnpm db:generate && pnpm build:cli && next build",
     "build:cli": "tsc -p tsconfig.build.json",
     "start": "next start",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.next.json",
@@ -35,11 +36,16 @@
     "report": "pnpm --silent build:cli && node dist/src/cli.js report",
     "audit:playmodb-candidates": "tsx scripts/audit-playmodb-candidates.ts",
     "audit:official-playmobil": "tsx scripts/audit-official-playmobil.ts",
-    "dry-run:official-release-waves": "tsx scripts/dry-run-official-release-waves.ts"
+    "dry-run:official-release-waves": "tsx scripts/dry-run-official-release-waves.ts",
+    "dev:vinext": "vinext dev --port 3001",
+    "build:vinext": "pnpm db:generate && vinext build",
+    "start:vinext": "wrangler dev --config dist/server/wrangler.json",
+    "deploy:vinext": "vinext-cloudflare deploy"
   },
   "dependencies": {
     "@prisma/adapter-pg": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@vinext/cloudflare": "1.0.0-beta.10",
     "cheerio": "1.2.0",
     "dotenv": "17.2.3",
     "fast-xml-parser": "5.11.1",
@@ -48,18 +54,25 @@
     "pg": "8.16.3",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "react-server-dom-webpack": "^19.3.0",
+    "vinext": "1.0.0-beta.12",
     "zod": "4.1.11"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.60.0",
     "@electric-sql/pglite": "0.5.8",
     "@types/node": "24.10.0",
     "@types/pg": "8.15.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-rsc": "^0.5.35",
     "pglite-prisma-adapter": "0.7.2",
     "prisma": "7.10.0",
     "tsx": "4.23.15",
     "typescript": "7.0.2",
-    "vitest": "5.0.1"
+    "vite": "8.0.0",
+    "vitest": "5.0.1",
+    "wrangler": "^4.139.0"
   }
 }

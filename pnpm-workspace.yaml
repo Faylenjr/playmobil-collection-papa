@@ -5,7 +5,9 @@ onlyBuiltDependencies:
   - '@prisma/engines'
   - esbuild
   - prisma
+  - workerd
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+  workerd: true

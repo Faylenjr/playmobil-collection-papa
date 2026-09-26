@@ -13,3 +13,5 @@ data/raw/
 *.log
 *.tsbuildinfo
 .DS_Store
+.vinext/
+.wrangler/
