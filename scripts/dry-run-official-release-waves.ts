@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { createHash } from "node:crypto";
-import { Prisma } from "../generated/prisma/client";
+import { Prisma } from "../generated/prisma-node/client";
 import { getDatabaseClient } from "../lib/db";
 import { parseOfficialPageObservation, type OfficialMarket, type OfficialPageObservation } from "../lib/official-source-audit";
 import {

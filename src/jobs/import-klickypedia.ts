@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { PrismaClient } from "../../generated/prisma/client.js";
+import type { PrismaClient } from "../../generated/prisma-node/client.js";
 import { PoliteHttpClient } from "../importers/http.js";
 import { KLICKYPEDIA, listKlickypediaSetUrls, parseKlickypediaSet } from "../importers/klickypedia.js";
 import type { SitemapEntry } from "../importers/types.js";

@@ -1,4 +1,4 @@
-import type { PrismaClient } from "../../generated/prisma/client.js";
+import type { PrismaClient } from "../../generated/prisma-node/client.js";
 import { PoliteHttpClient } from "../importers/http.js";
 import { parsePlaymobilProduct, PLAYMOBIL_DE, PLAYMOBIL_FR } from "../importers/playmobil.js";
 import { importRecord } from "../pipeline/import-record.js";

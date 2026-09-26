@@ -1,4 +1,4 @@
-import type { PrismaClient } from "../../generated/prisma/client.js";
+import type { PrismaClient } from "../../generated/prisma-node/client.js";
 import { validateMergedRepairPlan, type MergedRepairPlan } from "../domain/merged-repair-plan.js";
 import { isGenericSourceMedia } from "../domain/source-media.js";
 import { PoliteHttpClient } from "../importers/http.js";

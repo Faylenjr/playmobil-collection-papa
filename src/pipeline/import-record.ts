@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
+import type { Prisma, PrismaClient } from "../../generated/prisma-node/client.js";
 import { parseReference } from "../domain/reference.js";
 import { resolveIdentityKeys, type IdentitySnapshot } from "../domain/identity.js";
 import { resolveCandidates } from "../domain/resolver.js";

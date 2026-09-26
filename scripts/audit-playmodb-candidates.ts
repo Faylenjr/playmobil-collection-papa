@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Prisma } from "../generated/prisma/client";
+import { Prisma } from "../generated/prisma-node/client";
 import { getDatabaseClient } from "../lib/db";
 import { collectorClassFromFactsSql, collectorFactsCtesSql, collectorFactsJoinsSql } from "../lib/ranking";
 

@@ -1,4 +1,4 @@
-import type { Prisma } from "../../generated/prisma/client.js";
+import type { Prisma } from "../../generated/prisma-node/client.js";
 import { parseReference } from "../domain/reference.js";
 import { resolveCandidates } from "../domain/resolver.js";
 import { klickypediaThemeSlug } from "../importers/klickypedia.js";

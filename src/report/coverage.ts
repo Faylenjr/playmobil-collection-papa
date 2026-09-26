@@ -1,4 +1,4 @@
-import type { PrismaClient } from "../../generated/prisma/client.js";
+import type { PrismaClient } from "../../generated/prisma-node/client.js";
 
 export interface CoverageMetric { field: string; present: number; total: number; percent: number }
 const metric = (field: string, present: number, total: number): CoverageMetric => ({ field, present, total, percent: total === 0 ? 0 : Math.round((present / total) * 10_000) / 100 });

@@ -1,4 +1,4 @@
-import type { Prisma } from "../../generated/prisma/client.js";
+import type { Prisma } from "../../generated/prisma-node/client.js";
 import { stableRecordQualifier } from "../domain/identity.js";
 
 export interface SourceRecordIdentity {

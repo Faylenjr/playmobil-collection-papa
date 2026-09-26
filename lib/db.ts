@@ -8,11 +8,11 @@ const globalForPrisma = globalThis as unknown as {
 
 export async function getDatabaseClient(): Promise<PrismaClient> {
   if (process.env.PGLITE_DIR) {
-    globalForPrisma.playmobilPrismaPromise ??= import("../src/db/embedded").then(
+    const clientPromise = (globalForPrisma.playmobilPrismaPromise ??= import("../src/db/embedded").then(
       async ({ createEmbeddedDatabaseClient }) =>
-        (await createEmbeddedDatabaseClient(process.env.PGLITE_DIR)).db,
-    );
-    return globalForPrisma.playmobilPrismaPromise;
+        (await createEmbeddedDatabaseClient(process.env.PGLITE_DIR)).db as unknown as PrismaClient,
+    ));
+    return clientPromise;
   }
 
   const connectionString = process.env.DATABASE_URL;

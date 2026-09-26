@@ -1,4 +1,4 @@
-import type { Prisma, PrismaClient } from "../../generated/prisma/client.js";
+import type { Prisma, PrismaClient } from "../../generated/prisma-node/client.js";
 import {
   classifyUrlReferenceEvidence,
   clusterMergedSourceRecords,

@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { PrismaClient } from "../generated/prisma/client.js";
+import type { PrismaClient } from "../generated/prisma-node/client.js";
 import { createEmbeddedDatabaseClient } from "../src/db/embedded.js";
 import { auditMergedIdentities } from "../src/jobs/audit-merged-identities.js";
 import { repairMergedIdentities } from "../src/jobs/repair-merged-identities.js";

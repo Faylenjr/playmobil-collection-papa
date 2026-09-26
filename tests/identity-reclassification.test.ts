@@ -8,7 +8,7 @@ import { applyReferenceAssignments, reclassifyIdentities } from "../src/jobs/rec
 import { qualifiedIdentityKeys } from "../src/pipeline/canonical-identity.js";
 import { importRecord } from "../src/pipeline/import-record.js";
 import type { RawCollectible } from "../src/importers/types.js";
-import type { Prisma } from "../generated/prisma/client.js";
+import type { Prisma } from "../generated/prisma-node/client.js";
 
 const directories: string[] = [];
 afterEach(async () => {

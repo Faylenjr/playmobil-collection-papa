@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { PrismaClient } from "../generated/prisma/client.js";
+import type { PrismaClient } from "../generated/prisma-node/client.js";
 import { createEmbeddedDatabaseClient } from "../src/db/embedded.js";
 import { KLICKYPEDIA_GENERIC_SOURCE_FALLBACK_URL } from "../src/domain/source-media.js";
 import { auditMergedIdentities } from "../src/jobs/audit-merged-identities.js";
