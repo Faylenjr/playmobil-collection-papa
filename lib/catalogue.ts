@@ -8,6 +8,10 @@ import {
   collectorFactsJoinsSql,
   collectorPriorityFromFactsSql,
 } from "./ranking";
+import {
+  collectorCommercialReferencePredicateSql,
+  collectorReferenceGroupSql,
+} from "./collector-reference-sql";
 
 export const PAGE_SIZE = 36;
 export const KLICKYPEDIA_PLACEHOLDER =
@@ -41,11 +45,12 @@ function rankingWhereSql(query: string, themeSlug: string, year?: number) {
     )`);
   }
   if (themeSlug) clauses.push(Prisma.sql`EXISTS (
-    SELECT 1
-    FROM (
+    SELECT 1 FROM (
       SELECT vt."theme_id" FROM "variant_themes" vt WHERE vt."variant_id" = pv."id"
-      UNION
-      SELECT pt."theme_id" FROM "product_themes" pt WHERE pt."product_id" = p."id"
+      UNION ALL
+      SELECT pt."theme_id" FROM "product_themes" pt
+      WHERE pt."product_id" = p."id"
+        AND NOT EXISTS (SELECT 1 FROM "variant_themes" own_theme WHERE own_theme."variant_id" = pv."id")
     ) assigned_theme
     JOIN "themes" t ON t."id" = assigned_theme."theme_id"
     LEFT JOIN "themes" parent ON parent."id" = t."parent_id"
@@ -59,12 +64,45 @@ function catalogueOrderSql(sort: CatalogueSort) {
   if (sort === "newest") return Prisma.sql`"effective_date" DESC NULLS LAST, "reference_sort" ASC, "id" ASC`;
   if (sort === "oldest") return Prisma.sql`"effective_date" ASC NULLS LAST, "reference_sort" ASC, "id" ASC`;
   if (sort === "reference") return Prisma.sql`
-    ("priority" = 0) ASC,
-    NULLIF(SUBSTRING("reference_sort" FROM '^([0-9]+)'), '')::bigint ASC NULLS LAST,
+    "reference_group" ASC,
+    "reference_numeric" DESC NULLS LAST,
     "reference_sort" ASC,
     "id" ASC
   `;
   return Prisma.sql`"priority" DESC, "effective_date" DESC NULLS LAST, "reference_sort" ASC, "id" ASC`;
+}
+
+const referenceFactsJoinSql = Prisma.sql`
+  LEFT JOIN LATERAL (
+    SELECT pr."display_value", pr."normalized_value", pr."base_value", pr."suffix", pr."identity_class", pr."is_primary"
+    FROM "product_references" pr
+    WHERE pr."variant_id" = pv."id"
+    ORDER BY pr."is_primary" DESC, pr."display_value" ASC
+    LIMIT 1
+  ) pr ON TRUE
+`;
+
+async function getExactCommercialReferenceAnchor(
+  db: Awaited<ReturnType<typeof getDatabaseClient>>,
+  query: string,
+  themeSlug: string,
+  year?: number,
+) {
+  const normalized = query.trim().toUpperCase();
+  if (!/^\d{3,5}$/.test(normalized)) return null;
+  const rows = await db.$queryRaw<{ numericValue: number }[]>(Prisma.sql`
+    SELECT COALESCE(pr."base_value", pr."normalized_value")::int AS "numericValue"
+    FROM "product_variants" pv
+    JOIN "products" p ON p."id" = pv."product_id"
+    ${referenceFactsJoinSql}
+    ${rankingWhereSql("", themeSlug, year)}
+      ${themeSlug || year ? Prisma.sql`AND` : Prisma.sql`WHERE`}
+      ${collectorCommercialReferencePredicateSql}
+      AND COALESCE(pr."base_value", pr."normalized_value") = ${normalized}
+    ORDER BY pr."is_primary" DESC, pr."display_value" ASC
+    LIMIT 1
+  `);
+  return rows[0]?.numericValue ?? null;
 }
 
 const catalogueVariantSelect = {
@@ -120,46 +158,46 @@ export async function getCatalogue(
   year?: number,
 ) {
   const db = await getDatabaseClient();
-  const usesCollectorClassification = sort === "recommended";
+  const exactReferenceAnchor = await getExactCommercialReferenceAnchor(db, query, themeSlug, year);
+  const effectiveSort: CatalogueSort = exactReferenceAnchor === null ? sort : "reference";
+  const usesCollectorClassification = effectiveSort === "recommended";
   const collectorCtes = usesCollectorClassification
     ? Prisma.sql`${collectorFactsCtesSql},`
     : Prisma.empty;
   const collectorJoins = usesCollectorClassification ? collectorFactsJoinsSql : Prisma.empty;
   const priority = usesCollectorClassification
     ? collectorPriorityFromFactsSql
-    : sort === "reference"
-      ? Prisma.sql`CASE WHEN EXISTS (
-          SELECT 1 FROM "product_references" pr
-          WHERE pr."variant_id" = pv."id"
-            AND pr."identity_class"::text = 'ASSIGNED'
-            AND pr."normalized_value" !~ '^(0+|N/?A)'
-        ) THEN 1 ELSE 0 END`
-      : Prisma.sql`0`;
+    : Prisma.sql`0`;
+  const exactReferenceFilter = exactReferenceAnchor === null
+    ? Prisma.sql`TRUE`
+    : Prisma.sql`("reference_group" > 0 OR ("reference_group" = 0 AND "reference_numeric" <= ${exactReferenceAnchor}))`;
   const rows = await db.$queryRaw<{ id: string; priority: number; total: number }[]>(Prisma.sql`
     WITH ${collectorCtes} scored AS (
       SELECT pv."id",
              (${priority})::int AS "priority",
              COALESCE(pv."release_date", MAKE_DATE(COALESCE(pv."release_year", p."release_year"), 1, 1)) AS "effective_date",
-             LOWER(COALESCE(
-               (SELECT pr."display_value" FROM "product_references" pr WHERE pr."variant_id" = pv."id" ORDER BY pr."is_primary" DESC, pr."display_value" ASC LIMIT 1),
-               p."base_reference", pv."canonical_key"
-             )) AS "reference_sort"
+             (${collectorReferenceGroupSql})::int AS "reference_group",
+             CASE WHEN COALESCE(pr."base_value", pr."normalized_value") ~ '^[0-9]+$'
+               THEN COALESCE(pr."base_value", pr."normalized_value")::bigint END AS "reference_numeric",
+             LOWER(COALESCE(pr."display_value", p."base_reference", pv."canonical_key")) AS "reference_sort"
       FROM "product_variants" pv
       JOIN "products" p ON p."id" = pv."product_id"
       ${collectorJoins}
-      ${rankingWhereSql(query, themeSlug, year)}
+      ${referenceFactsJoinSql}
+      ${rankingWhereSql(exactReferenceAnchor === null ? query : "", themeSlug, year)}
     ), counted AS (
       SELECT *, (COUNT(*) OVER())::int AS "total"
       FROM scored
+      WHERE ${exactReferenceFilter}
     )
     SELECT "id", "priority", "total"
     FROM counted
-    ORDER BY ${catalogueOrderSql(sort)}
+    ORDER BY ${catalogueOrderSql(effectiveSort)}
     LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}
   `);
   const total = rows[0]?.total ?? 0;
   const variants = await getVariantsInOrder(rows.map(({ id }) => id));
-  return { total, variants, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { total, variants, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)), effectiveSort, exactReference: exactReferenceAnchor === null ? null : query.trim() };
 }
 
 export async function getThemes(limit = 30) {
@@ -167,10 +205,11 @@ export async function getThemes(limit = 30) {
   return db.$queryRaw<{ slug: string; name: string; count: number; imageUrl: string | null }[]>(Prisma.sql`
     WITH themed AS (
       SELECT "theme_id", "variant_id" FROM "variant_themes"
-      UNION
+      UNION ALL
       SELECT pt."theme_id", pv."id" AS "variant_id"
       FROM "product_themes" pt
       JOIN "product_variants" pv ON pv."product_id" = pt."product_id"
+      WHERE NOT EXISTS (SELECT 1 FROM "variant_themes" own_theme WHERE own_theme."variant_id" = pv."id")
     ), theme_media AS (
       SELECT themed."theme_id",
              ma."source_url",
@@ -216,10 +255,11 @@ export async function getThemeNavigation(slug: string) {
     db.$queryRaw<{ slug: string; name: string; count: number }[]>(Prisma.sql`
       WITH themed AS (
         SELECT "theme_id", "variant_id" FROM "variant_themes"
-        UNION
+        UNION ALL
         SELECT pt."theme_id", pv."id" AS "variant_id"
         FROM "product_themes" pt
         JOIN "product_variants" pv ON pv."product_id" = pt."product_id"
+        WHERE NOT EXISTS (SELECT 1 FROM "variant_themes" own_theme WHERE own_theme."variant_id" = pv."id")
       )
       SELECT child."slug", child."name", COUNT(DISTINCT themed."variant_id")::int AS "count"
       FROM "themes" parent
@@ -234,7 +274,9 @@ export async function getThemeNavigation(slug: string) {
       WITH assigned AS (
         SELECT vt."variant_id" FROM "variant_themes" vt JOIN "themes" t ON t."id" = vt."theme_id" LEFT JOIN "themes" parent ON parent."id" = t."parent_id" WHERE t."slug" = ${slug} OR parent."slug" = ${slug}
         UNION
-        SELECT pv."id" FROM "product_themes" pt JOIN "themes" t ON t."id" = pt."theme_id" LEFT JOIN "themes" parent ON parent."id" = t."parent_id" JOIN "product_variants" pv ON pv."product_id" = pt."product_id" WHERE t."slug" = ${slug} OR parent."slug" = ${slug}
+        SELECT pv."id" FROM "product_themes" pt JOIN "themes" t ON t."id" = pt."theme_id" LEFT JOIN "themes" parent ON parent."id" = t."parent_id" JOIN "product_variants" pv ON pv."product_id" = pt."product_id"
+        WHERE (t."slug" = ${slug} OR parent."slug" = ${slug})
+          AND NOT EXISTS (SELECT 1 FROM "variant_themes" own_theme WHERE own_theme."variant_id" = pv."id")
       )
       SELECT COALESCE(pv."release_year", p."release_year")::int AS "year", COUNT(DISTINCT pv."id")::int AS "count"
       FROM assigned

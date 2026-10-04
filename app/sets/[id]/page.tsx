@@ -5,8 +5,9 @@ import { CollectionControls } from "../../../components/CollectionControls";
 import { getVariant } from "../../../lib/catalogue";
 import { getVariantCollectorState } from "../../../lib/collector";
 import { updateCollectionItem } from "../../actions/collector";
+import { returnLabel, sanitizeReturnTo } from "../../../lib/navigation-context";
 
-type ProductPageProps = { params: Promise<{ id: string }> };
+type ProductPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string | string[] }> };
 
 const conditionLabels = {
   SEALED: "Sous blister",
@@ -25,8 +26,9 @@ function Field({ label, value }: { label: string; value: string | number | null 
   return <div className="detail-field"><dt>{label}</dt><dd>{value}</dd></div>;
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const id = (await params).id;
+  const returnTo = sanitizeReturnTo((await searchParams).returnTo);
   const [variant, collectorState] = await Promise.all([getVariant(id), getVariantCollectorState(id)]);
   if (!variant) notFound();
 
@@ -51,7 +53,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <div className="page-shell detail-page">
-      <Link href="/catalogue" className="back-link">← Retour au catalogue</Link>
+      <Link href={returnTo} className="back-link">← {returnLabel(returnTo)}</Link>
 
       <section className="product-hero">
         <div className="hero-image">

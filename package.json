@@ -36,6 +36,7 @@
     "report": "pnpm --silent build:cli && node dist/src/cli.js report",
     "audit:playmodb-candidates": "tsx scripts/audit-playmodb-candidates.ts",
     "audit:official-playmobil": "tsx scripts/audit-official-playmobil.ts",
+    "audit:collector-references": "tsx scripts/audit-collector-references.ts",
     "dry-run:official-release-waves": "tsx scripts/dry-run-official-release-waves.ts",
     "dev:vinext": "vinext dev --port 3001",
     "build:vinext": "pnpm db:generate && vinext build",

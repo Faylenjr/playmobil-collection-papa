@@ -2,9 +2,11 @@ import Link from "next/link";
 import { getCatalogue, getTheme, getThemeNavigation, PAGE_SIZE, parseCatalogueSort, type CatalogueSort } from "../../lib/catalogue";
 import { getCollectorStatuses } from "../../lib/collector";
 import { ProductCard } from "../../components/ProductCard";
+import { PageJump } from "../../components/PageJump";
+import { buildInternalUrl, type SearchParamRecord } from "../../lib/navigation-context";
 
 type CataloguePageProps = {
-  searchParams: Promise<{ q?: string; page?: string; theme?: string; sort?: string; year?: string }>;
+  searchParams: Promise<SearchParamRecord>;
 };
 
 export const dynamic = "force-dynamic";
@@ -27,12 +29,13 @@ function paginationWindow(current: number, total: number) {
 
 export default async function CataloguePage({ searchParams }: CataloguePageProps) {
   const params = await searchParams;
-  const query = (params.q ?? "").trim();
-  const themeSlug = (params.theme ?? "").trim();
-  const sort = parseCatalogueSort(params.sort);
-  const parsedYear = Number.parseInt(params.year ?? "", 10);
+  const single = (value: string | string[] | undefined) => Array.isArray(value) ? value[0] ?? "" : value ?? "";
+  const query = single(params.q).trim();
+  const themeSlug = single(params.theme).trim();
+  const sort = parseCatalogueSort(single(params.sort));
+  const parsedYear = Number.parseInt(single(params.year), 10);
   const year = Number.isFinite(parsedYear) && parsedYear > 1900 ? parsedYear : undefined;
-  const requestedPage = Number.parseInt(params.page ?? "1", 10);
+  const requestedPage = Number.parseInt(single(params.page) || "1", 10);
   const page = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1;
   const [result, theme, themeNavigation] = await Promise.all([
     getCatalogue(query, page, themeSlug, sort, year),
@@ -49,6 +52,7 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
 
   const first = result.total === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const last = Math.min(currentPage * PAGE_SIZE, result.total);
+  const returnTo = buildInternalUrl("/catalogue", params, { page: currentPage > 1 ? currentPage : null });
 
   return (
     <div className="page-shell catalogue-page">
@@ -60,7 +64,7 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
         </div>
         <p className="catalogue-count">
           <strong>{result.total.toLocaleString("fr-FR")}</strong>
-          <span>{query ? "résultats" : "variantes cataloguées"}</span>
+          <span>{result.exactReference ? "références à parcourir" : query ? "résultats" : "variantes cataloguées"}</span>
         </p>
       </section>
 
@@ -79,17 +83,19 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
           />
           <button type="submit">Rechercher</button>
           <label className="sort-control">Trier par
-            <select name="sort" defaultValue={sort}>
+            <select name="sort" defaultValue={result.effectiveSort}>
               <option value="recommended">Recommandé pour collectionneur</option>
               <option value="newest">Plus récent</option>
               <option value="oldest">Plus ancien</option>
               <option value="reference">Référence</option>
             </select>
           </label>
-          {query && <Link className="clear-search" href={catalogueHref(1, "", themeSlug, sort, year)}>Effacer la recherche</Link>}
+          {query && <Link className="clear-search" href={catalogueHref(1, "", themeSlug, result.effectiveSort, year)}>Effacer la recherche</Link>}
           {themeSlug && <Link className="clear-search" href="/themes">Changer de thème</Link>}
         </div>
       </form>
+
+      {result.exactReference && <p className="reference-continuation" role="status">Référence exacte {result.exactReference} trouvée : le catalogue continue ensuite par références décroissantes.</p>}
 
       {theme && themeNavigation && (themeNavigation.children.length > 0 || themeNavigation.years.length > 0) && (
         <section className="theme-navigation" aria-label={`Explorer ${theme.name}`}>
@@ -121,7 +127,7 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
               const market = variant.markets.map(({ market: item }) => item.code).join(" · ");
 
               const status = statuses.get(variant.id)!;
-              return <ProductCard key={variant.id} data={{ id: variant.id, name, reference, year: year ?? null, theme: theme ?? null, market, variantLabel: variant.variantLabel, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} />;
+              return <ProductCard key={variant.id} data={{ id: variant.id, name, reference, year: year ?? null, theme: theme ?? null, market, variantLabel: variant.variantLabel, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} returnTo={returnTo} />;
             })}
           </section>
 
@@ -139,6 +145,7 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
               {currentPage < result.pages ? <Link href={catalogueHref(currentPage + 1, query, themeSlug, sort, year)}>Suivante →</Link> : <span aria-disabled="true">Suivante →</span>}
             </nav>
           )}
+          <PageJump action="/catalogue" currentPage={currentPage} pages={result.pages} params={params} />
         </>
       ) : (
         <section className="empty-state">

@@ -118,7 +118,7 @@ export async function getWishlistItems(query: string, page: number) {
   const where = { wishlistId: wishlist.id, variant: collectionSearchWhere(query, "") } satisfies Prisma.WishlistItemWhereInput;
   const [total, items] = await Promise.all([
     db.wishlistItem.count({ where }),
-    db.wishlistItem.findMany({ where, orderBy: [{ priority: "desc" }, { variant: { releaseYear: { sort: "desc", nulls: "last" } } }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { variant: { include: itemVariantInclude } } }),
+    db.wishlistItem.findMany({ where, orderBy: [{ priority: "desc" }, { variant: { releaseYear: { sort: "desc", nulls: "last" } } }, { variant: { canonicalKey: "desc" } }, { id: "asc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { variant: { include: itemVariantInclude } } }),
   ]);
   return { items: items.map((item) => ({ ...item, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }

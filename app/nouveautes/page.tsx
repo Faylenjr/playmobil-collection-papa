@@ -35,6 +35,7 @@ export default async function LatestReleasesPage() {
             inCollection={status.inCollection}
             inWishlist={status.inWishlist}
             quantity={status.quantity}
+            returnTo="/nouveautes"
           />;
         })}
       </div>
