@@ -89,7 +89,7 @@ async function getExactCommercialReferenceAnchor(
   year?: number,
 ) {
   const normalized = query.trim().toUpperCase();
-  if (!/^\d{3,5}$/.test(normalized)) return null;
+  if (!(/^\d{3,4}$/.test(normalized) || /^7[0-2]\d{3}$/.test(normalized))) return null;
   const rows = await db.$queryRaw<{ numericValue: number }[]>(Prisma.sql`
     SELECT COALESCE(pr."base_value", pr."normalized_value")::int AS "numericValue"
     FROM "product_variants" pv

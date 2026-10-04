@@ -13,12 +13,19 @@ export type CollectorReferenceFacts = {
 const nonCommercialKinds = new Set(["PART", "MERCHANDISE", "CATALOGUE", "PROMOTIONAL_ITEM"]);
 const nonCommercialFormats = new Set(["Magazin", "Keychains", "Decoration toy"]);
 
+function hasNormalCollectorNumber(base: string) {
+  if (/^\d{3,4}$/.test(base)) return true;
+  if (!/^\d{5}$/.test(base)) return false;
+  const value = Number.parseInt(base, 10);
+  return value >= 70_000 && value <= 72_999;
+}
+
 export function classifyCollectorReference(facts: CollectorReferenceFacts): CollectorReferenceGroup {
   const normalized = facts.normalizedValue.trim().toUpperCase();
   const base = (facts.baseValue ?? normalized).trim().toUpperCase();
   if (facts.identityClass === "PLACEHOLDER" || facts.identityClass === "AMBIGUOUS") return "NON_COLLECTOR";
   if (/^(?:N\/?A|UNKNOWN|NONE|NULL|UNASSIGNED)$/.test(normalized) || /^0+$/.test(base)) return "NON_COLLECTOR";
-  if (/^\d{3,5}$/.test(base)
+  if (hasNormalCollectorNumber(base)
     && !nonCommercialKinds.has(facts.productKind)
     && !nonCommercialFormats.has(facts.format ?? "")) return "COMMERCIAL";
   return "SPECIAL";

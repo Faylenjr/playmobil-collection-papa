@@ -19,6 +19,8 @@ describe("collector references", () => {
   });
 
   it("keeps technical and special references after normal commercial references", () => {
+    expect(classifyCollectorReference(reference({ normalizedValue: "99999", baseValue: "99999" }))).toBe("SPECIAL");
+    expect(classifyCollectorReference(reference({ normalizedValue: "91376", baseValue: "91376" }))).toBe("SPECIAL");
     expect(classifyCollectorReference(reference({ normalizedValue: "01442403-GER", baseValue: "01442403", suffix: "GER", productKind: "MERCHANDISE", format: "Other" }))).toBe("SPECIAL");
     expect(classifyCollectorReference(reference({ normalizedValue: "30841060-GER", baseValue: "30841060", productKind: "CATALOGUE", format: "Magazin" }))).toBe("SPECIAL");
   });
