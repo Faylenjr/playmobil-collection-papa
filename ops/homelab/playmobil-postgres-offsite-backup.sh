@@ -30,7 +30,7 @@ restic backup \
 
 snapshot_id="$(restic snapshots --host homeclap --tag playmobil-postgres --latest 1 --json | python3 -c 'import json,sys; rows=json.load(sys.stdin); print(rows[-1]["id"] if rows else "")')"
 [[ -n "$snapshot_id" ]] || { echo "Snapshot Restic Playmobil introuvable" >&2; exit 1; }
-restic ls "$snapshot_id" | grep -Fq "$(basename "$latest")"
+restic ls "$snapshot_id" | grep -F "$(basename "$latest")" >/dev/null
 
 # La rétention logique est appliquée à ce tag seulement. Le prune physique reste
 # dans la maintenance Restic générale pour ne pas alourdir chaque sauvegarde.
