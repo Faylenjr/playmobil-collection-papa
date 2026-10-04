@@ -1,0 +1,18 @@
+[Unit]
+Description=Sauvegarde PostgreSQL Playmobil locale et chiffrée hors site
+Wants=network-online.target
+After=network-online.target mnt-stockage.mount
+RequiresMountsFor=/mnt/stockage
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/playmobil-postgres-offsite-backup
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+UMask=0077
+PrivateTmp=true
+ProtectHome=read-only
+ProtectSystem=full
+ReadWritePaths=/mnt/stockage/backups/playmobil-postgresql /var/cache/restic /root/.config/rclone
+NoNewPrivileges=true
