@@ -13,6 +13,7 @@ describe("official 2026 release-wave corpus", () => {
     expect(official2026ReleaseWaves).toHaveLength(5);
     expect(official2026References).toHaveLength(43);
     expect(new Set(official2026References).size).toBe(43);
+    expect(official2026ReleaseWaves.every((wave) => new Set(wave.observedOrder).size === wave.references.length)).toBe(true);
     expect(official2026ManifestDigest()).toBe("5e8feb7aef6692a93a2178e6a6427c43b47721a755f5f1c2fdde5b3fa22fe4b4");
   });
 

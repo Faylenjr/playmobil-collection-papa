@@ -19,6 +19,7 @@ export interface OfficialReleaseWaveDefinition {
   market: "US";
   period: { start: string; end: string; precision: WavePrecision };
   references: readonly string[];
+  observedOrder: readonly string[];
   rangeClaims: readonly OfficialRangeClaim[];
 }
 
@@ -30,6 +31,7 @@ export const official2026ReleaseWaves = [
     market: "US",
     period: { start: "2026-01-01", end: "2026-02-28", precision: "RANGE" },
     references: ["71634", "71720", "71838", "71839", "71843", "72011", "72012", "72013", "72014", "72027", "72028", "72043"],
+    observedOrder: ["72043", "71634", "71720", "72011", "72014", "72012", "72013", "71838", "71839", "71843", "72027", "72028"],
     rangeClaims: [
       { name: "Funstars", kind: "SERIES", references: ["71634", "71720"], confidence: "HIGH", reason: "The official article groups both products under the PLAYMOBIL Funstars heading and links the Funstars category." },
       { name: "ESA Space Range", kind: "LINE", references: ["72011", "72012", "72013", "72014"], confidence: "HIGH", reason: "The official article explicitly calls this group the ESA Space Range." },
@@ -45,6 +47,7 @@ export const official2026ReleaseWaves = [
     market: "US",
     period: { start: "2026-03-01", end: "2026-03-31", precision: "MONTH" },
     references: ["71773", "71774", "71775", "71903", "71904", "71905", "72023", "72024", "72031", "72034"],
+    observedOrder: ["71903", "71904", "71905", "71773", "71775", "71774", "72031", "72034", "72023", "72024"],
     rangeClaims: [
       { name: "My Life", kind: "LINE", references: ["71903", "71904", "71905"], confidence: "HIGH", reason: "The official article states that the beach products are part of the My Life range." },
       { name: "PLAYMOBIL JUNIOR", kind: "LINE", references: ["71773", "71774", "71775"], confidence: "HIGH", reason: "The official article groups the three references under the PLAYMOBIL JUNIOR heading." },
@@ -57,6 +60,7 @@ export const official2026ReleaseWaves = [
     market: "US",
     period: { start: "2026-01-01", end: "2026-12-31", precision: "CAMPAIGN" },
     references: ["72056", "72057", "72058"],
+    observedOrder: ["72056", "72057", "72058"],
     rangeClaims: [
       { name: "Soccer", kind: "LINE", references: ["72056", "72057", "72058"], confidence: "HIGH", reason: "The official article calls the group the new PLAYMOBIL Soccer range and links the three products." },
     ],
@@ -68,6 +72,7 @@ export const official2026ReleaseWaves = [
     market: "US",
     period: { start: "2026-01-01", end: "2026-12-31", precision: "CAMPAIGN" },
     references: ["72112", "72113", "72114", "72115", "72116", "72117", "72118", "72119"],
+    observedOrder: ["72112", "72113", "72115", "72114", "72117", "72119", "72118", "72116"],
     rangeClaims: [
       { name: "Knights", kind: "LINE", references: ["72112", "72113", "72114", "72115", "72116", "72117", "72118", "72119"], confidence: "HIGH", reason: "The official campaign is explicitly devoted to the PLAYMOBIL Knights 2026 releases." },
     ],
@@ -79,6 +84,7 @@ export const official2026ReleaseWaves = [
     market: "US",
     period: { start: "2026-05-01", end: "2026-05-31", precision: "MONTH" },
     references: ["71873", "71874", "71875", "72061", "72062", "72063", "72065", "72070", "72071", "72073"],
+    observedOrder: ["72070", "72071", "72073", "72061", "72063", "72065", "72062", "71873", "71874", "71875"],
     rangeClaims: [
       { name: "Animals & Friends", kind: "LINE", references: ["72070", "72071", "72073"], confidence: "HIGH", reason: "The official article calls these products additions to the Animals & Friends range." },
       { name: "Offroad Cars", kind: "LINE", references: ["72061", "72062", "72063", "72065"], confidence: "HIGH", reason: "The official article explicitly calls Offroad Cars a new range and groups these vehicles." },
@@ -89,7 +95,11 @@ export const official2026ReleaseWaves = [
 export const official2026References = [...new Set(official2026ReleaseWaves.flatMap((wave) => [...wave.references]))];
 
 export function official2026ManifestDigest() {
-  return createHash("sha256").update(JSON.stringify(official2026ReleaseWaves)).digest("hex");
+  // `observedOrder` is presentation metadata captured after the original
+  // audited manifest. Keep the audit digest stable by hashing only the
+  // fields that formed that manifest.
+  const auditedManifest = official2026ReleaseWaves.map(({ observedOrder: _observedOrder, ...wave }) => wave);
+  return createHash("sha256").update(JSON.stringify(auditedManifest)).digest("hex");
 }
 
 export interface OfficialWavePageObservation {

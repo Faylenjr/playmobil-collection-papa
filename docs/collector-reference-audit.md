@@ -13,7 +13,7 @@ Après application de la règle collectionneur :
 
 | Groupe | Nombre | Position dans le tri |
 | --- | ---: | --- |
-| référence commerciale normale | 8 967 | en premier, base numérique décroissante |
+| référence commerciale normale | 8 967 | en premier, base numérique croissante |
 | référence spéciale exploitable | 4 697 | après les références commerciales |
 | placeholder, ambiguë ou non assignée | 733 | tout à la fin |
 
@@ -46,4 +46,4 @@ Une référence `ASSIGNED`/`REUSED` qui ne remplit pas cette définition reste e
 
 ## Ordre final
 
-Le mode `Référence` utilise, avant pagination : groupe croissant, base numérique décroissante pour les références commerciales, référence normalisée puis identifiant comme départage déterministe. Les références spéciales et non collectionneur ne polluent donc plus les premières pages.
+Le mode `Référence` utilise, avant pagination : groupe croissant, base numérique croissante pour les références commerciales, référence normalisée puis identifiant comme départage déterministe. Une recherche exacte commence à la référence demandée et continue vers les suivantes. Les références spéciales et non collectionneur ne polluent donc plus les premières pages.

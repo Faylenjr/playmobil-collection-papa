@@ -95,7 +95,7 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
         </div>
       </form>
 
-      {result.exactReference && <p className="reference-continuation" role="status">Référence exacte {result.exactReference} trouvée : le catalogue continue ensuite par références décroissantes.</p>}
+      {result.exactReference && <p className="reference-continuation" role="status">Référence exacte {result.exactReference} trouvée : le catalogue continue ensuite par références croissantes.</p>}
 
       {theme && themeNavigation && (themeNavigation.children.length > 0 || themeNavigation.years.length > 0) && (
         <section className="theme-navigation" aria-label={`Explorer ${theme.name}`}>

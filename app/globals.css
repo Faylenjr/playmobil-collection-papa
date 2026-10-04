@@ -170,6 +170,7 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .collector-badge { position: absolute; left: 12px; bottom: 12px; padding: 6px 10px; border: 1px solid rgba(255,255,255,.8); border-radius: 999px; box-shadow: 0 4px 12px rgba(6,35,74,.16); font-size: .72rem; font-weight: 900; }
 .owned-badge { color: white; background: var(--green); }
 .wanted-badge { color: var(--blue-950); background: var(--yellow); }
+.missing-badge { color: #52667a; background: #eef3f7; }
 .card-body { padding: 17px 18px 19px; }
 .reference { margin: 0 0 5px; color: var(--blue-700); font-size: 0.77rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; }
 .card-body h2 { min-height: 2.7em; margin: 0; font-size: 1.03rem; line-height: 1.35; }
@@ -291,6 +292,43 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .release-year .section-title { align-items: baseline; padding-bottom: 12px; border-bottom: 2px solid var(--blue-100); }
 .release-year .section-title h2 { color: var(--blue-900); font-size: 2.4rem; }
 .release-year .section-title span { color: var(--muted); font-size: 0.85rem; }
+.release-wave { margin-top: 54px; scroll-margin-top: 100px; }
+.wave-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 13px; }
+.wave-heading h2 { margin: 4px 0; color: var(--blue-900); font-size: clamp(1.55rem, 3vw, 2.35rem); }
+.wave-heading p { margin: 0; color: var(--muted); }
+.wave-heading > strong { display: flex; min-width: 130px; align-items: center; flex-direction: column; padding: 14px; color: white; background: var(--green); border-radius: 16px; font-size: 1.5rem; }
+.wave-heading > strong small { margin-top: 3px; font-size: .7rem; }
+.progress-track { height: 9px; overflow: hidden; margin-bottom: 22px; background: #dfeaf3; border-radius: 999px; }
+.progress-track span { display: block; height: 100%; background: var(--green); border-radius: inherit; }
+.source-note { margin: 16px 0 0; color: var(--muted); font-size: .8rem; }
+.source-note a { color: var(--blue-700); font-weight: 800; }
+
+.discovery-grid, .country-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.discovery-card, .country-card { display: flex; min-height: 190px; gap: 18px; padding: 24px; background: white; border: 1px solid var(--line); border-radius: 20px; box-shadow: var(--shadow); }
+.discovery-card:hover, .country-card:hover { border-color: #9fc8e9; transform: translateY(-3px); }
+.discovery-icon { display: grid; width: 64px; height: 64px; flex: 0 0 auto; place-items: center; color: white; background: var(--blue-700); border-radius: 20px; font-size: 1rem; font-weight: 900; }
+.discovery-card h2, .country-card h2 { margin: 2px 0 8px; }
+.discovery-card p, .country-card p { margin: 4px 0; color: var(--muted); }
+.discovery-card strong, .discovery-card small { display: block; margin-top: 8px; }
+.discovery-card strong { color: var(--blue-700); }
+.discovery-products { margin-top: 28px; }
+.country-card > span { font-size: 2.8rem; line-height: 1; }
+.country-card small { display: block; margin-top: 12px; color: var(--muted); }
+.country-heading { display: flex; align-items: center; gap: 24px; padding: 30px; background: white; border: 1px solid var(--line); border-radius: 22px; }
+.country-flag { font-size: 4.5rem; }
+.travel-callout { display: flex; justify-content: space-between; gap: 20px; margin-top: 22px; padding: 16px 19px; color: #704500; background: #fff3c5; border: 1px solid #ebcf72; border-radius: 14px; }
+
+.price-panel { margin-top: 34px; padding: 28px; background: white; border: 2px solid var(--blue-100); border-radius: 20px; box-shadow: 0 10px 32px rgba(18, 53, 88, 0.07); }
+.muted-copy { color: var(--muted); }
+.list-price-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.list-price-grid small { display: block; margin-top: 5px; color: var(--muted); }
+.offer-list { display: grid; gap: 10px; margin-top: 18px; }
+.offer-list article { display: grid; grid-template-columns: 1fr auto auto; gap: 20px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
+.offer-list article div { display: flex; flex-direction: column; }
+.offer-list article span { color: var(--muted); font-size: .8rem; }
+.offer-list article a, .manual-market-links a { color: var(--blue-700); font-weight: 800; }
+.manual-market-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.manual-market-links a { padding: 9px 12px; background: #edf5fc; border-radius: 9px; }
 
 .home-page { padding-block: 42px 90px; }
 .home-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(360px, .85fr); min-height: 510px; overflow: hidden; color: white; background: linear-gradient(125deg, var(--blue-950), var(--blue-700)); border-radius: 30px; box-shadow: 0 24px 65px rgba(8,53,109,.22); }
@@ -382,6 +420,7 @@ footer strong { color: var(--blue-900); }
   .theme-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .home-hero { grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); }
   .collector-showcase { padding-right: 28px; }
+  .discovery-grid, .country-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
@@ -426,6 +465,9 @@ footer strong { color: var(--blue-900); }
   .wishlist-actions { grid-column: 1 / -1; }
   .pagination { grid-template-columns: 1fr 1fr; }
   .pagination > div { grid-column: 1 / -1; grid-row: 1; justify-content: center; }
+  .wave-heading { align-items: start; flex-direction: column; }
+  .wave-heading > strong { align-self: stretch; }
+  .list-price-grid { grid-template-columns: 1fr 1fr; }
 }
 
 @media (max-width: 440px) {
@@ -455,6 +497,11 @@ footer strong { color: var(--blue-900); }
   footer { flex-direction: column; gap: 2px; }
   .collector-page-heading { align-items: start; flex-direction: column; }
   .collector-page-heading > strong { min-width: 110px; align-self: stretch; }
+  .discovery-grid, .country-grid { grid-template-columns: 1fr; }
+  .country-heading, .travel-callout { align-items: start; flex-direction: column; }
+  .country-flag { font-size: 3.5rem; }
+  .list-price-grid { grid-template-columns: 1fr; }
+  .offer-list article { grid-template-columns: 1fr; gap: 7px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

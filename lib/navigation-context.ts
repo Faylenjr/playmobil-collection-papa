@@ -5,6 +5,7 @@ const allowedReturnPaths = new Set([
   "/recherches",
   "/themes",
 ]);
+const allowedReturnPrefixes = ["/pays/", "/collections-speciales/"];
 
 export type SearchParamRecord = Record<string, string | string[] | undefined>;
 
@@ -29,7 +30,7 @@ export function sanitizeReturnTo(value: string | string[] | undefined) {
   if (!candidate || !candidate.startsWith("/") || candidate.startsWith("//") || candidate.includes("\\")) return "/catalogue";
   try {
     const parsed = new URL(candidate, "https://playmobil.local");
-    if (parsed.origin !== "https://playmobil.local" || !allowedReturnPaths.has(parsed.pathname)) return "/catalogue";
+    if (parsed.origin !== "https://playmobil.local" || (!allowedReturnPaths.has(parsed.pathname) && !allowedReturnPrefixes.some((prefix) => parsed.pathname.startsWith(prefix)))) return "/catalogue";
     return `${parsed.pathname}${parsed.search}`;
   } catch {
     return "/catalogue";
@@ -46,5 +47,7 @@ export function returnLabel(returnTo: string) {
   if (returnTo.startsWith("/recherches")) return "Retour à mes recherches";
   if (returnTo.startsWith("/nouveautes")) return "Retour aux nouveautés";
   if (returnTo.startsWith("/themes")) return "Retour aux thèmes";
+  if (returnTo.startsWith("/pays")) return "Retour au pays";
+  if (returnTo.startsWith("/collections-speciales")) return "Retour à la collection spéciale";
   return "Retour au catalogue";
 }

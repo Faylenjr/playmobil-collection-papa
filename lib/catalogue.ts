@@ -65,7 +65,7 @@ function catalogueOrderSql(sort: CatalogueSort) {
   if (sort === "oldest") return Prisma.sql`"effective_date" ASC NULLS LAST, "reference_sort" ASC, "id" ASC`;
   if (sort === "reference") return Prisma.sql`
     "reference_group" ASC,
-    "reference_numeric" DESC NULLS LAST,
+    "reference_numeric" ASC NULLS LAST,
     "reference_sort" ASC,
     "id" ASC
   `;
@@ -136,7 +136,7 @@ const catalogueVariantSelect = {
   },
 } satisfies Prisma.ProductVariantSelect;
 
-async function getVariantsInOrder(ids: string[]) {
+export async function getVariantsByIds(ids: string[]) {
   if (!ids.length) return [];
   const db = await getDatabaseClient();
   const [unordered, frenchNames] = await Promise.all([
@@ -170,7 +170,7 @@ export async function getCatalogue(
     : Prisma.sql`0`;
   const exactReferenceFilter = exactReferenceAnchor === null
     ? Prisma.sql`TRUE`
-    : Prisma.sql`("reference_group" > 0 OR ("reference_group" = 0 AND "reference_numeric" <= ${exactReferenceAnchor}))`;
+    : Prisma.sql`("reference_group" > 0 OR ("reference_group" = 0 AND "reference_numeric" >= ${exactReferenceAnchor}))`;
   const rows = await db.$queryRaw<{ id: string; priority: number; total: number }[]>(Prisma.sql`
     WITH ${collectorCtes} scored AS (
       SELECT pv."id",
@@ -196,7 +196,7 @@ export async function getCatalogue(
     LIMIT ${PAGE_SIZE} OFFSET ${(page - 1) * PAGE_SIZE}
   `);
   const total = rows[0]?.total ?? 0;
-  const variants = await getVariantsInOrder(rows.map(({ id }) => id));
+  const variants = await getVariantsByIds(rows.map(({ id }) => id));
   return { total, variants, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)), effectiveSort, exactReference: exactReferenceAnchor === null ? null : query.trim() };
 }
 
@@ -319,7 +319,7 @@ export async function getLatestReleases(yearLimit = 3, perYear = 24) {
     WHERE row_number <= ${perYear}
     ORDER BY "releaseYear" DESC, "effective_date" DESC NULLS LAST, "reference_sort" ASC, "id" ASC
   `);
-  const variants = await getVariantsInOrder(rows.map(({ id }) => id));
+  const variants = await getVariantsByIds(rows.map(({ id }) => id));
   const rowById = new Map(rows.map((row) => [row.id, row]));
   const groups = new Map<number, typeof variants>();
   for (const variant of variants) {

@@ -6,6 +6,8 @@ import { getVariant } from "../../../lib/catalogue";
 import { getVariantCollectorState } from "../../../lib/collector";
 import { updateCollectionItem } from "../../actions/collector";
 import { returnLabel, sanitizeReturnTo } from "../../../lib/navigation-context";
+import { getVariantPriceSummary } from "../../../lib/discovery";
+import { marketplaceSearchLinks, safeExternalOfferUrl } from "../../../lib/pricing";
 
 type ProductPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string | string[] }> };
 
@@ -29,7 +31,7 @@ function Field({ label, value }: { label: string; value: string | number | null 
 export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const id = (await params).id;
   const returnTo = sanitizeReturnTo((await searchParams).returnTo);
-  const [variant, collectorState] = await Promise.all([getVariant(id), getVariantCollectorState(id)]);
+  const [variant, collectorState, prices] = await Promise.all([getVariant(id), getVariantCollectorState(id), getVariantPriceSummary(id)]);
   if (!variant) notFound();
 
   const name = variant.displayName;
@@ -96,6 +98,17 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
           </dl>
           <details className="edit-collection"><summary>Modifier les informations</summary><CollectionEditor variantId={variant.id} item={collectorState.item} /></details>
         </div>}
+      </section>
+
+      <section className="price-panel">
+        <div className="section-heading"><span className="eyebrow">Prix et disponibilités</span><h2>Où trouver ce Playmobil ?</h2></div>
+        {prices.listPrices.length > 0 ? <div className="list-price-grid">{prices.listPrices.map((price) => <div className="detail-field" key={price.id}><dt>Prix conseillé · {price.market.name}</dt><dd>{Number(price.amount).toLocaleString("fr-FR", { style: "currency", currency: price.currency })}</dd><small>{price.source.name} · observé le {price.observedAt.toLocaleDateString("fr-FR")}</small></div>)}</div> : <p className="muted-copy">Prix conseillé non documenté pour le moment.</p>}
+        {prices.offers.length > 0 ? <div className="offer-list">{prices.offers.map((offer) => {
+          const latest = offer.observations[0];
+          const safeUrl = safeExternalOfferUrl(offer.url);
+          return <article key={offer.id}><div><strong>{offer.retailer.name}</strong><span>{offer.condition === "USED" ? "Occasion" : offer.condition === "NEW" ? "Neuf" : offer.condition === "SEALED" ? "Scellé" : "État non précisé"}</span></div><b>{latest ? Number(latest.totalPrice ?? latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency }) : "Prix indisponible"}</b>{safeUrl && <a href={safeUrl} target="_blank" rel="noreferrer sponsored">Voir l’offre ↗</a>}</article>;
+        })}</div> : <p className="muted-copy">Aucune offre suivie pour le moment.</p>}
+        {reference && <div className="manual-market-links"><a href={marketplaceSearchLinks(reference).ebay} target="_blank" rel="noreferrer">Voir sur eBay ↗</a><a href={marketplaceSearchLinks(reference).leboncoin} target="_blank" rel="noreferrer">Voir sur Leboncoin ↗</a><a href={marketplaceSearchLinks(reference).dealabs} target="_blank" rel="noreferrer">Rechercher sur Dealabs ↗</a></div>}
       </section>
 
       {otherImages.length > 0 && (

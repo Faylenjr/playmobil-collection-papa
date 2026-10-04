@@ -14,5 +14,7 @@ describe("navigation context", () => {
     expect(sanitizeReturnTo("//example.com/phishing")).toBe("/catalogue");
     expect(sanitizeReturnTo("/catalogue\\evil")).toBe("/catalogue");
     expect(sanitizeReturnTo("/admin")).toBe("/catalogue");
+    expect(sanitizeReturnTo("/pays/GERMANY?filter=wanted")).toBe("/pays/GERMANY?filter=wanted");
+    expect(sanitizeReturnTo("/collections-speciales/geants-xxl")).toBe("/collections-speciales/geants-xxl");
   });
 });

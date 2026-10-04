@@ -1,6 +1,6 @@
 # Architecture prix et offres
 
-Ce document prépare le comparateur demandé sans activer de scraper ni écrire d'offre en base.
+Ce document décrit désormais le socle implémenté. Aucun scraper ni import marchand n'est activé sans accès API autorisé.
 
 ## Modèle proposé
 
@@ -10,7 +10,7 @@ Identité du vendeur ou de la marketplace : nom, type (`SHOP`, `MARKETPLACE`, `P
 
 ### `Offer`
 
-Une annonce courante reliée à un `ProductVariant` : identifiant externe stable, vendeur, état (`NEW`, `USED`, `SEALED`, `UNKNOWN`), URL d'achat, devise, disponibilité, date de première/dernière observation et date d'expiration. L'identité doit être `(retailerId, externalId)` ; une recherche textuelle ne suffit jamais à créer une association automatique avec un Playmobil.
+Une annonce courante reliée exactement soit à un `Product`, soit à un `ProductVariant` : identifiant externe stable, vendeur, état (`NEW`, `USED`, `SEALED`, `UNKNOWN`), URL d'achat, disponibilité, date de première/dernière observation et date d'expiration. L'identité est `(retailerId, externalId)` ; une contrainte SQL impose une seule cible et une URL HTTPS. Une recherche textuelle ne suffit jamais à créer une association automatique avec un Playmobil.
 
 ### `PriceObservation`
 
@@ -18,7 +18,7 @@ Historique append-only : `offerId`, prix de l'article, frais de port connus, tot
 
 ### Prix conseillé
 
-Le `listPrice` déjà présent sur `ProductVariant` reste séparé des offres. Sa provenance doit passer par `SourceValue`/`SourceRecord` (marché, URL officielle, date observée). Une remise n'est affichée que si la devise et le marché sont comparables : `(listPrice - currentPrice) / listPrice`.
+Le champ historique `ProductVariant.listPrice` est conservé pour compatibilité, mais la nouvelle table append-only `ListPriceObservation` porte obligatoirement le marché, la devise, la source, l'URL, la date d'observation et éventuellement la période de validité. Une remise n'est affichée que si devise et marché sont comparables : `(listPrice - currentPrice) / listPrice`.
 
 ## Fraîcheur et affichage
 
@@ -33,7 +33,7 @@ Le `listPrice` déjà présent sur `ProductVariant` reste séparé des offres. S
 
 ### eBay
 
-Le Browse API officiel permet la recherche d'annonces et expose prix, état, livraison, disponibilité et URL. Il utilise OAuth avec jeton d'application. Son accès production est toutefois soumis à l'approbation eBay Buy API / Partner Network et à des règles d'affichage ; le bac à sable est disponible avant approbation. C'est la première intégration propre à envisager, après obtention de l'accès production.
+Le Browse API officiel permet la recherche d'annonces et expose prix, état, livraison, disponibilité et URL. Tous ses appels utilisent un jeton OAuth d'application (client credentials). Le bac à sable est accessible avec un compte développeur, mais l'accès Buy API en production est restreint : candidature/validation eBay, et selon le modèle affiliation eBay Partner Network, revue de l'expérience et contrats. Il n'existe aucune garantie d'approbation. Le dépôt contient un adaptateur injectable et testé, désactivé tant que `EBAY_CLIENT_ID` et `EBAY_CLIENT_SECRET` ne sont pas configurés ; aucun appel réseau ni import n'est effectué aujourd'hui.
 
 Documentation officielle :
 
@@ -54,10 +54,11 @@ Préférer, dans l'ordre : API officielle, flux marchand/affiliation autorisé, 
 
 ## Première phase recommandée
 
-1. ajouter les trois tables uniquement quand une première source autorisée est disponible ;
-2. intégrer eBay en bac à sable et tester le matching exact par référence avec revue en cas d'ambiguïté ;
-3. demander l'accès production ;
-4. ajouter ensuite des flux de boutiques partenaires ;
-5. laisser Leboncoin et Dealabs hors automatisation tant qu'aucun accès officiel n'est obtenu.
+1. configurer un keyset eBay Sandbox dans les secrets du homelab ;
+2. brancher le client HTTP Browse API sur l'interface `EbayBrowseClient` et conserver le dry-run ;
+3. faire revoir tout résultat sans référence commerciale exacte isolée ;
+4. demander l'accès production eBay et n'activer l'écriture qu'après approbation ;
+5. ajouter ensuite des flux de boutiques partenaires autorisés ;
+6. laisser Leboncoin et Dealabs en liens manuels tant qu'aucun accès officiel n'est obtenu.
 
-Le chantier actuel n'ajoute donc aucune migration prix et n'effectue aucun appel automatisé à une marketplace.
+Le chantier actuel ajoute `Retailer`, `Offer`, `PriceObservation` et `ListPriceObservation`, ainsi que l'interface et les tests de matching. Il n'effectue aucun appel automatisé à une marketplace et n'invente aucun prix.
