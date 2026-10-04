@@ -44,9 +44,12 @@ sha256sum -c "$base.dump.sha256" >/dev/null
 
 if mountpoint -q /media/stockage; then
   install -d -m 0700 "$OFFSITE_STAGE"
-  for suffix in dump dump.list dump.counts dump.sha256; do
+  for suffix in dump dump.list dump.counts; do
     install -m 0600 "$base.$suffix" "$OFFSITE_STAGE/$(basename "$base.$suffix")"
   done
+  printf '%s  %s\n' "$(cut -d' ' -f1 "$base.dump.sha256")" "$(basename "$base.dump")" \
+    >"$OFFSITE_STAGE/$(basename "$base.dump.sha256")"
+  chmod 0600 "$OFFSITE_STAGE/$(basename "$base.dump.sha256")"
   (cd "$OFFSITE_STAGE" && sha256sum -c "$(basename "$base.dump.sha256")" >/dev/null)
   log "copie de transit hors site validée: $OFFSITE_STAGE/$(basename "$base.dump")"
 else
