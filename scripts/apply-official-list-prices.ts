@@ -51,9 +51,10 @@ async function main() {
         });
         const marketRow = await tx.market.findUniqueOrThrow({ where: { code: config.code } });
         for (const { observation, variantId } of candidates.filter((candidate) => candidate.observation.market === market)) {
-          const existing = await tx.listPriceObservation.findFirst({ where: { variantId, marketId: marketRow.id, sourceId: source.id, sourceUrl: observation.sourceUrl, amount: observation.officialPrice!.amount, currency: observation.officialPrice!.currency, observedAt: new Date(snapshot.observedAt) } });
+          const amount = new Prisma.Decimal(observation.officialPrice!.amount.toFixed(2));
+          const existing = await tx.listPriceObservation.findFirst({ where: { variantId, marketId: marketRow.id, sourceId: source.id, sourceUrl: observation.sourceUrl, amount, currency: observation.officialPrice!.currency, observedAt: new Date(snapshot.observedAt) } });
           if (!existing) {
-            await tx.listPriceObservation.create({ data: { variantId, marketId: marketRow.id, sourceId: source.id, amount: observation.officialPrice!.amount, currency: observation.officialPrice!.currency, sourceUrl: observation.sourceUrl, observedAt: new Date(snapshot.observedAt) } });
+            await tx.listPriceObservation.create({ data: { variantId, marketId: marketRow.id, sourceId: source.id, amount, currency: observation.officialPrice!.currency, sourceUrl: observation.sourceUrl, observedAt: new Date(snapshot.observedAt) } });
             created += 1;
           }
         }
