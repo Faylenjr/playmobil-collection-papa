@@ -123,6 +123,31 @@ enum OfferAvailability {
   UNKNOWN
 }
 
+enum ProductIdentifierType {
+  EAN
+  GTIN
+  UPC
+  MPN
+  OFFICIAL_SKU
+}
+
+enum IdentifierConfidenceStatus {
+  SOURCE_OBSERVED
+  CORROBORATED
+  OFFICIAL_CONFIRMED
+  CONFLICTING
+  REJECTED
+}
+
+enum ExternalCandidateStatus {
+  DISCOVERED
+  CORROBORATED
+  OFFICIAL_CONFIRMED
+  CONFLICTING
+  REJECTED
+  IMPORTED
+}
+
 model Product {
   id               String            @id @default(uuid()) @db.Uuid
   canonicalKey     String            @unique @map("canonical_key")
@@ -142,6 +167,8 @@ model Product {
   rangeMemberships RangeMembership[]
   releaseWaveItems ReleaseWaveItem[]
   offers           Offer[]
+  identifiers      ProductIdentifier[]
+  importedCandidates ExternalCandidate[]
 
   @@index([baseReference])
   @@index([releaseYear])
@@ -197,6 +224,7 @@ model ProductVariant {
   marketEvidence         MarketEvidence[]
   offers                 Offer[]
   listPriceObservations  ListPriceObservation[]
+  identifiers            ProductIdentifier[]
 
   @@index([productId])
   @@index([releaseYear])
@@ -293,6 +321,7 @@ model Market {
   evidence      MarketEvidence[]
   listPrices    ListPriceObservation[]
   retailers     Retailer[]
+  identifiers   ProductIdentifier[]
 
   @@map("markets")
 }
@@ -560,8 +589,71 @@ model Source {
   marketEvidence      MarketEvidence[]
   retailers           Retailer[]
   listPrices          ListPriceObservation[]
+  productIdentifiers  ProductIdentifier[]
+  candidateObservations ExternalCandidateObservation[]
 
   @@map("sources")
+}
+
+model ProductIdentifier {
+  id              String                     @id @default(uuid()) @db.Uuid
+  observationKey  String                     @unique @map("observation_key")
+  productId       String?                    @map("product_id") @db.Uuid
+  variantId       String?                    @map("variant_id") @db.Uuid
+  type            ProductIdentifierType
+  rawValue        String                     @map("raw_value")
+  normalizedValue String                     @map("normalized_value")
+  sourceId        String                     @map("source_id") @db.Uuid
+  marketId        String?                    @map("market_id") @db.Uuid
+  sourceUrl       String                     @map("source_url")
+  observedAt      DateTime                   @map("observed_at")
+  confidence      IdentifierConfidenceStatus @default(SOURCE_OBSERVED)
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  product         Product?                   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant         ProductVariant?            @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  source          Source                     @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  market          Market?                    @relation(fields: [marketId], references: [id], onDelete: SetNull)
+
+  @@index([type, normalizedValue])
+  @@index([productId])
+  @@index([variantId])
+  @@map("product_identifiers")
+}
+
+model ExternalCandidate {
+  id                  String                  @id @default(uuid()) @db.Uuid
+  displayReference    String                  @map("display_reference")
+  normalizedReference String                  @unique @map("normalized_reference")
+  status              ExternalCandidateStatus @default(DISCOVERED)
+  conflictReason      String?                 @map("conflict_reason")
+  importedProductId   String?                 @map("imported_product_id") @db.Uuid
+  firstObservedAt     DateTime                @map("first_observed_at")
+  lastObservedAt      DateTime                @map("last_observed_at")
+  createdAt           DateTime                @default(now()) @map("created_at")
+  updatedAt           DateTime                @updatedAt @map("updated_at")
+  importedProduct     Product?                @relation(fields: [importedProductId], references: [id], onDelete: SetNull)
+  observations        ExternalCandidateObservation[]
+
+  @@index([status, lastObservedAt(sort: Desc)])
+  @@map("external_candidates")
+}
+
+model ExternalCandidateObservation {
+  id              String            @id @default(uuid()) @db.Uuid
+  observationKey  String            @unique @map("observation_key")
+  candidateId     String            @map("candidate_id") @db.Uuid
+  sourceId        String            @map("source_id") @db.Uuid
+  sourceUrl       String            @map("source_url")
+  observedName    String?           @map("observed_name")
+  announcedYear   Int?              @map("announced_year")
+  announcedMonth  String?           @map("announced_month")
+  firstObservedAt DateTime          @map("first_observed_at")
+  lastObservedAt  DateTime          @map("last_observed_at")
+  candidate       ExternalCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  source          Source            @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+
+  @@index([candidateId, sourceId])
+  @@map("external_candidate_observations")
 }
 
 model SourceRecord {

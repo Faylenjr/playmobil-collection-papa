@@ -1,4 +1,4 @@
-const allowedOfferHosts = new Set(["ebay.fr", "www.ebay.fr", "leboncoin.fr", "www.leboncoin.fr", "dealabs.com", "www.dealabs.com"]);
+const allowedOfferHosts = new Set(["ebay.fr", "www.ebay.fr", "leboncoin.fr", "www.leboncoin.fr", "dealabs.com", "www.dealabs.com", "kelkoo.fr", "www.kelkoo.fr"]);
 
 export function safeExternalOfferUrl(value: string) {
   try {

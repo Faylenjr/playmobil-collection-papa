@@ -1,0 +1,19 @@
+{
+  "sourceRole": "DISCOVERY_ONLY",
+  "observedAt": "2026-10-05T02:20:59.085Z",
+  "scope": "Only the twelve 2026 references found missing during the controlled audit; not a catalogue copy.",
+  "entries": [
+    { "reference": "71520", "ean": "4008789715203" },
+    { "reference": "72216", "ean": "4008789722164" },
+    { "reference": "72220", "ean": "4008789722201" },
+    { "reference": "72221", "ean": "4008789722218" },
+    { "reference": "72222", "ean": "4008789722225" },
+    { "reference": "72224", "ean": "4008789722249" },
+    { "reference": "72240", "ean": null },
+    { "reference": "72269", "ean": null },
+    { "reference": "72365", "ean": "4008789723659" },
+    { "reference": "72366", "ean": "4008789723666" },
+    { "reference": "72367", "ean": "4008789723673" },
+    { "reference": "72368", "ean": "4008789723680" }
+  ]
+}

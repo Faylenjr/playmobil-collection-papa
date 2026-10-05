@@ -110,14 +110,20 @@ export async function getMarket(code: string) {
 
 export async function getVariantPriceSummary(variantId: string) {
   const db = await getDatabaseClient();
-  const [listPrices, offers] = await Promise.all([
-    db.listPriceObservation.findMany({ where: { variantId }, orderBy: { observedAt: "desc" }, include: { market: true, source: true }, take: 12 }),
+  const [allListPrices, offers] = await Promise.all([
+    db.listPriceObservation.findMany({ where: { variantId }, orderBy: { observedAt: "desc" }, include: { market: true, source: true }, take: 50 }),
     db.offer.findMany({
       where: { OR: [{ variantId }, { product: { variants: { some: { id: variantId } } } }] },
       orderBy: { lastObservedAt: "desc" },
-      include: { retailer: true, observations: { orderBy: { observedAt: "desc" }, take: 1 } },
+      include: { retailer: { include: { market: true } }, observations: { orderBy: { observedAt: "desc" }, take: 1 } },
       take: 20,
     }),
   ]);
+  const seenMarkets = new Set<string>();
+  const listPrices = allListPrices.filter((price) => {
+    if (seenMarkets.has(price.marketId)) return false;
+    seenMarkets.add(price.marketId);
+    return true;
+  });
   return { listPrices, offers };
 }

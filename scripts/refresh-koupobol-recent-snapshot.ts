@@ -60,6 +60,7 @@ function parseLatestPage(html: string) {
 }
 
 async function main() {
+  throw new Error("Automated Koupobol fetching is disabled: the published terms require prior permission to reproduce site elements. Use a controlled manual snapshot and catalogue:radar-diff.");
   if (!process.argv.includes("--refresh")) throw new Error("Use --refresh explicitly; normal audits read committed snapshots without network access.");
   const robots = await fetchText(`${baseUrl}/robots.txt`);
   if (/Disallow:\s*\/playmobil-/i.test(robots) || /Disallow:\s*\/les-derniers-playmobil-ajoutes/i.test(robots)) {

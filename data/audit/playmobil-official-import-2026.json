@@ -1,0 +1,1452 @@
+{
+  "sourceRole": "CANONICAL_OFFICIAL_IMPORT",
+  "observedAt": "2026-10-05T13:41:51.828Z",
+  "targets": [
+    "72216",
+    "72220",
+    "72221",
+    "72222",
+    "72224",
+    "72269",
+    "72365",
+    "72366",
+    "72367",
+    "72368"
+  ],
+  "observations": [
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72216.html",
+      "reference": "72216",
+      "name": "Calèche des licornes",
+      "description": "À bord de son élégante calèche tirée par une licorne, la fée retourne au village des fées avec son joyling. Son arrivée ne passe pas inaperçue puisqu'elle se fait au son d'une joyeuse musique de trompette. Pendant que la fée dirige la calèche, son joyling profite du trajet, confortablement installé sur le siège de la calèche. Vivez des excursions magiques sous le signe de l'imagination et de l'amitié !",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 248,
+        "depth": 142,
+        "height": 46
+      },
+      "productDimensions": {
+        "width": 290,
+        "depth": 90,
+        "height": 85
+      },
+      "weightGrams": 182,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_extra1",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72216"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72216"
+        }
+      ],
+      "breadcrumbs": [
+        "Accueil",
+        "Boutique ...",
+        "Fantasy & Magic"
+      ],
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72216.html",
+      "reference": "72216",
+      "name": "Einhornkutsche",
+      "description": "Mit der eleganten Einhornkutsche fährt die Fee gemeinsam mit ihrem Joyling zurück ins Feendorf. Schon von Weitem kündigt sie ihre Ankunft mit fröhlicher Trompetenmusik an. Während die Fee die Kutsche lenkt, genießt der Joyling die Fahrt auf dem bequemen Kutschensitz. Erlebe magische Ausflüge voller Fantasie und Freundschaft!",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 248,
+        "depth": 142,
+        "height": 46
+      },
+      "productDimensions": {
+        "width": 290,
+        "depth": 90,
+        "height": 85
+      },
+      "weightGrams": 182,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72216_product_extra1",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72216"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72216"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Fantasy & Magic"
+      ],
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72216",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72216.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72220.html",
+      "reference": "72220",
+      "name": "Boule de Noël : Sportif",
+      "description": "Les boules de Noël PLAYMOBIL allient décoration festive, plaisir ludique et possibilité de faire de petites surprises. Vous pouvez suspendre la boule dans votre sapin ou la placer sur la table de fête en guise de délicate attention. À l'intérieur, le Père Noël attend, parfois caché, parfois fièrement juché au sommet. Dans cette boule se trouve un personnage original qui représente le Père Noël en véritable athlète, avec des haltères et la force nécessaire pour soulever tous les cadeaux. Un souvenir de Noël à collectionner et à conserver. Cette boule réutilisable est également idéale pour faire de petites surprises et de petits cadeaux.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 93,
+        "depth": 93,
+        "height": 88
+      },
+      "weightGrams": 91,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72220"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72220"
+        }
+      ],
+      "breadcrumbs": [
+        "Accueil",
+        "Boutique ...",
+        "Christmas"
+      ],
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72220.html",
+      "reference": "72220",
+      "name": "Weihnachtskugel: Kraftsportler",
+      "description": "Die PLAYMOBIL-Weihnachtskugeln vereinen festliche Dekoration, spielerische Freude und die Möglichkeit für kleine Überraschungen. Du kannst die Kugel an den geschmückten Baum hängen oder als liebevolles Detail auf dem festlichen Tisch platzieren. Innen wartet der Weihnachtsmann, manchmal verborgen, manchmal stolz obenauf. In dieser Kugel steckt eine originelle Weihnachtsmann-Figur, die Santa als echten Kraftsportler zeigt –mit Hanteln und voller Power, um die Geschenke zu stemmen. Ein Stück Weihnachtsgeschichte zum Sammeln und Bewahren. Die wiederverwendbare Kugel eignet sich außerdem wunderbar für kleine Überraschungen und Geschenke.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 93,
+        "depth": 93,
+        "height": 88
+      },
+      "weightGrams": 91,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72220"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72220"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Christmas"
+      ],
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72220.html",
+      "reference": "72220",
+      "name": "Christmas Ornament: Weightlifter",
+      "description": "PLAYMOBIL Christmas ornaments combine festive decoration, playful fun, and delightful surprises. Hang the ornament on the tree or place it as a charming detail on your holiday table. Inside, Santa is waiting – sometimes tucked away, sometimes proudly perched on top. This ornament features an original Santa figure who’s a true fitness fan, complete with dumbbells and the strength to lift all the gifts. A piece of Christmas magic to collect and treasure. The reusable ornament is also perfect for small surprises and gifts.",
+      "figureCount": 1,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72220_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72220"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72220"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Christmas"
+      ]
+    },
+    {
+      "reference": "72221",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72221.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72221.html",
+      "reference": "72221",
+      "name": "Weihnachtskugel: Longboarder",
+      "description": "Die PLAYMOBIL-Weihnachtskugeln vereinen festliche Dekoration, spielerische Freude und die Möglichkeit für kleine Überraschungen. Du kannst die Kugel an den geschmückten Baum hängen oder als liebevolles Detail auf dem festlichen Tisch platzieren. Innen wartet der Weihnachtsmann, manchmal verborgen, manchmal stolz obenauf. In dieser Kugel steckt eine coole Weihnachtsmann-Figur, die Santa auf seinem Longboard durch den Winter rollen lässt –lässig, schnell und voller Weihnachtsfreude. Ein Stück Weihnachtsgeschichte zum Sammeln und Bewahren. Die wiederverwendbare Kugel eignet sich außerdem wunderbar für kleine Überraschungen und Geschenke.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 93,
+        "depth": 93,
+        "height": 88
+      },
+      "weightGrams": 96,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72221_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72221_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72221_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72221_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72221_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72221"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72221"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Christmas"
+      ],
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72221",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72221.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72222.html",
+      "reference": "72222",
+      "name": "Boule de Noël : Menuisier",
+      "description": "Les boules de Noël PLAYMOBIL allient décoration festive, plaisir ludique et possibilité de faire de petites surprises. Vous pouvez suspendre la boule dans votre sapin ou la placer sur la table de fête en guise de délicate attention. À l'intérieur, le Père Noël attend, parfois caché, parfois fièrement juché au sommet. Dans cette boule se trouve un adorable personnage qui représente le Père Noël en inventeur, vêtu d'un pull de Noël et d'un pantalon d'atelier, en train de fabriquer des jouets. Un souvenir de Noël à collectionner et à conserver. Cette boule réutilisable est également idéale pour faire de petites surprises et de petits cadeaux.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 93,
+        "depth": 93,
+        "height": 88
+      },
+      "weightGrams": 92,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72222"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72222"
+        }
+      ],
+      "breadcrumbs": [
+        "Accueil",
+        "Boutique ...",
+        "Christmas"
+      ],
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72222.html",
+      "reference": "72222",
+      "name": "Weihnachtskugel: Spielzeugentwickler",
+      "description": "Die PLAYMOBIL-Weihnachtskugeln vereinen festliche Dekoration, spielerische Freude und die Möglichkeit für kleine Überraschungen. Du kannst die Kugel an den geschmückten Baum hängen oder als liebevolles Detail auf dem festlichen Tisch platzieren. Innen wartet der Weihnachtsmann, manchmal verborgen, manchmal stolz obenauf. In dieser Kugel steckt eine witzige und kuschelige Weihnachtsmann-Figur, die den Tüftler-Santa in Weihnachtspulli und Werkstatthose beim Bauen von Spielzeug zeigt. Ein Stück Weihnachtsgeschichte zum Sammeln und Bewahren. Die wiederverwendbare Kugel eignet sich außerdem wunderbar für kleine Überraschungen und Geschenke.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 93,
+        "depth": 93,
+        "height": 88
+      },
+      "weightGrams": 92,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72222"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72222"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Christmas"
+      ],
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72222.html",
+      "reference": "72222",
+      "name": "Christmas Ornament: Toymaker",
+      "description": "PLAYMOBIL Christmas ornaments combine festive decoration, playful fun, and delightful surprises. Hang the ornament on the tree or place it as a charming detail on your holiday table. Inside, Santa is waiting – sometimes tucked away, sometimes proudly perched on top. This ornament features a cozy, cheerful Santa – the toymaker in his Christmas sweater and workshop pants, busy building toys. A piece of Christmas magic to collect and treasure. The reusable ornament is also perfect for small surprises and gifts.",
+      "figureCount": 1,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72222_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72222"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72222"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Christmas"
+      ]
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72224.html",
+      "reference": "72224",
+      "name": "Boule de Noël : Père Nöel",
+      "description": "Les boules de Noël PLAYMOBIL allient décoration festive, plaisir ludique et possibilité de faire de petites surprises. Vous pouvez suspendre la boule dans votre sapin ou la placer sur la table de fête en guise de délicate attention. À l'intérieur, le Père Noël attend, parfois caché, parfois fièrement juché au sommet. Cette boule renferme un élégant personnage qui représente un Père Noël classique avec son sac de cadeaux et ses présents emballés avec amour. Un souvenir de Noël à collectionner et à conserver. Cette boule réutilisable est également idéale pour faire de petites surprises et de petits cadeaux.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 93,
+        "depth": 93,
+        "height": 88
+      },
+      "weightGrams": 98,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72224"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72224"
+        }
+      ],
+      "breadcrumbs": [
+        "Accueil",
+        "Boutique ...",
+        "Christmas"
+      ],
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72224.html",
+      "reference": "72224",
+      "name": "Weihnachtskugel: Klassik",
+      "description": "Die PLAYMOBIL-Weihnachtskugeln vereinen festliche Dekoration, spielerische Freude und die Möglichkeit für kleine Überraschungen. Du kannst die Kugel an den geschmückten Baum hängen oder als liebevolles Detail auf dem festlichen Tisch platzieren. Innen wartet der Weihnachtsmann, manchmal verborgen, manchmal stolz obenauf. In dieser Kugel steckt eine elegante Weihnachtsmann-Figur, die den klassischen Santa mit Geschenkesack und liebevoll verpackten Geschenken darstellt. Ein Stück Weihnachtsgeschichte zum Sammeln und Bewahren. Die wiederverwendbare Kugel eignet sich außerdem wunderbar für kleine Überraschungen und Geschenke.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 93,
+        "depth": 93,
+        "height": 88
+      },
+      "weightGrams": 98,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72224"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72224"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Christmas"
+      ],
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72224.html",
+      "reference": "72224",
+      "name": "Christmas Ornament: Classic",
+      "description": "PLAYMOBIL Christmas ornaments combine festive decoration, playful fun, and delightful surprises. Hang the ornament on the tree or place it as a charming detail on your holiday table. Inside, Santa is waiting – sometimes tucked away, sometimes proudly perched on top. This ornament features an elegant Santa figure holding a gift bag filled with beautifully wrapped presents. A piece of Christmas magic to collect and treasure. The reusable ornament is also perfect for small surprises and gifts.",
+      "figureCount": 1,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72224_product_extra2",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72224"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72224"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "Christmas"
+      ]
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72269.html",
+      "reference": "72269",
+      "name": "SKY TRAILS : Kit de démarrage XXL",
+      "description": "Kit de démarrage XXL : encore plus d'action et de possibilités ! Attention, bâtisseurs/bâtisseuses, héros/héroïnes de scènes d'action ! Avec le kit de démarrage XXL, vous êtes plongés dès le départ au cœur même de l'aventure SKY TRAILS. Ce set est parfait pour tous ceux qui veulent se lancer et construire de grands circuits.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 515,
+        "depth": 385,
+        "height": 125
+      },
+      "weightGrams": 2772,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra2",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra3",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra4",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra5",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra6",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra7",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra8",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra9",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra10",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra11",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72269"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72269"
+        }
+      ],
+      "breadcrumbs": [
+        "Accueil",
+        "Boutique ...",
+        "SKY TRAILS"
+      ],
+      "officialPrice": {
+        "amount": 89.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72269.html",
+      "reference": "72269",
+      "name": "SKY TRAILS: Starter Kit XXL",
+      "description": "Starter Kit XXL – noch mehr Action, noch mehr Möglichkeiten! Achtung, SKY TRAILS Fans! Mit dem Starter Kit XXL bist du von Anfang an mittendrin im Sky-Trails-Abenteuer. Dieses Set ist perfekt für alle, die gleich richtig durchstarten und große Bahnen bauen wollen.",
+      "figureCount": 1,
+      "packageDimensions": {
+        "width": 515,
+        "depth": 385,
+        "height": 125
+      },
+      "weightGrams": 2772,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra2",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra3",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra4",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra5",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra6",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra7",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra8",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra9",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra10",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra11",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72269"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72269"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "SKY TRAILS"
+      ],
+      "officialPrice": {
+        "amount": 89.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72269.html",
+      "reference": "72269",
+      "name": "SKY TRAILS: Starter Kit XXL",
+      "description": "Starter Kit XXL – Even More Action, Even More Possibilities! Attention, builders and action heroes! With the XXL Starter Kit, you’re right in the middle of the SKY TRAILS adventure from the very start. This set is perfect for anyone who wants to kick things off in a big way and build epic tracks.",
+      "figureCount": 1,
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra2",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra3",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra4",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra5",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra6",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra7",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra8",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra9",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra10",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72269_product_extra11",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72269"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72269"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ..."
+      ]
+    },
+    {
+      "reference": "72365",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72365.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72365.html",
+      "reference": "72365",
+      "name": "Ready-To-Play Set \"Reiterhof 72127\"",
+      "description": "PLAYMOBIL hi! – Erwecke deine PLAYMOBIL-Welt zum Leben! Interaktiver Spielspaß mit über 500 inspirierenden Audioinhalten und vier abwechslungsreichen Spielvarianten – voller Abenteuer, kreativer Spielideen, spannender Geschichten und Spielen, die die Vorstellungskraft fördern. Eintauchen. Mitmachen. Immer wieder neu erleben! Ready-to-Play Set– alles drin für den interaktiver Spielspaß mit Sound und Sprache Erwecke den Reiterhof (Artikelnummer 72127) zum Leben! Setze deiner Figur den Backpack (Artikelnummer 72248) auf und erkunde den Reiterhof (Artikelnummer 72127) Die zehn magischen Sticker machen jeden Tag auf dem Hof zum echten Erlebnis: Was passiert wohl dieses Mal? Interaktiv. Magisch. Mittendrin! Der interaktive Backpack (Artikelnummer 72248) passt auf jede PLAYMOBIL-Figur und erkennt die magischen Sticker, die auf Elemente wie Stall, Futterplatz oder Pferd geklebt werden. Sobald sich die Figur nähert, startet das Abenteuer: Hufen klappern, der Reitunterricht beginnt, interaktive Aufgaben starten – und die Kinder sind mittendrin! Vier Spielvarianten • Abenteuer-Modus Offene Spielsituationen und Audio-Impulse: Hier kannst du frei entdecken und dich immer wieder überraschen lassen • Ideen-Modus Kurze Inspirationen, die neue Spielansätze eröffnen: Perfekt, wenn du neue Abenteuer ausprobieren möchtest • Geschichten-Modus Kurze Hörspielsequenzen – so lang wie eine Tasse Kakao: Lehne dich zurück und höre spannende Geschichten • Game-Modus Spiele, Quizze und interaktive Geschichten: Hier findest du spannende Spiele, herausfordernde Rätsel und interaktive Geschichten Einmal kaufen – grenzenlos spielen Der interaktive Backpack ist mit allen „magischen Stickern“ von PLAYMOBIL hi! und deren passenden Spielwelten kompatibel. Immer neu, immer spannend Neue Inhalte können über die App jeder Zeit käuflich erworben werden. So wird jeder Einsatz zu einem neuen Abenteuer! Sorgenfrei für Eltern Sicherer und selbstständiger Spaß – ganz ohne Bildschirm (Screen-free play) und ohne aktive WLAN-Verbindung während des Spielens. Über die App haben Eltern alles im Blick. Das wird zusätzlich benötigt Dieses Ready-to-Play Set ist vollständig spielbereit und erfordert nur noch die kostenlose mobile App (ausschließlich zum Setup und Download von Inhalten). Entdecke die Vielfalt Erwecke weitere PLAYMOBIL Spielwelten wie Piraten, Zoo oder Polizei – für noch mehr Abwechslung und fantasievolle Spielmomente zum Leben.",
+      "figureCount": 3,
+      "packageDimensions": {
+        "width": 515,
+        "depth": 385,
+        "height": 90
+      },
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_extra2",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_extra3",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_extra4",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_extra5",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_extra6",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72365_product_extra7",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72365"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72365"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "PLAYMOBIL hi!"
+      ],
+      "officialPrice": {
+        "amount": 189.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72365",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72365.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72366",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72366.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72366.html",
+      "reference": "72366",
+      "name": "Ready-To-Play Set \"Piraten 71530\"",
+      "description": "PLAYMOBIL hi! – Erwecke deine PLAYMOBIL-Welt zum Leben! Interaktiver Spielspaß mit über 500 inspirierenden Audioinhalten und vier abwechslungsreichen Spielvarianten – voller Abenteuer, kreativer Spielideen, spannender Geschichten und Spielen, die die Vorstellungskraft fördern. Eintauchen. Mitmachen. Immer wieder neu erleben! Ready-to-Play Set– alles drin für den interaktiver Spielspaß mit Sound und Sprache Erwecke das Große Piratenschiff (Artikelnummer 71530) zum Leben! Setze deiner Figur den Backpack (Artikelnummer 72248) auf und erkunde das Große Piratenschiff (Artikelnummer 71530). Die zehn magischen Sticker machen jeden Segeltörn zum echten Erlebnis: Was passiert wohl dieses Mal? Interaktiv. Magisch. Mittendrin! Der Backpack (Artikelnummer 72248) passt auf jede PLAYMOBIL-Figur und erkennt die magischen Sticker, die auf Elemente wie Schiff, Steuerrad oder Kanone geklebt werden. Sobald sich die Figur nähert, startet das Abenteuer: Kanonen donnern, Piraten singen, interaktive Aufgaben starten – und die Kinder sind mittendrin! Vier Spielvarianten • Abenteuer-Modus Offene Spielsituationen und Audio-Impulse: Hier kannst du frei entdecken und dich immer wieder überraschen lassen • Ideen-Modus Kurze Inspirationen, die neue Spielansätze eröffnen: Perfekt, wenn du neue Abenteuer ausprobieren möchtest • Geschichten-Modus Kurze Hörspielsequenzen – so lang wie eine Tasse Kakao: Lehne dich zurück und höre spannende Geschichten • Game-Modus Spiele, Quizze und interaktive Geschichten: Hier findest du spannende Spiele, herausfordernde Rätsel und interaktive Geschichten Einmal kaufen – grenzenlos spielen Der interaktive Backpack ist mit allen „magischen Stickern“ von PLAYMOBIL hi! und deren passenden Spielwelten kompatibel. Immer neu, immer spannend Neue Inhalte können über die App jeder Zeit käuflich erworben werden. So wird jeder Einsatz zu einem neuen Abenteuer! Sorgenfrei für Eltern Sicherer und selbstständiger Spaß – ganz ohne Bildschirm (Screen-free play) und ohne aktive WLAN-Verbindung während des Spielens. Über die App haben Eltern alles im Blick. Das wird zusätzlich benötigt Dieses Ready-to-Play Set ist vollständig spielbereit und erfordert nur noch die kostenlose mobile App (ausschließlich zum Setup und Download von Inhalten). Entdecke die Vielfalt Erwecke weitere PLAYMOBIL Spielwelten zum Leben wie Polizei, Reiterhof und Zoo – für noch mehr Abwechslung und fantasievolle Spielmomente.",
+      "figureCount": 4,
+      "packageDimensions": {
+        "width": 515,
+        "depth": 385,
+        "height": 142
+      },
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_extra2",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_extra3",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_extra4",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_extra5",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_extra6",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72366_product_extra7",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72366"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72366"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "PLAYMOBIL hi!"
+      ],
+      "officialPrice": {
+        "amount": 189.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72366",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72366.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72367",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72367.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72367.html",
+      "reference": "72367",
+      "name": "Ready-To-Play Set \"Polizei 71873\"",
+      "description": "PLAYMOBIL hi! – Erwecke deine PLAYMOBIL-Welt zum Leben! Interaktiver Spielspaß mit über 500 inspirierenden Audioinhalten und vier abwechslungsreichen Spielvarianten – voller Abenteuer, kreativer Spielideen, spannender Geschichten und Spielen, die die Vorstellungskraft fördern. Eintauchen. Mitmachen. Immer wieder neu erleben! Ready-to-Play Set– alles drin für den interaktiver Spielspaß mit Sound und Sprache Erwecke die Polizei-Kommandozentrale (Artikelnummer 71873) zum Leben! Setze deiner Figur den Backpack (Artikelnummer 72248) auf und erkunde die Polizei-Kommandozentrale (Artikelnummer 71873). Die zehn magischen Sticker machen jeden Tag in der Zentrale zum echten Erlebnis: Was passiert wohl dieses Mal? Interaktiv. Magisch. Mittendrin! Der interaktive Backpack (Artikelnummer 72248) passt auf jede PLAYMOBIL-Figur und erkennt die magischen Sticker, die auf Elemente wie Zellen, Verhörraum oder dem Helikopter-Landeplatz geklebt werden. Sobald sich die Figur mit Backpack nähert, startet das Abenteuer: Sirenen ertönen, Verbrecher fliehen, interaktive Aufgaben starten – und die Kinder sind mittendrin! Vier Spielvarianten • Abenteuer-Modus Offene Spielsituationen und Audio-Impulse: Hier kannst du frei entdecken und dich immer wieder überraschen lassen • Ideen-Modus Kurze Inspirationen, die neue Spielansätze eröffnen: Perfekt, wenn du neue Abenteuer ausprobieren möchtest • Geschichten-Modus Kurze Hörspielsequenzen – so lang wie eine Tasse Kakao: Lehne dich zurück und höre spannende Geschichten • Game-Modus Spiele, Quizze und interaktive Geschichten: Hier findest du spannende Spiele, herausfordernde Rätsel und interaktive Geschichten Einmal kaufen – grenzenlos spielen Der interaktive Backpack ist mit allen „magischen Stickern“ von PLAYMOBIL hi! und deren passenden Spielwelten kompatibel. Immer neu, immer spannend Neue Inhalte können über die App jeder Zeit käuflich erworben werden. So wird jeder Einsatz zu einem neuen Abenteuer! Sorgenfrei für Eltern Sicherer und selbstständiger Spaß – ganz ohne Bildschirm (Screen-free play) und ohne aktive WLAN-Verbindung während des Spielens. Über die App haben Eltern alles im Blick. Das wird zusätzlich benötigt Dieses Ready-to-Play Set ist vollständig spielbereit und erfordert nur noch die kostenlose mobile App (ausschließlich zum Setup und Download von Inhalten). Entdecke die Vielfalt Erwecke weitere PLAYMOBIL Spielwelten wie Piraten, Zoo oder Pferde für noch mehr Abwechslung und fantasievolle Spielmomente zum Leben.",
+      "figureCount": 4,
+      "packageDimensions": {
+        "width": 515,
+        "depth": 385,
+        "height": 142
+      },
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_extra2",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_extra3",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_extra4",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_extra5",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_extra6",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72367_product_extra7",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72367"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72367"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "PLAYMOBIL hi!"
+      ],
+      "officialPrice": {
+        "amount": 189.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72367",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72367.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72368",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72368.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "httpStatus": 200,
+      "confirmed": true,
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72368.html",
+      "reference": "72368",
+      "name": "Ready-To-Play Set \"Zoo 72070\"",
+      "description": "PLAYMOBIL hi! – Erwecke deine PLAYMOBIL-Welt zum Leben! Interaktiver Spielspaß mit über 500 inspirierenden Audioinhalten und vier abwechslungsreichen Spielvarianten – voller Abenteuer, kreativer Spielideen, spannender Geschichten und Spielen, die die Vorstellungskraft fördern. Eintauchen. Mitmachen. Immer wieder neu erleben! Ready-to-Play Set– alles drin für den interaktiver Spielspaß mit Sound und Sprache Erwecke den Zoo (Artikelnummer 72070) zum Leben! Setze deiner Figur den Backpack (Artikelnummer 72248) auf und erkunde den Zoo: Wildnis-Kletterpark (Artikelnummer 72070). Die zehn magischen Sticker machen jede Entdeckungstour zum Erlebnis: Was passiert wohl dieses Mal? Interaktiv. Magisch. Mittendrin! Der Backpack (Artikelnummer 72248) passt auf jede PLAYMOBIL-Figur und erkennt die magischen Sticker, die auf Elemente wie Futterluken, Tiertafeln oder den Löwen geklebt werden. Sobald sich die Figur mit Backpack nähert, startet das Abenteuer: Löwen brüllen, Giraffen schmatzen, spannende interaktive Aufgaben starten– und die Kinder sind mittendrin! Vier Spielvarianten • Abenteuer-Modus Offene Spielsituationen und Audio-Impulse: Hier kannst du frei entdecken und dich immer wieder überraschen lassen • Ideen-Modus Kurze Inspirationen, die neue Spielansätze eröffnen: Perfekt, wenn du neue Abenteuer ausprobieren möchtest • Geschichten-Modus Kurze Hörspielsequenzen – so lang wie eine Tasse Kakao: Lehne dich zurück und höre spannende Geschichten • Game-Modus Spiele, Quizze und interaktive Geschichten: Hier findest du spannende Spiele, herausfordernde Rätsel und interaktive Geschichten Einmal kaufen – grenzenlos spielen Der interaktive Backpack ist mit allen „magischen Stickern“ von PLAYMOBIL hi! und deren passenden Spielwelten kompatibel. Immer neu, immer spannend Neue Inhalte können über die App jeder Zeit käuflich erworben werden. So wird jeder Einsatz zu einem neuen Abenteuer! Sorgenfrei für Eltern Sicherer und selbstständiger Spaß – ganz ohne Bildschirm (Screen-free play) und ohne aktive WLAN-Verbindung während des Spielens. Über die App haben Eltern alles im Blick. Das wird zusätzlich benötigt Dieses Ready-to-Play Set ist vollständig spielbereit und erfordert nur noch die kostenlose mobile App (ausschließlich zum Setup und Download von Inhalten). Entdecke die Vielfalt Erwecke weitere PLAYMOBIL Spielwelten zum Leben wie Reiterhof, Piraten und Polizei – für noch mehr Abwechslung und fantasievolle Spielmomente.",
+      "figureCount": 4,
+      "packageDimensions": {
+        "width": 460,
+        "depth": 284,
+        "height": 119
+      },
+      "imageKinds": [
+        "main",
+        "box_front",
+        "box_back",
+        "gallery"
+      ],
+      "officialImages": [
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_detail",
+          "kind": "main"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_box_front",
+          "kind": "box_front"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_box_back",
+          "kind": "box_back"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_extra1",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_extra2",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_extra3",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_extra4",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_extra5",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_extra6",
+          "kind": "gallery"
+        },
+        {
+          "url": "https://media.playmobil.com/i/playmobil/72368_product_extra7",
+          "kind": "gallery"
+        }
+      ],
+      "officialIdentifiers": [
+        {
+          "type": "OFFICIAL_SKU",
+          "rawValue": "72368"
+        },
+        {
+          "type": "MPN",
+          "rawValue": "72368"
+        }
+      ],
+      "breadcrumbs": [
+        "Home",
+        "Shop ...",
+        "PLAYMOBIL hi!"
+      ],
+      "officialPrice": {
+        "amount": 179.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72368",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72368.html",
+      "httpStatus": 404,
+      "confirmed": false
+    }
+  ]
+}

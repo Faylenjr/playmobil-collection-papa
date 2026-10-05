@@ -17,6 +17,8 @@ export interface OfficialPageObservation {
   productDimensions?: DimensionsMm;
   weightGrams?: number;
   imageKinds: string[];
+  officialImages?: Array<{ url: string; kind: "box_front" | "box_back" | "main" | "gallery" }>;
+  officialIdentifiers?: Array<{ type: "GTIN" | "MPN" | "OFFICIAL_SKU"; rawValue: string }>;
   breadcrumbs: string[];
   officialPrice?: { amount: number; currency: string; availability?: string };
 }
@@ -70,7 +72,18 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
   const packageDimensions = dimensions(detail(/Packungsma|Dimensions de l.emballage|Package dimensions/i));
   const productDimensions = dimensions(detail(/Produktma|Dimensions du produit|Product dimensions/i));
   const images = Array.isArray(product?.image) ? product.image.filter((value): value is string => typeof value === "string") : [];
-  const imageKinds = [...new Set(images.map((url) => /box[_ -]?front/i.test(url) ? "box_front" : /box[_ -]?back/i.test(url) ? "box_back" : /product[_ -]?detail/i.test(url) ? "main" : "gallery"))];
+  const officialImages = images.map((url) => ({
+    url,
+    kind: (/box[_ -]?front/i.test(url) ? "box_front" : /box[_ -]?back/i.test(url) ? "box_back" : /product[_ -]?detail/i.test(url) ? "main" : "gallery") as "box_front" | "box_back" | "main" | "gallery",
+  }));
+  const imageKinds = [...new Set(officialImages.map(({ kind }) => kind))];
+  const officialIdentifiers: OfficialPageObservation["officialIdentifiers"] = [];
+  if (typeof product?.sku === "string" && product.sku.trim()) officialIdentifiers.push({ type: "OFFICIAL_SKU", rawValue: product.sku.trim() });
+  if (typeof product?.mpn === "string" && product.mpn.trim()) officialIdentifiers.push({ type: "MPN", rawValue: product.mpn.trim() });
+  for (const key of ["gtin", "gtin8", "gtin12", "gtin13", "gtin14"] as const) {
+    const value = product?.[key];
+    if (typeof value === "string" && value.trim()) officialIdentifiers.push({ type: "GTIN", rawValue: value.trim() });
+  }
   const breadcrumbs = $(".breadcrumbs__list a").map((_, element) => $(element).text().replace(/\s+/g, " ").trim()).get().filter(Boolean);
   const releaseYearText = $(".badges__badge--year").first().text().trim() || breadcrumbs.findLast((value) => /^(?:19|20)\d{2}$/.test(value));
   const releaseYear = releaseYearText && /^(?:19|20)\d{2}$/.test(releaseYearText) ? Number(releaseYearText) : undefined;
@@ -91,7 +104,8 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
     ...(packageDimensions ? { packageDimensions } : {}),
     ...(productDimensions ? { productDimensions } : {}),
     ...(weightGrams !== undefined && Number.isFinite(weightGrams) ? { weightGrams } : {}),
-    imageKinds, breadcrumbs, ...(officialPrice ? { officialPrice } : {}),
+    imageKinds, ...(officialImages.length ? { officialImages } : {}),
+    ...(officialIdentifiers.length ? { officialIdentifiers } : {}), breadcrumbs, ...(officialPrice ? { officialPrice } : {}),
   };
 }
 

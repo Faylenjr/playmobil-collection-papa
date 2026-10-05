@@ -316,7 +316,10 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .country-card small { display: block; margin-top: 12px; color: var(--muted); }
 .country-heading { display: flex; align-items: center; gap: 24px; padding: 30px; background: white; border: 1px solid var(--line); border-radius: 22px; }
 .country-flag { font-size: 4.5rem; }
-.travel-callout { display: flex; justify-content: space-between; gap: 20px; margin-top: 22px; padding: 16px 19px; color: #704500; background: #fff3c5; border: 1px solid #ebcf72; border-radius: 14px; }
+.travel-callout { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px; margin-top: 22px; padding: 16px 19px; color: #704500; background: #fff3c5; border: 1px solid #ebcf72; border-radius: 14px; }
+.travel-callout ul { width: 100%; margin: 0; padding-left: 20px; }
+.travel-callout li + li { margin-top: 5px; }
+.travel-callout a { color: #704500; font-weight: 800; }
 
 .price-panel { margin-top: 34px; padding: 28px; background: white; border: 2px solid var(--blue-100); border-radius: 20px; box-shadow: 0 10px 32px rgba(18, 53, 88, 0.07); }
 .muted-copy { color: var(--muted); }
@@ -326,6 +329,10 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .offer-list article { display: grid; grid-template-columns: 1fr auto auto; gap: 20px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 12px; }
 .offer-list article div { display: flex; flex-direction: column; }
 .offer-list article span { color: var(--muted); font-size: .8rem; }
+.offer-group { margin-top: 24px; }
+.offer-group h3 { margin: 0 0 8px; }
+.offer-prices small { color: var(--muted); }
+.offer-prices .promotion-badge { width: fit-content; margin-top: 5px; padding: 3px 7px; color: #17653a; background: #e5f7ec; border-radius: 999px; font-weight: 900; }
 .offer-list article a, .manual-market-links a { color: var(--blue-700); font-weight: 800; }
 .manual-market-links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
 .manual-market-links a { padding: 9px 12px; background: #edf5fc; border-radius: 9px; }
