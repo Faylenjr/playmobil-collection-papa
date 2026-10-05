@@ -2,7 +2,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Prisma } from "../generated/prisma-node/client";
-import { getDatabaseClient } from "../lib/db";
+import { getNodeDatabaseClient } from "../lib/db-node";
 
 type OfficialObservation = {
   reference: string;
@@ -20,7 +20,7 @@ const supportedMarkets = {
 async function main() {
   const apply = process.argv.includes("--apply");
   const snapshot = JSON.parse(await readFile(path.join(process.cwd(), "data", "audit", "playmobil-official-recent.json"), "utf8")) as { observedAt: string; observations: OfficialObservation[] };
-  const db = await getDatabaseClient();
+  const db = getNodeDatabaseClient();
   try {
     const rows = await db.$queryRaw<Array<{ reference: string; variantId: string; variantsUsingBase: number }>>(Prisma.sql`
       SELECT pr."base_value" AS reference, pv."id"::text AS "variantId",
@@ -40,6 +40,7 @@ async function main() {
       .map((observation) => observation.reference))];
     const plan = { mode: apply ? "APPLY" : "DRY_RUN", snapshotObservedAt: snapshot.observedAt, wouldCreate: candidates.length, references: new Set(candidates.map((candidate) => candidate.observation.reference)).size, byMarket: Object.fromEntries(Object.keys(supportedMarkets).map((market) => [market, candidates.filter((candidate) => candidate.observation.market === market).length])), skippedMultipleVariants };
     if (!apply) { console.log(JSON.stringify(plan, null, 2)); return; }
+    let created = 0;
     await db.$transaction(async (tx) => {
       for (const market of Object.keys(supportedMarkets) as Array<keyof typeof supportedMarkets>) {
         const config = supportedMarkets[market];
@@ -51,11 +52,14 @@ async function main() {
         const marketRow = await tx.market.findUniqueOrThrow({ where: { code: config.code } });
         for (const { observation, variantId } of candidates.filter((candidate) => candidate.observation.market === market)) {
           const existing = await tx.listPriceObservation.findFirst({ where: { variantId, marketId: marketRow.id, sourceId: source.id, sourceUrl: observation.sourceUrl, amount: observation.officialPrice!.amount, currency: observation.officialPrice!.currency, observedAt: new Date(snapshot.observedAt) } });
-          if (!existing) await tx.listPriceObservation.create({ data: { variantId, marketId: marketRow.id, sourceId: source.id, amount: observation.officialPrice!.amount, currency: observation.officialPrice!.currency, sourceUrl: observation.sourceUrl, observedAt: new Date(snapshot.observedAt) } });
+          if (!existing) {
+            await tx.listPriceObservation.create({ data: { variantId, marketId: marketRow.id, sourceId: source.id, amount: observation.officialPrice!.amount, currency: observation.officialPrice!.currency, sourceUrl: observation.sourceUrl, observedAt: new Date(snapshot.observedAt) } });
+            created += 1;
+          }
         }
       }
     });
-    console.log(JSON.stringify({ ...plan, created: candidates.length }, null, 2));
+    console.log(JSON.stringify({ ...plan, created }, null, 2));
   } finally {
     await db.$disconnect();
   }

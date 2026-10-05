@@ -2,7 +2,7 @@ import "dotenv/config";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { Prisma } from "../generated/prisma-node/client";
-import { getDatabaseClient } from "../lib/db";
+import { getNodeDatabaseClient } from "../lib/db-node";
 import { classifyCollectorReference } from "../lib/collector-reference";
 import { classifyRecentEntry, summarizeStatuses, type LocalReference, type SnapshotEntry } from "../lib/recent-catalogue-audit";
 
@@ -14,7 +14,7 @@ async function readSnapshot(year: number) {
 }
 
 async function main() {
-  const db = await getDatabaseClient();
+  const db = getNodeDatabaseClient();
   try {
     const local = await db.$queryRaw<LocalReference[]>(Prisma.sql`
       SELECT p."id"::text AS "productId", pv."id"::text AS "variantId", pv."release_year" AS "releaseYear",
