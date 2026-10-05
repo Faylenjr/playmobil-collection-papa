@@ -11,7 +11,7 @@ type Candidate = {
   figureCount: number | null; mediaCount: number; stratum: string;
 };
 
-const marketConfig: Record<OfficialMarket, string> = {
+const marketConfig: Record<Extract<OfficialMarket, "fr-FR" | "de-DE">, string> = {
   "fr-FR": "https://www.playmobil.com/fr-fr",
   "de-DE": "https://www.playmobil.com/de-de",
 };

@@ -30,7 +30,7 @@ type LocalRow = {
   figureCount: number | null;
 };
 
-const productMarkets: Record<OfficialMarket, string> = {
+const productMarkets: Record<Extract<OfficialMarket, "fr-FR" | "de-DE">, string> = {
   "fr-FR": "https://www.playmobil.com/fr-fr",
   "de-DE": "https://www.playmobil.com/de-de",
 };

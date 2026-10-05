@@ -1,0 +1,377 @@
+{
+  "sourceRole": "DISCOVERY_ONLY",
+  "sourceUrl": "https://www.koupobol.com/playmobil-2027/liste-par-theme",
+  "observedAt": "2026-10-05T02:20:59.085Z",
+  "robotsUrl": "https://www.koupobol.com/robots.txt",
+  "robotsObserved": "User-agent: *\nDisallow: /go/\nSitemap: https://www.koupobol.com/sitemap.xml",
+  "entries": [
+    {
+      "reference": "72286",
+      "name": "Naufrage des Pirates",
+      "theme": "Pirates",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-pirates/72286-naufrage-des-pirates/p4756"
+    },
+    {
+      "reference": "72287",
+      "name": "Plage et épave",
+      "theme": "Pirates",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-pirates/72287-plage-et-epave/p4757"
+    },
+    {
+      "reference": "72288",
+      "name": "Le camp des pirates",
+      "theme": "Pirates",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-pirates/72288-le-camp-des-pirates/p4758"
+    },
+    {
+      "reference": "72289",
+      "name": "Pirate contre un kraken",
+      "theme": "Pirates",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-pirates/72289-pirate-contre-un-kraken/p4759"
+    },
+    {
+      "reference": "72290",
+      "name": "Bateau à pédales",
+      "theme": "Junior",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-junior/72290-bateau-a-pedales/p4760"
+    },
+    {
+      "reference": "72291",
+      "name": "Les sirènes",
+      "theme": "Junior",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-junior/72291-les-sirenes/p4761"
+    },
+    {
+      "reference": "72292",
+      "name": "Aventure de plongée",
+      "theme": "Junior",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-junior/72292-aventure-de-plongee/p4762"
+    },
+    {
+      "reference": "72293",
+      "name": "Canards pour la baignoire",
+      "theme": "Junior",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-junior/72293-canards-pour-la-baignoire/p4763"
+    },
+    {
+      "reference": "72294",
+      "name": "Club-house",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72294-club-house/p4771"
+    },
+    {
+      "reference": "72295",
+      "name": "Fête costumée",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72295-fete-costumee/p4772"
+    },
+    {
+      "reference": "72296",
+      "name": "Marché de la mode",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72296-marche-de-la-mode/p4773"
+    },
+    {
+      "reference": "72299",
+      "name": "Figurines Garçon - Série 31",
+      "theme": "Figures",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-figures/72299-figurines-garcon-serie-31/p4740"
+    },
+    {
+      "reference": "72300",
+      "name": "Figurines Fille - Série 31",
+      "theme": "Figures",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-figures/72300-figurines-fille-serie-31/p4741"
+    },
+    {
+      "reference": "72307",
+      "name": "Clinique vétérinaire",
+      "theme": "Animaux et amis",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/animaux-et-amis/72307-clinique-veterinaire/p4764"
+    },
+    {
+      "reference": "72308",
+      "name": "Voiture du vétérinaire",
+      "theme": "Animaux et amis",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/animaux-et-amis/72308-voiture-du-veterinaire/p4765"
+    },
+    {
+      "reference": "72309",
+      "name": "Salle de rayon X",
+      "theme": "Animaux et amis",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/animaux-et-amis/72309-salle-de-rayon-x/p4766"
+    },
+    {
+      "reference": "72310",
+      "name": "Salle pour les chiots",
+      "theme": "Animaux et amis",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/animaux-et-amis/72310-salle-pour-les-chiots/p4767"
+    },
+    {
+      "reference": "72311",
+      "name": "Premiers soins pour les chats",
+      "theme": "Animaux et amis",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/animaux-et-amis/72311-premiers-soins-pour-les-chats/p4768"
+    },
+    {
+      "reference": "72316",
+      "name": "Barbie Malibu Porte-clés",
+      "theme": "Barbie",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/barbie/72316-barbie-malibu-porte-cles/p4769"
+    },
+    {
+      "reference": "72317",
+      "name": "Barbie Brooklyn Porte-clés",
+      "theme": "Barbie",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/barbie/72317-barbie-brooklyn-porte-cles/p4770"
+    },
+    {
+      "reference": "72326",
+      "name": "Sortie de famille - Duo Pack",
+      "theme": "My Life",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72326-sortie-de-famille-duo-pack/p4742"
+    },
+    {
+      "reference": "72327",
+      "name": "Sports d'hiver - Duo Pack",
+      "theme": "My Life",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72327-sports-d-hiver-duo-pack/p4743"
+    },
+    {
+      "reference": "72328",
+      "name": "Les amies - Duo Pack",
+      "theme": "My Life",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72328-les-amies-duo-pack/p4744"
+    },
+    {
+      "reference": "72329",
+      "name": "Ninja - Duo Pack",
+      "theme": "Objets divers",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/objets-divers-playmobil/72329-ninja-duo-pack/p4745"
+    },
+    {
+      "reference": "72330",
+      "name": "Fée et loutre",
+      "theme": "Special Plus",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72330-fee-et-loutre/p4746"
+    },
+    {
+      "reference": "72331",
+      "name": "Fantôme",
+      "theme": "Special Plus",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72331-fantome/p4747"
+    },
+    {
+      "reference": "72332",
+      "name": "Gardienne de but",
+      "theme": "Special Plus",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72332-gardienne-de-but/p4748"
+    },
+    {
+      "reference": "72333",
+      "name": "Vendeuse de sacs",
+      "theme": "Special Plus",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72333-vendeuse-de-sacs/p4749"
+    },
+    {
+      "reference": "72334",
+      "name": "Vendeur de glaces",
+      "theme": "Special Plus",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72334-vendeur-de-glaces/p4750"
+    },
+    {
+      "reference": "72335",
+      "name": "Vendangeur",
+      "theme": "Special Plus",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72335-vendangeur/p4751"
+    },
+    {
+      "reference": "72342",
+      "name": "Parc d'aventures pour enfants - Promo Pack",
+      "theme": "My Life",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72342-parc-d-aventures-pour-enfants-promo-pack/p4752"
+    },
+    {
+      "reference": "72343",
+      "name": "Formule 1 - Promo Pack",
+      "theme": "Voitures",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/voitures-playmobil/72343-formule-1-promo-pack/p4753"
+    },
+    {
+      "reference": "72344",
+      "name": "Braquage de banque - Promo Pack",
+      "theme": "Western",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-western/72344-braquage-de-banque-promo-pack/p4754"
+    },
+    {
+      "reference": "72345",
+      "name": "Sorcières et chaudron - Promo Pack",
+      "theme": "Halloween",
+      "announcedMonth": "Janvier",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-halloween/72345-sorcieres-et-chaudron-promo-pack/p4755"
+    },
+    {
+      "reference": "72370",
+      "name": "Camping-car avec terrasse panoramique",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72370-camping-car-avec-terrasse-panoramique/p4774"
+    },
+    {
+      "reference": "72371",
+      "name": "Camping avec aire de services",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72371-camping-avec-aire-de-services/p4775"
+    },
+    {
+      "reference": "72372",
+      "name": "Camping autour d'un feu",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72372-camping-autour-d-un-feu/p4776"
+    },
+    {
+      "reference": "72373",
+      "name": "Barbecue en plein air",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72373-barbecue-en-plein-air/p4777"
+    },
+    {
+      "reference": "72374",
+      "name": "Une escapade dans la nature",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72374-une-escapade-dans-la-nature/p4778"
+    },
+    {
+      "reference": "72375",
+      "name": "Paddle",
+      "theme": "My Life",
+      "announcedMonth": "Mars",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-my-life/72375-paddle/p4779"
+    },
+    {
+      "reference": "72403",
+      "name": "Volcan avec un Parasaurolophus et un Saichania",
+      "theme": "Dinos",
+      "announcedMonth": "Mai",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-dinos/72403-volcan-avec-un-parasaurolophus-et-un-saichania/p4780"
+    },
+    {
+      "reference": "72404",
+      "name": "Transport de dinosaures avec le Triceratops",
+      "theme": "Dinos",
+      "announcedMonth": "Mai",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-dinos/72404-transport-de-dinosaures-avec-le-triceratops/p4781"
+    },
+    {
+      "reference": "72405",
+      "name": "Un brachiosaure avec un motard",
+      "theme": "Dinos",
+      "announcedMonth": "Mai",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-dinos/72405-un-brachiosaure-avec-un-motard/p4782"
+    },
+    {
+      "reference": "72408",
+      "name": "Attaque d'un Dimorphodon contre un hélicoptère",
+      "theme": "Dinos",
+      "announcedMonth": null,
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-dinos/72408-attaque-d-un-dimorphodon-contre-un-helicoptere/p4784"
+    },
+    {
+      "reference": "72409",
+      "name": "Jeune Tyrannosaurus Rex avec cage",
+      "theme": "Dinos",
+      "announcedMonth": "Mai",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-dinos/72409-jeune-tyrannosaurus-rex-avec-cage/p4783"
+    },
+    {
+      "reference": "72410",
+      "name": "Ptéranodon avec son nid",
+      "theme": "Dinos",
+      "announcedMonth": "Mai",
+      "announcedYear": 2027,
+      "url": "https://www.koupobol.com/playmobil-dinos/72410-pteranodon-avec-son-nid/p4785"
+    }
+  ]
+}

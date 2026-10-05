@@ -1,6 +1,6 @@
 import { load } from "cheerio";
 
-export type OfficialMarket = "fr-FR" | "de-DE";
+export type OfficialMarket = "fr-FR" | "de-DE" | "en-US";
 
 export type DimensionsMm = { width: number; depth: number; height: number };
 
@@ -18,6 +18,7 @@ export interface OfficialPageObservation {
   weightGrams?: number;
   imageKinds: string[];
   breadcrumbs: string[];
+  officialPrice?: { amount: number; currency: string; availability?: string };
 }
 
 const dimensionPattern = /([\d.,]+)\s*x\s*([\d.,]+)\s*x\s*([\d.,]+)\s*cm/i;
@@ -75,6 +76,12 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
   const releaseYear = releaseYearText && /^(?:19|20)\d{2}$/.test(releaseYearText) ? Number(releaseYearText) : undefined;
   const name = typeof product?.name === "string" ? product.name : $("h1").first().text().replace(/\s+/g, " ").trim();
   const description = typeof product?.description === "string" ? product.description : undefined;
+  const offer = product?.offers && typeof product.offers === "object" ? product.offers as Record<string, unknown> : undefined;
+  const offerAmount = typeof offer?.price === "number" ? offer.price : typeof offer?.price === "string" ? Number(offer.price.replace(",", ".")) : undefined;
+  const offerCurrency = typeof offer?.priceCurrency === "string" && /^[A-Z]{3}$/.test(offer.priceCurrency) ? offer.priceCurrency : undefined;
+  const officialPrice = offerAmount !== undefined && Number.isFinite(offerAmount) && offerAmount >= 0 && offerCurrency
+    ? { amount: offerAmount, currency: offerCurrency, ...(typeof offer?.availability === "string" ? { availability: offer.availability } : {}) }
+    : undefined;
 
   return {
     market, sourceUrl, reference, ...(name ? { name } : {}), ...(description ? { description } : {}),
@@ -84,7 +91,7 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
     ...(packageDimensions ? { packageDimensions } : {}),
     ...(productDimensions ? { productDimensions } : {}),
     ...(weightGrams !== undefined && Number.isFinite(weightGrams) ? { weightGrams } : {}),
-    imageKinds, breadcrumbs,
+    imageKinds, breadcrumbs, ...(officialPrice ? { officialPrice } : {}),
   };
 }
 

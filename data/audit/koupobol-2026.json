@@ -1,0 +1,1777 @@
+{
+  "sourceRole": "DISCOVERY_ONLY",
+  "sourceUrl": "https://www.koupobol.com/playmobil-2026/liste-par-theme",
+  "observedAt": "2026-10-05T02:20:59.085Z",
+  "robotsUrl": "https://www.koupobol.com/robots.txt",
+  "robotsObserved": "User-agent: *\nDisallow: /go/\nSitemap: https://www.koupobol.com/sitemap.xml",
+  "entries": [
+    {
+      "reference": "7213",
+      "name": "Entraînement Chevaliers du Dragon",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/7213-entrainement-chevaliers-du-dragon/p4738"
+    },
+    {
+      "reference": "71520",
+      "name": "Volkswagen T1 Camping Bus - Jaune",
+      "theme": "Volkswagen",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-volkswagen/71520-volkswagen-t1-camping-bus-jaune/p4718"
+    },
+    {
+      "reference": "71714",
+      "name": "Ferme transportable",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/71714-ferme-transportable/p4788"
+    },
+    {
+      "reference": "71955",
+      "name": "The Rock Monster Truck",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71955-the-rock-monster-truck/p4616"
+    },
+    {
+      "reference": "71956",
+      "name": "WWE RAW Ring Collectors Set (Seth Rollins - CM Punk)",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71956-wwe-raw-ring-collectors-set-seth-rollins-cm-punk/p4615"
+    },
+    {
+      "reference": "71957",
+      "name": "Undertaker - Stone Cold - Triple H",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71957-undertaker-stone-cold-triple-h/p4602"
+    },
+    {
+      "reference": "71958",
+      "name": "Hulk Hogan",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71958-hulk-hogan/p4601"
+    },
+    {
+      "reference": "71959",
+      "name": "\"Stone Cold\" Steve Austin",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71959-stone-cold-steve-austin/p4600"
+    },
+    {
+      "reference": "71960",
+      "name": "Roman Reigns",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71960-roman-reigns/p4599"
+    },
+    {
+      "reference": "71961",
+      "name": "Cody Rhodes",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71961-cody-rhodes/p4598"
+    },
+    {
+      "reference": "71962",
+      "name": "Rhea Ripley",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71962-rhea-ripley/p4597"
+    },
+    {
+      "reference": "71963",
+      "name": "Triple H",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71963-triple-h/p4596"
+    },
+    {
+      "reference": "71964",
+      "name": "WWE Superstars Sachet Surprise Serie 1",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/71964-wwe-superstars-sachet-surprise-serie-1/p4613"
+    },
+    {
+      "reference": "72005",
+      "name": "Jouets de sable",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72005-jouets-de-sable/p4535"
+    },
+    {
+      "reference": "72006",
+      "name": "Jouets de sable",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72006-jouets-de-sable/p4536"
+    },
+    {
+      "reference": "72011",
+      "name": "fusée de recherche martienne",
+      "theme": "ESA",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-esa/72011-fusee-de-recherche-martienne/p4548"
+    },
+    {
+      "reference": "72012",
+      "name": "Rover d'exploration martienne",
+      "theme": "ESA",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-esa/72012-rover-d-exploration-martienne/p4549"
+    },
+    {
+      "reference": "72013",
+      "name": "Planeur spatial",
+      "theme": "ESA",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-esa/72013-planeur-spatial/p4550"
+    },
+    {
+      "reference": "72014",
+      "name": "Astronaute avec robot",
+      "theme": "ESA",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-esa/72014-astronaute-avec-robot/p4551"
+    },
+    {
+      "reference": "72023",
+      "name": "Sorcière et sorcier - Duo Pack",
+      "theme": "Halloween",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-halloween/72023-sorciere-et-sorcier-duo-pack/p4525"
+    },
+    {
+      "reference": "72024",
+      "name": "Pirates - Duo Pack",
+      "theme": "Pirates",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-pirates/72024-pirates-duo-pack/p4526"
+    },
+    {
+      "reference": "72025",
+      "name": "Garde forestier avec rhinocéros - Duo Pack",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72025-garde-forestier-avec-rhinoceros-duo-pack/p4527"
+    },
+    {
+      "reference": "72026",
+      "name": "Cavalière avec poulain - Duo Pack",
+      "theme": "Western",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-western/72026-cavaliere-avec-poulain-duo-pack/p4528"
+    },
+    {
+      "reference": "72027",
+      "name": "Figurines Garçon - Série 29",
+      "theme": "Figures",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-figures/72027-figurines-garcon-serie-29/p4523"
+    },
+    {
+      "reference": "72028",
+      "name": "Figurines Fille - Série 29",
+      "theme": "Figures",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-figures/72028-figurines-fille-serie-29/p4524"
+    },
+    {
+      "reference": "72029",
+      "name": "Policier avec radar",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72029-policier-avec-radar/p4529"
+    },
+    {
+      "reference": "72030",
+      "name": "Astronaute",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72030-astronaute/p4530"
+    },
+    {
+      "reference": "72031",
+      "name": "Mécanicien",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72031-mecanicien/p4531"
+    },
+    {
+      "reference": "72032",
+      "name": "Vacancière",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72032-vacanciere/p4532"
+    },
+    {
+      "reference": "72033",
+      "name": "Aventurier",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72033-aventurier/p4533"
+    },
+    {
+      "reference": "72034",
+      "name": "Fée des bois",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72034-fee-des-bois/p4534"
+    },
+    {
+      "reference": "72043",
+      "name": "Rendez-vous de la Saint-Valentin",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72043-rendez-vous-de-la-saint-valentin/p4547"
+    },
+    {
+      "reference": "72044",
+      "name": "Frankie Stein Porte-clés",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72044-frankie-stein-porte-cles/p4590"
+    },
+    {
+      "reference": "72045",
+      "name": "Cleo De Nile Porte-clés",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72045-cleo-de-nile-porte-cles/p4589"
+    },
+    {
+      "reference": "72046",
+      "name": "Draculaura Porte-clés",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72046-draculaura-porte-cles/p4588"
+    },
+    {
+      "reference": "72052",
+      "name": "Bal masqué dans le pavillon",
+      "theme": "Princess",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-princess/72052-bal-masque-dans-le-pavillon/p4552"
+    },
+    {
+      "reference": "72053",
+      "name": "Labyrinthe royal",
+      "theme": "Princess",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-princess/72053-labyrinthe-royal/p4553"
+    },
+    {
+      "reference": "72054",
+      "name": "Visite lointaine",
+      "theme": "Princess",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-princess/72054-visite-lointaine/p4554"
+    },
+    {
+      "reference": "72055",
+      "name": "Trois princesses",
+      "theme": "Princess",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-princess/72055-trois-princesses/p4555"
+    },
+    {
+      "reference": "72056",
+      "name": "Stade de football et défis",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72056-stade-de-football-et-defis/p4591"
+    },
+    {
+      "reference": "72057",
+      "name": "Entraînement de Football",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72057-entrainement-de-football/p4592"
+    },
+    {
+      "reference": "72058",
+      "name": "Joueurs de football",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72058-joueurs-de-football/p4593"
+    },
+    {
+      "reference": "72059",
+      "name": "Booster Propulseur",
+      "theme": "Sky Trails",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/sky-trails/72059-booster-propulseur/p4643"
+    },
+    {
+      "reference": "72060",
+      "name": "Déclencheur",
+      "theme": "Sky Trails",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/sky-trails/72060-declencheur/p4605"
+    },
+    {
+      "reference": "72061",
+      "name": "Camion tout-terrain",
+      "theme": "Rallye",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-rallye/72061-camion-tout-terrain/p4556"
+    },
+    {
+      "reference": "72062",
+      "name": "Voiture de tuning tout-terrain",
+      "theme": "Rallye",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-rallye/72062-voiture-de-tuning-tout-terrain/p4557"
+    },
+    {
+      "reference": "72063",
+      "name": "Offroad Buggy",
+      "theme": "Rallye",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-rallye/72063-offroad-buggy/p4558"
+    },
+    {
+      "reference": "72064",
+      "name": "Quad tout-terrain",
+      "theme": "Rallye",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-rallye/72064-quad-tout-terrain/p4559"
+    },
+    {
+      "reference": "72065",
+      "name": "Offroad Motorrad",
+      "theme": "Rallye",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-rallye/72065-offroad-motorrad/p4560"
+    },
+    {
+      "reference": "72066",
+      "name": "Véhicule d'intervention SWAT - Promo Pack",
+      "theme": "Policiers",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/policiers-playmobil/72066-vehicule-d-intervention-swat-promo-pack/p4537"
+    },
+    {
+      "reference": "72067",
+      "name": "Excursion des fées - Promo Pack",
+      "theme": "Magic Unicorns",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/magic-unicorns/72067-excursion-des-fees-promo-pack/p4538"
+    },
+    {
+      "reference": "72068",
+      "name": "Éléphant avec soigneur - Promo Pack",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72068-elephant-avec-soigneur-promo-pack/p4539"
+    },
+    {
+      "reference": "72069",
+      "name": "Cachette des dinosaures",
+      "theme": "Dinos",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-dinos/72069-cachette-des-dinosaures/p4540"
+    },
+    {
+      "reference": "72070",
+      "name": "Zoo : Parc d'escalade sauvage",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72070-zoo-parc-d-escalade-sauvage/p4561"
+    },
+    {
+      "reference": "72071",
+      "name": "Zoo : aventure dans la jungle",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72071-zoo-aventure-dans-la-jungle/p4562"
+    },
+    {
+      "reference": "72072",
+      "name": "Zoo : véhicule pour soigneurs animaliers",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72072-zoo-vehicule-pour-soigneurs-animaliers/p4563"
+    },
+    {
+      "reference": "72073",
+      "name": "Zoo : expédition glaciale",
+      "theme": "Animaux et amis",
+      "announcedMonth": "Mars",
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72073-zoo-expedition-glaciale/p4564"
+    },
+    {
+      "reference": "72074",
+      "name": "Zoo : mascotte",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72074-zoo-mascotte/p4565"
+    },
+    {
+      "reference": "72076",
+      "name": "Vol de vélo",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72076-vol-de-velo/p4541"
+    },
+    {
+      "reference": "72078",
+      "name": "Plongeurs de la police avec un trésor",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72078-plongeurs-de-la-police-avec-un-tresor/p4542"
+    },
+    {
+      "reference": "72079",
+      "name": "Course-poursuite à moto",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72079-course-poursuite-a-moto/p4543"
+    },
+    {
+      "reference": "72080",
+      "name": "hélicoptère de police",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72080-helicoptere-de-police/p4544"
+    },
+    {
+      "reference": "72081",
+      "name": "Boutique de mode",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72081-boutique-de-mode/p4545"
+    },
+    {
+      "reference": "72082",
+      "name": "Créatrice de mode",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72082-creatrice-de-mode/p4546"
+    },
+    {
+      "reference": "72083",
+      "name": "Camion malaxeur",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72083-camion-malaxeur/p4714"
+    },
+    {
+      "reference": "72084",
+      "name": "Train avec des animaux",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72084-train-avec-des-animaux/p4715"
+    },
+    {
+      "reference": "72085",
+      "name": "Action de super-héros",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72085-action-de-super-heros/p4630"
+    },
+    {
+      "reference": "72086",
+      "name": "Gâteau d'anniversaire",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72086-gateau-d-anniversaire/p4716"
+    },
+    {
+      "reference": "72087",
+      "name": "Le jardin des fées et des licornes",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72087-le-jardin-des-fees-et-des-licornes/p4717"
+    },
+    {
+      "reference": "72088",
+      "name": "Puzzle sur les pompiers",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72088-puzzle-sur-les-pompiers/p4632"
+    },
+    {
+      "reference": "72089",
+      "name": "Zoo : tigre et visiteur",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72089-zoo-tigre-et-visiteur/p4566"
+    },
+    {
+      "reference": "72090",
+      "name": "Zoo : ours polaire et soigneur",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72090-zoo-ours-polaire-et-soigneur/p4567"
+    },
+    {
+      "reference": "72091",
+      "name": "Zoo : dauphin et visiteuse",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72091-zoo-dauphin-et-visiteuse/p4568"
+    },
+    {
+      "reference": "72092",
+      "name": "Zoo : bébé éléphant et soigneuse",
+      "theme": "Animaux et amis",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/animaux-et-amis/72092-zoo-bebe-elephant-et-soigneuse/p4569"
+    },
+    {
+      "reference": "72093",
+      "name": "John Cena",
+      "theme": "WWE",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/wwe/72093-john-cena/p4595"
+    },
+    {
+      "reference": "72100",
+      "name": "Œuf : pirates",
+      "theme": "Pirates",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-pirates/72100-oeuf-pirates/p4570"
+    },
+    {
+      "reference": "72101",
+      "name": "Œuf : vacances à la plage",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72101-oeuf-vacances-a-la-plage/p4571"
+    },
+    {
+      "reference": "72102",
+      "name": "Œuf : Princesses",
+      "theme": "Princess",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-princess/72102-oeuf-princesses/p4572"
+    },
+    {
+      "reference": "72103",
+      "name": "Œuf : Espace",
+      "theme": "Space",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-space/72103-oeuf-espace/p4573"
+    },
+    {
+      "reference": "72104",
+      "name": "Mariage des sirènes",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72104-mariage-des-sirenes/p4574"
+    },
+    {
+      "reference": "72105",
+      "name": "Sac coquillage & sirènes",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72105-sac-coquillage-sirenes/p4576"
+    },
+    {
+      "reference": "72106",
+      "name": "Orque et sirène",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72106-orque-et-sirene/p4577"
+    },
+    {
+      "reference": "72107",
+      "name": "Buffet de mariage des sirènes",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72107-buffet-de-mariage-des-sirenes/p4578"
+    },
+    {
+      "reference": "72108",
+      "name": "Sirène, cadeaux & animaux marins",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72108-sirene-cadeaux-animaux-marins/p4575"
+    },
+    {
+      "reference": "72109",
+      "name": "Sirène avec hippocampe",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72109-sirene-avec-hippocampe/p4579"
+    },
+    {
+      "reference": "72112",
+      "name": "Château-fort des chevaliers",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72112-chateau-fort-des-chevaliers/p4580"
+    },
+    {
+      "reference": "72113",
+      "name": "Tour des chevaliers du Dragon",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72113-tour-des-chevaliers-du-dragon/p4581"
+    },
+    {
+      "reference": "72114",
+      "name": "Dragon noir & chevalier",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72114-dragon-noir-chevalier/p4582"
+    },
+    {
+      "reference": "72115",
+      "name": "Canon des chevaliers du Lion",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72115-canon-des-chevaliers-du-lion/p4583"
+    },
+    {
+      "reference": "72116",
+      "name": "Troll et trésor chevaliers du Lion",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72116-troll-et-tresor-chevaliers-du-lion/p4584"
+    },
+    {
+      "reference": "72117",
+      "name": "Catapulte à pierre Chevalier dragon",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72117-catapulte-a-pierre-chevalier-dragon/p4585"
+    },
+    {
+      "reference": "72118",
+      "name": "Chef des Chevaliers du Dragon",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72118-chef-des-chevaliers-du-dragon/p4586"
+    },
+    {
+      "reference": "72119",
+      "name": "Chef des Chevaliers Lions",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72119-chef-des-chevaliers-lions/p4587"
+    },
+    {
+      "reference": "72120",
+      "name": "Barbie Parc aquatique",
+      "theme": "Barbie",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/barbie/72120-barbie-parc-aquatique/p4606"
+    },
+    {
+      "reference": "72121",
+      "name": "Barbie Café de plage",
+      "theme": "Barbie",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/barbie/72121-barbie-cafe-de-plage/p4607"
+    },
+    {
+      "reference": "72122",
+      "name": "Barbie Bateau de l'aventure",
+      "theme": "Barbie",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/barbie/72122-barbie-bateau-de-l-aventure/p4608"
+    },
+    {
+      "reference": "72123",
+      "name": "Barbie Décapotable",
+      "theme": "Barbie",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/barbie/72123-barbie-decapotable/p4609"
+    },
+    {
+      "reference": "72124",
+      "name": "Barbie Tendance plage",
+      "theme": "Barbie",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/barbie/72124-barbie-tendance-plage/p4610"
+    },
+    {
+      "reference": "72125",
+      "name": "Barbie Brooklyn",
+      "theme": "Barbie",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/barbie/72125-barbie-brooklyn/p4611"
+    },
+    {
+      "reference": "72126",
+      "name": "Barbie Malibu",
+      "theme": "Barbie",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/barbie/72126-barbie-malibu/p4612"
+    },
+    {
+      "reference": "72127",
+      "name": "Grand centre équestre",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72127-grand-centre-equestre/p4659"
+    },
+    {
+      "reference": "72128",
+      "name": "Clinique vétérinaire",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72128-clinique-veterinaire/p4660"
+    },
+    {
+      "reference": "72129",
+      "name": "Véhicule avec remorque pour chevaux",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72129-vehicule-avec-remorque-pour-chevaux/p4661"
+    },
+    {
+      "reference": "72130",
+      "name": "Parcours de compétition",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72130-parcours-de-competition/p4702"
+    },
+    {
+      "reference": "72131",
+      "name": "Petite écurie avec un maréchal-ferrant",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72131-petite-ecurie-avec-un-marechal-ferrant/p4662"
+    },
+    {
+      "reference": "72132",
+      "name": "Randonnée équestre avec feu de camp",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72132-randonnee-equestre-avec-feu-de-camp/p4703"
+    },
+    {
+      "reference": "72133",
+      "name": "Trois chevaux de concours",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72133-trois-chevaux-de-concours/p4641"
+    },
+    {
+      "reference": "72134",
+      "name": "Voltige",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72134-voltige/p4640"
+    },
+    {
+      "reference": "72135",
+      "name": "Saut d'obstacles",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72135-saut-d-obstacles/p4638"
+    },
+    {
+      "reference": "72136",
+      "name": "Dressage équestre",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72136-dressage-equestre/p4637"
+    },
+    {
+      "reference": "72137",
+      "name": "Équitation western",
+      "theme": "I Love Horses / J'adore les chevaux",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/i-love-horses-j-adore-les-chevaux/72137-equitation-western/p4639"
+    },
+    {
+      "reference": "72139",
+      "name": "Figurines Garçon - Série 30",
+      "theme": "Figures",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-figures/72139-figurines-garcon-serie-30/p4679"
+    },
+    {
+      "reference": "72140",
+      "name": "Figurines Fille - Série 30",
+      "theme": "Figures",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-figures/72140-figurines-fille-serie-30/p4680"
+    },
+    {
+      "reference": "72143",
+      "name": "Le bureau de Mme le Proviseur Santête",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72143-le-bureau-de-mme-le-proviseur-santete/p4617"
+    },
+    {
+      "reference": "72144",
+      "name": "Draculaura au gymnase avec Clawd Wolf et Heath Burns",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72144-draculaura-au-gymnase-avec-clawd-wolf-et-heath-burns/p4618"
+    },
+    {
+      "reference": "72145",
+      "name": "salle de classe avec Spectra et M. Momie",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72145-salle-de-classe-avec-spectra-et-m-momie/p4619"
+    },
+    {
+      "reference": "72146",
+      "name": "Abbey et les casiers",
+      "theme": "Monster High",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/monster-high/72146-abbey-et-les-casiers/p4620"
+    },
+    {
+      "reference": "72149",
+      "name": "Pompier et Barbecue",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72149-pompier-et-barbecue/p4629"
+    },
+    {
+      "reference": "72150",
+      "name": "Bûcheron avec tronçonneuse",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72150-bucheron-avec-tronconneuse/p4636"
+    },
+    {
+      "reference": "72151",
+      "name": "Plongeuse avec une tortue",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72151-plongeuse-avec-une-tortue/p4625"
+    },
+    {
+      "reference": "72152",
+      "name": "L'elfe de Noël et ses biscuits",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72152-l-elfe-de-noel-et-ses-biscuits/p4628"
+    },
+    {
+      "reference": "72153",
+      "name": "Princesse des glaces",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72153-princesse-des-glaces/p4634"
+    },
+    {
+      "reference": "72154",
+      "name": "Pirate contre crocodile",
+      "theme": "Special Plus",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-special-plus/72154-pirate-contre-crocodile/p4626"
+    },
+    {
+      "reference": "72160",
+      "name": "Grange",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72160-grange/p4644"
+    },
+    {
+      "reference": "72161",
+      "name": "Tracteur équipé d'une arracheuse de pommes de terre",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72161-tracteur-equipe-d-une-arracheuse-de-pommes-de-terre/p4645"
+    },
+    {
+      "reference": "72162",
+      "name": "Maison de ferme",
+      "theme": "Country",
+      "announcedMonth": "Mai",
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72162-maison-de-ferme/p4646"
+    },
+    {
+      "reference": "72163",
+      "name": "Petit tracteur équipé d'une faucheuse à foin",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72163-petit-tracteur-equipe-d-une-faucheuse-a-foin/p4647"
+    },
+    {
+      "reference": "72164",
+      "name": "Stand de vente de nourriture avec quad",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72164-stand-de-vente-de-nourriture-avec-quad/p4648"
+    },
+    {
+      "reference": "72165",
+      "name": "Jardin potager",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72165-jardin-potager/p4649"
+    },
+    {
+      "reference": "72167",
+      "name": "Vétérinaire et vache",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72167-veterinaire-et-vache/p4650"
+    },
+    {
+      "reference": "72168",
+      "name": "Poulailler",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72168-poulailler/p4624"
+    },
+    {
+      "reference": "72169",
+      "name": "Jeune berger",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72169-jeune-berger/p4623"
+    },
+    {
+      "reference": "72170",
+      "name": "Clapier à Lapin rustique",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72170-clapier-a-lapin-rustique/p4621"
+    },
+    {
+      "reference": "72171",
+      "name": "Agriculteur avec cochons",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72171-agriculteur-avec-cochons/p4622"
+    },
+    {
+      "reference": "72172",
+      "name": "T-Rex avec chercheuse - Duo Pack",
+      "theme": "Dinos",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-dinos/72172-t-rex-avec-chercheuse-duo-pack/p4635"
+    },
+    {
+      "reference": "72173",
+      "name": "Amies faisant du shopping - Duo Pack",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72173-amies-faisant-du-shopping-duo-pack/p4727"
+    },
+    {
+      "reference": "72174",
+      "name": "Fée avec un poulain licorne - Duo Pack",
+      "theme": "Fairies",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fairies/72174-fee-avec-un-poulain-licorne-duo-pack/p4627"
+    },
+    {
+      "reference": "72175",
+      "name": "Combat de chevaliers - Duo Pack",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72175-combat-de-chevaliers-duo-pack/p4631"
+    },
+    {
+      "reference": "72178",
+      "name": "Ulysse et les Sirènes",
+      "theme": "Adventure",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/adventure/72178-ulysse-et-les-sirenes/p4719"
+    },
+    {
+      "reference": "72179",
+      "name": "Les Aventures d'Ulysse",
+      "theme": "Adventure",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/adventure/72179-les-aventures-d-ulysse/p4720"
+    },
+    {
+      "reference": "72180",
+      "name": "Ensemble de figurines Ulysse",
+      "theme": "Adventure",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/adventure/72180-ensemble-de-figurines-ulysse/p4721"
+    },
+    {
+      "reference": "72184",
+      "name": "Train d'anniversaire",
+      "theme": "Gift for You / Cadeau pour toi",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/gift-for-you-cadeau-pour-toi/72184-train-d-anniversaire/p4700"
+    },
+    {
+      "reference": "72185",
+      "name": "Mariage",
+      "theme": "Gift for You / Cadeau pour toi",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/gift-for-you-cadeau-pour-toi/72185-mariage/p4701"
+    },
+    {
+      "reference": "72186",
+      "name": "Naissance",
+      "theme": "Gift for You / Cadeau pour toi",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/gift-for-you-cadeau-pour-toi/72186-naissance/p4699"
+    },
+    {
+      "reference": "72187",
+      "name": "Carte de voeux : Anniversaire",
+      "theme": "Objets divers",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/objets-divers-playmobil/72187-carte-de-voeux-anniversaire/p4722"
+    },
+    {
+      "reference": "72189",
+      "name": "Carte de voeux : Avec amour",
+      "theme": "Objets divers",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/objets-divers-playmobil/72189-carte-de-voeux-avec-amour/p4723"
+    },
+    {
+      "reference": "72190",
+      "name": "Carte de voeux : Naissance",
+      "theme": "Objets divers",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/objets-divers-playmobil/72190-carte-de-voeux-naissance/p4724"
+    },
+    {
+      "reference": "72191",
+      "name": "Caserne de Pompiers",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72191-caserne-de-pompiers/p4652"
+    },
+    {
+      "reference": "72192",
+      "name": "Camion avec échelle",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72192-camion-avec-echelle/p4653"
+    },
+    {
+      "reference": "72193",
+      "name": "Camion de secours",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72193-camion-de-secours/p4654"
+    },
+    {
+      "reference": "72194",
+      "name": "Camionnette",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72194-camionnette/p4655"
+    },
+    {
+      "reference": "72195",
+      "name": "Fast-food en feu",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72195-fast-food-en-feu/p4656"
+    },
+    {
+      "reference": "72196",
+      "name": "Hélicoptère",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72196-helicoptere/p4657"
+    },
+    {
+      "reference": "72197",
+      "name": "Drone d'extinction des pompiers",
+      "theme": "City Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-action/72197-drone-d-extinction-des-pompiers/p4633"
+    },
+    {
+      "reference": "72210",
+      "name": "Tour d'assaut des Chevaliers du Dragon",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72210-tour-d-assaut-des-chevaliers-du-dragon/p4694"
+    },
+    {
+      "reference": "72211",
+      "name": "L'enlèvement du dragon",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72211-l-enlevement-du-dragon/p4695"
+    },
+    {
+      "reference": "72212",
+      "name": "Chevalier avec lion",
+      "theme": "Knights",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-knights/72212-chevalier-avec-lion/p4696"
+    },
+    {
+      "reference": "72214",
+      "name": "Rendez-vous magique des fées",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72214-rendez-vous-magique-des-fees/p4789"
+    },
+    {
+      "reference": "72215",
+      "name": "Jardin féérique avec bébé licorne",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72215-jardin-feerique-avec-bebe-licorne/p4739"
+    },
+    {
+      "reference": "72216",
+      "name": "Calèche des licornes",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72216-caleche-des-licornes/p4787"
+    },
+    {
+      "reference": "72217",
+      "name": "Fée licorne « lumière de lune »",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72217-fee-licorne-lumiere-de-lune/p4697"
+    },
+    {
+      "reference": "72218",
+      "name": "Fée et licorne « rosée du matin »",
+      "theme": "Fantasy & Magic",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-fantasy-magic/72218-fee-et-licorne-rosee-du-matin/p4698"
+    },
+    {
+      "reference": "72219",
+      "name": "Boule de Noël : pâtissier",
+      "theme": "Christmas",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-christmas/72219-boule-de-noel-patissier/p4688"
+    },
+    {
+      "reference": "72220",
+      "name": "Boule de Noël : sportif",
+      "theme": "Christmas",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-christmas/72220-boule-de-noel-sportif/p4689"
+    },
+    {
+      "reference": "72221",
+      "name": "Boule de Noël : skatter",
+      "theme": "Christmas",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-christmas/72221-boule-de-noel-skatter/p4685"
+    },
+    {
+      "reference": "72222",
+      "name": "Boule de Noël : menuisier",
+      "theme": "Christmas",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-christmas/72222-boule-de-noel-menuisier/p4687"
+    },
+    {
+      "reference": "72224",
+      "name": "Boule de Noël : Père Noël",
+      "theme": "Christmas",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-christmas/72224-boule-de-noel-pere-noel/p4686"
+    },
+    {
+      "reference": "72225",
+      "name": "Expédition dinosaures",
+      "theme": "Dinos",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-dinos/72225-expedition-dinosaures/p4663"
+    },
+    {
+      "reference": "72226",
+      "name": "Calendrier de l'Avent : Au pôle Nord",
+      "theme": "Calendriers de l'Avent",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/calendriers-de-l-avent-playmobil/72226-calendrier-de-l-avent-au-pole-nord/p4684"
+    },
+    {
+      "reference": "72236",
+      "name": "Couple Amoureux",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72236-couple-amoureux/p4594"
+    },
+    {
+      "reference": "72238",
+      "name": "Mercedes-Benz 300 SL",
+      "theme": "Voitures",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/voitures-playmobil/72238-mercedes-benz-300-sl/p4682"
+    },
+    {
+      "reference": "72239",
+      "name": "Porsche 911 turbo",
+      "theme": "Voitures",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/voitures-playmobil/72239-porsche-911-turbo/p4683"
+    },
+    {
+      "reference": "72240",
+      "name": "Tapis de jeu",
+      "theme": "Junior",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-junior/72240-tapis-de-jeu/p4658"
+    },
+    {
+      "reference": "72248",
+      "name": "Sac à dos interactif",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72248-sac-a-dos-interactif/p4604"
+    },
+    {
+      "reference": "72250",
+      "name": "Donne vie à ton univers de Pirates (Stickers Magiques)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72250-donne-vie-a-ton-univers-de-pirates-stickers-magiques/p4730"
+    },
+    {
+      "reference": "72251",
+      "name": "Donne vie à ton univers de Police (Stickers Magiques)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72251-donne-vie-a-ton-univers-de-police-stickers-magiques/p4733"
+    },
+    {
+      "reference": "72252",
+      "name": "Donne vie à ton univers de Zoo (Stickers Magiques)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72252-donne-vie-a-ton-univers-de-zoo-stickers-magiques/p4603"
+    },
+    {
+      "reference": "72254",
+      "name": "Entrainement Goretzka vs Rüdiger",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72254-entrainement-goretzka-vs-ruediger/p4693"
+    },
+    {
+      "reference": "72255",
+      "name": "Allemagne Football : Entrainement Felix Nmecha",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72255-allemagne-football-entrainement-felix-nmecha/p4666"
+    },
+    {
+      "reference": "72256",
+      "name": "Allemagne Football : Karim Adeyemi & Angelo Stiller",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72256-allemagne-football-karim-adeyemi-angelo-stiller/p4665"
+    },
+    {
+      "reference": "72257",
+      "name": "Allemagne Football : Julian Nagelsmann",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72257-allemagne-football-julian-nagelsmann/p4674"
+    },
+    {
+      "reference": "72258",
+      "name": "Allemagne Football : Oliver Baumann",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72258-allemagne-football-oliver-baumann/p4677"
+    },
+    {
+      "reference": "72259",
+      "name": "Allemagne Football : Nico Schlotterbeck",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72259-allemagne-football-nico-schlotterbeck/p4667"
+    },
+    {
+      "reference": "72260",
+      "name": "Allemagne Football : Jonathan Tah",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72260-allemagne-football-jonathan-tah/p4675"
+    },
+    {
+      "reference": "72261",
+      "name": "Allemagne Football : Waldemar Anton",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72261-allemagne-football-waldemar-anton/p4678"
+    },
+    {
+      "reference": "72262",
+      "name": "Allemagne Football : Maximilian Mittelstdt",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72262-allemagne-football-maximilian-mittelstdt/p4670"
+    },
+    {
+      "reference": "72263",
+      "name": "Allemagne Football : David Raum",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72263-allemagne-football-david-raum/p4673"
+    },
+    {
+      "reference": "72264",
+      "name": "Allemagne Football : Joshua Kimmich",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72264-allemagne-football-joshua-kimmich/p4668"
+    },
+    {
+      "reference": "72265",
+      "name": "Allemagne Football : Florian Wirtz",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72265-allemagne-football-florian-wirtz/p4672"
+    },
+    {
+      "reference": "72266",
+      "name": "Allemagne Football : Kai Havertz",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72266-allemagne-football-kai-havertz/p4669"
+    },
+    {
+      "reference": "72267",
+      "name": "Allemagne Football : Jamal Musiala",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72267-allemagne-football-jamal-musiala/p4671"
+    },
+    {
+      "reference": "72268",
+      "name": "Allemagne Football : Nick Woltemade",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72268-allemagne-football-nick-woltemade/p4676"
+    },
+    {
+      "reference": "72269",
+      "name": "Starter Kit XXL",
+      "theme": "Sky Trails",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/sky-trails/72269-starter-kit-xxl/p4708"
+    },
+    {
+      "reference": "72279",
+      "name": "Joueurs de Foot Bundesliga 25/26 Starter Set",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72279-joueurs-de-foot-bundesliga-25-26-starter-set/p4614"
+    },
+    {
+      "reference": "72280",
+      "name": "Sauvetage en mer (DLRG)",
+      "theme": "My Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-my-life/72280-sauvetage-en-mer-dlrg/p4664"
+    },
+    {
+      "reference": "72282",
+      "name": "Vespa Grise",
+      "theme": "Vespa",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/vespa/72282-vespa-grise/p4690"
+    },
+    {
+      "reference": "72283",
+      "name": "Vespa Blanche",
+      "theme": "Vespa",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/vespa/72283-vespa-blanche/p4692"
+    },
+    {
+      "reference": "72284",
+      "name": "Vespa Bleue",
+      "theme": "Vespa",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/vespa/72284-vespa-bleue/p4691"
+    },
+    {
+      "reference": "72285",
+      "name": "Le Petit Prince",
+      "theme": "Le Petit Prince",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/le-petit-prince/72285-le-petit-prince/p4681"
+    },
+    {
+      "reference": "72305",
+      "name": "Tracteur avec des balles de foin",
+      "theme": "Country",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-country/72305-tracteur-avec-des-balles-de-foin/p4651"
+    },
+    {
+      "reference": "72312",
+      "name": "Garde royale",
+      "theme": "City Life",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-city-life/72312-garde-royale/p4786"
+    },
+    {
+      "reference": "72313",
+      "name": "Volkswagen T1 Camping-car (Allemagne)",
+      "theme": "Volkswagen",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-volkswagen/72313-volkswagen-t1-camping-car-allemagne/p4710"
+    },
+    {
+      "reference": "72314",
+      "name": "Volkswagen T1 Camping-car (Espagne)",
+      "theme": "Volkswagen",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-volkswagen/72314-volkswagen-t1-camping-car-espagne/p4709"
+    },
+    {
+      "reference": "72315",
+      "name": "Volkswagen T1 Camping-Car (Mexique)",
+      "theme": "Volkswagen",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-volkswagen/72315-volkswagen-t1-camping-car-mexique/p4711"
+    },
+    {
+      "reference": "72340",
+      "name": "Volkswagen T1 Camping-car (Pays-Bas)",
+      "theme": "Volkswagen",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-volkswagen/72340-volkswagen-t1-camping-car-pays-bas/p4712"
+    },
+    {
+      "reference": "72341",
+      "name": "Volkswagen T1 Camping-car (Belgique)",
+      "theme": "Volkswagen",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-volkswagen/72341-volkswagen-t1-camping-car-belgique/p4713"
+    },
+    {
+      "reference": "72346",
+      "name": "Equipe national de football du Mexique",
+      "theme": "Sports & Action",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-sports-et-action/72346-equipe-national-de-football-du-mexique/p4642"
+    },
+    {
+      "reference": "72357",
+      "name": "la Faucheuse",
+      "theme": "Halloween",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-halloween/72357-la-faucheuse/p4725"
+    },
+    {
+      "reference": "72358",
+      "name": "Tête de citrouille",
+      "theme": "Halloween",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-halloween/72358-tete-de-citrouille/p4704"
+    },
+    {
+      "reference": "72359",
+      "name": "monstre visqueux",
+      "theme": "Halloween",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-halloween/72359-monstre-visqueux/p4726"
+    },
+    {
+      "reference": "72360",
+      "name": "Sorcière",
+      "theme": "Halloween",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-halloween/72360-sorciere/p4705"
+    },
+    {
+      "reference": "72361",
+      "name": "Couple de vampires",
+      "theme": "Halloween",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-halloween/72361-couple-de-vampires/p4706"
+    },
+    {
+      "reference": "72362",
+      "name": "Fantôme",
+      "theme": "Halloween",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-halloween/72362-fantome/p4707"
+    },
+    {
+      "reference": "72365",
+      "name": "Donne vie à ton univers Equestre (Kit prêt à jouer)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72365-donne-vie-a-ton-univers-equestre-kit-pret-a-jouer/p4734"
+    },
+    {
+      "reference": "72366",
+      "name": "Donne vie à ton univers de Pirates (Kit prêt à jouer)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72366-donne-vie-a-ton-univers-de-pirates-kit-pret-a-jouer/p4735"
+    },
+    {
+      "reference": "72367",
+      "name": "Donne vie à ton univers de Police (Kit prêt à jouer)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72367-donne-vie-a-ton-univers-de-police-kit-pret-a-jouer/p4736"
+    },
+    {
+      "reference": "72368",
+      "name": "Donne vie à ton univers de Zoo (Kit prêt à jouer)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72368-donne-vie-a-ton-univers-de-zoo-kit-pret-a-jouer/p4737"
+    },
+    {
+      "reference": "72399",
+      "name": "Donne vie à ton univers Equestre (Set d'activation)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72399-donne-vie-a-ton-univers-equestre-set-d-activation/p4728"
+    },
+    {
+      "reference": "72400",
+      "name": "Donne vie à ton univers de Pirates (Set d'activation)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72400-donne-vie-a-ton-univers-de-pirates-set-d-activation/p4732"
+    },
+    {
+      "reference": "72401",
+      "name": "Donne vie à ton univers de Police (Set d'activation)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72401-donne-vie-a-ton-univers-de-police-set-d-activation/p4731"
+    },
+    {
+      "reference": "72402",
+      "name": "Donne vie à ton univers de Zoo (Set d'activation)",
+      "theme": "Playmobil Hi!",
+      "announcedMonth": null,
+      "announcedYear": 2026,
+      "url": "https://www.koupobol.com/playmobil-hi/72402-donne-vie-a-ton-univers-de-zoo-set-d-activation/p4729"
+    }
+  ]
+}

@@ -1,0 +1,3230 @@
+{
+  "sourceRole": "CANONICAL_VERIFICATION",
+  "observedAt": "2026-10-05T02:28:02.270Z",
+  "targets": [
+    "2026",
+    "71520",
+    "71634",
+    "71720",
+    "71773",
+    "71774",
+    "71775",
+    "71838",
+    "71839",
+    "71843",
+    "71873",
+    "71874",
+    "71875",
+    "71903",
+    "71904",
+    "71905",
+    "72011",
+    "72012",
+    "72013",
+    "72014",
+    "72023",
+    "72024",
+    "72027",
+    "72028",
+    "72031",
+    "72034",
+    "72043",
+    "72056",
+    "72057",
+    "72058",
+    "72061",
+    "72062",
+    "72063",
+    "72065",
+    "72070",
+    "72071",
+    "72073",
+    "72112",
+    "72113",
+    "72114",
+    "72115",
+    "72116",
+    "72117",
+    "72118",
+    "72119",
+    "72216",
+    "72220",
+    "72221",
+    "72222",
+    "72224",
+    "72240",
+    "72269",
+    "72286",
+    "72287",
+    "72288",
+    "72289",
+    "72290",
+    "72291",
+    "72292",
+    "72293",
+    "72294",
+    "72295",
+    "72296",
+    "72299",
+    "72300",
+    "72307",
+    "72308",
+    "72309",
+    "72310",
+    "72311",
+    "72316",
+    "72317",
+    "72326",
+    "72327",
+    "72328",
+    "72329",
+    "72330",
+    "72331",
+    "72332",
+    "72333",
+    "72334",
+    "72335",
+    "72342",
+    "72343",
+    "72344",
+    "72345",
+    "72365",
+    "72366",
+    "72367",
+    "72368",
+    "72370",
+    "72371",
+    "72372",
+    "72373",
+    "72374",
+    "72375",
+    "72403",
+    "72404",
+    "72405",
+    "72408",
+    "72409",
+    "72410"
+  ],
+  "observations": [
+    {
+      "reference": "2026",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/2026.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "2026",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/2026.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "2026",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/2026.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "71520",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71520.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "71520",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71520.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "71520",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71520.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "71634",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71634.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71634",
+      "name": "Pizzaïolo et kart",
+      "officialPrice": {
+        "amount": 13.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71634",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71634.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71634",
+      "name": "Rasende Pizza",
+      "officialPrice": {
+        "amount": 13.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71634",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71634.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "71720",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71720.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71720",
+      "name": "Kart bateau de pirate",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71720",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71720.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71720",
+      "name": "Rasendes Piratenboot",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71720",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71720.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71720",
+      "name": "Racing Pirate Boat",
+      "officialPrice": {
+        "amount": 17.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71773",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71773.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71773",
+      "name": "JUNIOR : Tracteur avec planteuse",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71773",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71773.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71773",
+      "name": "JUNIOR: Traktor mit lustiger Pflanzmaschine",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71773",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71773.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71773",
+      "name": "JUNIOR: Tractor with Load and Drop Planter",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71774",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71774.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71774",
+      "name": "JUNIOR : Camion de collecte de déchets",
+      "officialPrice": {
+        "amount": 22.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71774",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71774.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71774",
+      "name": "JUNIOR: Spaßiges Müllsammelfahrzeug",
+      "officialPrice": {
+        "amount": 22.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71774",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71774.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71774",
+      "name": "JUNIOR: Push and Grab Garbage Collector",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71775",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71775.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71775",
+      "name": "JUNIOR : Toboggan avec réservoir d'eau",
+      "officialPrice": {
+        "amount": 18.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71775",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71775.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71775",
+      "name": "JUNIOR AQUA: Wasserfalltank mit Rutsche",
+      "officialPrice": {
+        "amount": 18.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71775",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71775.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71775",
+      "name": "JUNIOR AQUA: Pour and Play Water Tank with Slide",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71838",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71838.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71838",
+      "name": "Maison de fée avec licorne dorée",
+      "officialPrice": {
+        "amount": 49.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "71838",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71838.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71838",
+      "name": "Gemütliches Feenzuhause mit Goldeinhorn und Stall",
+      "officialPrice": {
+        "amount": 59.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "71838",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71838.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71838",
+      "name": "Cozy Fairy Home with Golden Unicorn",
+      "officialPrice": {
+        "amount": 69.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71839",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71839.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71839",
+      "name": "Ecurie licorne magique : maman & poulain",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "71839",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71839.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71839",
+      "name": "Zauberhafter Einhorn-Stall für Mama und Fohlen",
+      "officialPrice": {
+        "amount": 24.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "71839",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71839.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71839",
+      "name": "Magical Unicorn Stable",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71843",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71843.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71843",
+      "name": "Licorne Lavande porte-bonheur avec fée",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71843",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71843.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71843",
+      "name": "Sammeleinhorn Glückslavendel mit Fee",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71843",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71843.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71843",
+      "name": "Collectible Unicorn: Lucky Lavender with Fairy",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71873",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71873.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71873",
+      "name": "Centre de commandement de la police",
+      "officialPrice": {
+        "amount": 84.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "71873",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71873.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71873",
+      "name": "Polizei-Kommandozentrale",
+      "officialPrice": {
+        "amount": 74.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "71873",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71873.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71873",
+      "name": "Police Command Center",
+      "officialPrice": {
+        "amount": 99.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71874",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71874.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71874",
+      "name": "Poste de police avec salle de recherche",
+      "officialPrice": {
+        "amount": 49.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71874",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71874.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71874",
+      "name": "Polizeiwache mit Fahndungsraum",
+      "officialPrice": {
+        "amount": 44.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71874",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71874.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71874",
+      "name": "Police Station with Investigation Room",
+      "officialPrice": {
+        "amount": 74.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71875",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71875.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71875",
+      "name": "Pick-up de police, moto & 2 personnages",
+      "officialPrice": {
+        "amount": 39.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71875",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71875.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71875",
+      "name": "Verfolgungsjagd mit Polizei Pick-Up",
+      "officialPrice": {
+        "amount": 37.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71875",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71875.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71875",
+      "name": "Police Chase with Pick-Up Truck",
+      "officialPrice": {
+        "amount": 59.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71903",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71903.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71903",
+      "name": "Poste de secours & voiturette de plage",
+      "officialPrice": {
+        "amount": 44.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71903",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71903.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71903",
+      "name": "Rettungsturm mit Beach buggy",
+      "officialPrice": {
+        "amount": 44.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71903",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71903.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71903",
+      "name": "Lifeguard Tower with Beach Buggy",
+      "officialPrice": {
+        "amount": 59.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71904",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71904.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71904",
+      "name": "Camion vendeur de glaces & 3 personnages",
+      "officialPrice": {
+        "amount": 49.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71904",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71904.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71904",
+      "name": "Ice Cream Truck mit Surfshop",
+      "officialPrice": {
+        "amount": 44.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71904",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71904.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71904",
+      "name": "Ice Cream Truck with Surf Shop",
+      "officialPrice": {
+        "amount": 59.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71905",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/71905.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71905",
+      "name": "Scooter des mers, banane tractée & 4 personnages",
+      "officialPrice": {
+        "amount": 24.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71905",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/71905.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71905",
+      "name": "Bananenboot-Tour",
+      "officialPrice": {
+        "amount": 22.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "71905",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/71905.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "71905",
+      "name": "Banana Boat Trip",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72011",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72011.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72011",
+      "name": "Fusée d'exploration de la planète Mars de l'ESA",
+      "officialPrice": {
+        "amount": 49.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72011",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72011.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72011",
+      "name": "ESA: Mars-Forschungsrakete",
+      "officialPrice": {
+        "amount": 44.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72011",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72011.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72011",
+      "name": "ESA: Mars Research Rocket",
+      "officialPrice": {
+        "amount": 59.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72012",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72012.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72012",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72012.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72012",
+      "name": "ESA: Mars-Erkundungsrover",
+      "officialPrice": {
+        "amount": 22.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72012",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72012.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72013",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72013.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72013",
+      "name": "Vaisseau spatial de l'ESA",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72013",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72013.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72013",
+      "name": "ESA: Weltraumgleiter",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72013",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72013.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72013",
+      "name": "ESA: Space Glider",
+      "officialPrice": {
+        "amount": 24.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72014",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72014.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72014",
+      "name": "Astronaute de l'ESA avec robot",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72014",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72014.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72014",
+      "name": "ESA: Astronaut mit Roboter",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72014",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72014.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72014",
+      "name": "ESA: Astronaut with Robot",
+      "officialPrice": {
+        "amount": 16.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72023",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72023.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72023",
+      "name": "DuoPack Sorcière et sorcier",
+      "officialPrice": {
+        "amount": 4.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72023",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72023.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72023",
+      "name": "DuoPack Hexe und Zauberer",
+      "officialPrice": {
+        "amount": 4.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72023",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72023.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72023",
+      "name": "DuoPack Witch and Wizard",
+      "officialPrice": {
+        "amount": 8.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72024",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72024.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72024",
+      "name": "DuoPack Pirates avec drapeau",
+      "officialPrice": {
+        "amount": 4.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72024",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72024.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72024",
+      "name": "DuoPack Piraten",
+      "officialPrice": {
+        "amount": 4.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72024",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72024.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72024",
+      "name": "DuoPack Pirates",
+      "officialPrice": {
+        "amount": 8.99,
+        "currency": "USD",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72027",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72027.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72027",
+      "name": "PLAYMOBIL Figures garçons (Série 29)",
+      "officialPrice": {
+        "amount": 2.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72027",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72027.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72027",
+      "name": "PLAYMOBIL Figures: Boys (Serie 29)",
+      "officialPrice": {
+        "amount": 2.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72027",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72027.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72027",
+      "name": "PLAYMOBIL Figures: Boys (Series 29)",
+      "officialPrice": {
+        "amount": 4.99,
+        "currency": "USD",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72028",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72028.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72028",
+      "name": "PLAYMOBIL Figures filles (Série 29)",
+      "officialPrice": {
+        "amount": 2.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72028",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72028.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72028",
+      "name": "PLAYMOBIL Figures: Girls (Serie 29)",
+      "officialPrice": {
+        "amount": 2.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72028",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72028.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72028",
+      "name": "PLAYMOBIL Figures: Girls (Series 29)",
+      "officialPrice": {
+        "amount": 4.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72031",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72031.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72031",
+      "name": "Mécanicien & outils Spécial +",
+      "officialPrice": {
+        "amount": 3.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72031",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72031.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72031",
+      "name": "Mechaniker",
+      "officialPrice": {
+        "amount": 3.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72031",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72031.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72031",
+      "name": "Mechanic",
+      "officialPrice": {
+        "amount": 5.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72034",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72034.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72034",
+      "name": "Fée avec son magicamiz Spécial +",
+      "officialPrice": {
+        "amount": 3.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72034",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72034.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72034",
+      "name": "Waldfee mit süßem Helfer",
+      "officialPrice": {
+        "amount": 3.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72034",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72034.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72034",
+      "name": "Fairy with Cute Helper",
+      "officialPrice": {
+        "amount": 5.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72043",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72043.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72043",
+      "name": "Monster High™ Rendez-vous St-Valentin",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72043",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72043.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72043",
+      "name": "Monster High™Valentinstagsdate",
+      "officialPrice": {
+        "amount": 18.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72043",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72043.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72043",
+      "name": "Monster High™ Valentines Date",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72056",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72056.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72056",
+      "name": "Stade de football et défis",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72056",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72056.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72056",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72056.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72056",
+      "name": "Soccer Arena",
+      "officialPrice": {
+        "amount": 44.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72057",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72057.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72057",
+      "name": "Entraînement cage de football",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72057",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72057.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72057",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72057.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72057",
+      "name": "Soccer Training Station",
+      "officialPrice": {
+        "amount": 16.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72058",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72058.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72058",
+      "name": "Joueurs de football",
+      "officialPrice": {
+        "amount": 7.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72058",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72058.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72058",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72058.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72058",
+      "name": "Soccer Players",
+      "officialPrice": {
+        "amount": 10.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72061",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72061.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72061",
+      "name": "Monster truck",
+      "officialPrice": {
+        "amount": 49.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72061",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72061.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72061",
+      "name": "Offroad Truck",
+      "officialPrice": {
+        "amount": 41.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72061",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72061.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72061",
+      "name": "Off-Road Truck",
+      "officialPrice": {
+        "amount": 39.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72062",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72062.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72062",
+      "name": "Voiture de rallye",
+      "officialPrice": {
+        "amount": 34.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72062",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72062.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72062",
+      "name": "Offroad Tuningcar",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72062",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72062.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72062",
+      "name": "Off-Road Tuning Car",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72063",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72063.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72063",
+      "name": "Véhicule tout-terrain",
+      "officialPrice": {
+        "amount": 24.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72063",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72063.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72063",
+      "name": "Offroad Buggy",
+      "officialPrice": {
+        "amount": 22.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72063",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72063.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72063",
+      "name": "Off-Road Buggy",
+      "officialPrice": {
+        "amount": 34.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72065",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72065.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72065",
+      "name": "Motocross",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72065",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72065.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72065",
+      "name": "Offroad Motorrad",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72065",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72065.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72065",
+      "name": "Off-Road Motor Bike",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72070",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72070.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72070",
+      "name": "Zoo : Parc aventure avec les animaux",
+      "officialPrice": {
+        "amount": 74.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72070",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72070.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72070",
+      "name": "Zoo: Wildnis-Kletterpark",
+      "officialPrice": {
+        "amount": 67.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72070",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72070.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72070",
+      "name": "Zoo: Wilderness Climbing Park",
+      "officialPrice": {
+        "amount": 89.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72071",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72071.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72071",
+      "name": "Zoo : Au coeur de la jungle",
+      "officialPrice": {
+        "amount": 39.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72071",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72071.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72071",
+      "name": "Zoo: Dschungelabenteuer",
+      "officialPrice": {
+        "amount": 37.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72071",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72071.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72071",
+      "name": "Zoo: Jungle Adventure",
+      "officialPrice": {
+        "amount": 59.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72073",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72073.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72073",
+      "name": "Zoo : À la découverte de la banquise",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72073",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72073.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72073",
+      "name": "Zoo: Eis-Expedition",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72073",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72073.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72073",
+      "name": "Zoo: Ice Expedition",
+      "officialPrice": {
+        "amount": 22.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72112",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72112.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72112",
+      "name": "Château-fort des chevaliers",
+      "officialPrice": {
+        "amount": 119.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72112",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72112.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72112",
+      "name": "Große Löwenritterburg",
+      "officialPrice": {
+        "amount": 139.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72112",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72112.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72112",
+      "name": "Large Lion Knights Castle",
+      "officialPrice": {
+        "amount": 129.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72113",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72113.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72113",
+      "name": "Tour des chevaliers du Dragon",
+      "officialPrice": {
+        "amount": 74.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72113",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72113.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72113",
+      "name": "Drachenritterturm",
+      "officialPrice": {
+        "amount": 67.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72113",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72113.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72113",
+      "name": "Dragon Knights Tower",
+      "officialPrice": {
+        "amount": 69.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72114",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72114.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72114",
+      "name": "Dragon noir & chevalier",
+      "officialPrice": {
+        "amount": 29.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72114",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72114.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72114",
+      "name": "Schwarzer Drache",
+      "officialPrice": {
+        "amount": 26.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72114",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72114.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72114",
+      "name": "Black Dragon",
+      "officialPrice": {
+        "amount": 34.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72115",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72115.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72115",
+      "name": "Canon des chevaliers du Lion",
+      "officialPrice": {
+        "amount": 18.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72115",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72115.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72115",
+      "name": "Schusswaffe Löwenritter",
+      "officialPrice": {
+        "amount": 18.74,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72115",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72115.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72115",
+      "name": "Lion Knights with Battle Cannon",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72116",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72116.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72116",
+      "name": "Troll et trésor chevaliers du Lion",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72116",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72116.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72116",
+      "name": "Troll mit Löwenritterschatz",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72116",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72116.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72116",
+      "name": "Troll with Lion Knight Treasure",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72117",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72117.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72117",
+      "name": "Catapulte des Chevaliers du Dragon",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72117",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72117.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72117",
+      "name": "Steinkatapult Drachenritter",
+      "officialPrice": {
+        "amount": 14.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72117",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72117.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72117",
+      "name": "Dragon Knight Catapult",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72118",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72118.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72118",
+      "name": "Chef des Chevaliers du Dragon",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72118",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72118.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72118",
+      "name": "Anführer Drachenritter",
+      "officialPrice": {
+        "amount": 11.24,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72118",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72118.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72118",
+      "name": "Dragon Knight Leader",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "USD",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72119",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72119.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72119",
+      "name": "Chef des Chevaliers du Lion",
+      "officialPrice": {
+        "amount": 7.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72119",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72119.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72119",
+      "name": "Anführer Löwenritter",
+      "officialPrice": {
+        "amount": 7.49,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72119",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72119.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72119",
+      "name": "Lion Knight Leader",
+      "officialPrice": {
+        "amount": 8.99,
+        "currency": "USD",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72216",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72216.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72216",
+      "name": "Calèche des licornes",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72216",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72216.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72216",
+      "name": "Einhornkutsche",
+      "officialPrice": {
+        "amount": 19.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72216",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72216.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72220",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72220.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72220",
+      "name": "Boule de Noël : Sportif",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72220",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72220.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72220",
+      "name": "Weihnachtskugel: Kraftsportler",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72220",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72220.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72220",
+      "name": "Christmas Ornament: Weightlifter",
+      "officialPrice": null
+    },
+    {
+      "reference": "72221",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72221.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72221",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72221.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72221",
+      "name": "Weihnachtskugel: Longboarder",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72221",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72221.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72222",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72222.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72222",
+      "name": "Boule de Noël : Menuisier",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72222",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72222.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72222",
+      "name": "Weihnachtskugel: Spielzeugentwickler",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72222",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72222.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72222",
+      "name": "Christmas Ornament: Toymaker",
+      "officialPrice": null
+    },
+    {
+      "reference": "72224",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72224.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72224",
+      "name": "Boule de Noël : Père Nöel",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72224",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72224.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72224",
+      "name": "Weihnachtskugel: Klassik",
+      "officialPrice": {
+        "amount": 9.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72224",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72224.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72224",
+      "name": "Christmas Ornament: Classic",
+      "officialPrice": null
+    },
+    {
+      "reference": "72240",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72240.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72240",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72240.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72240",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72240.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72269",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72269.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72269",
+      "name": "SKY TRAILS : Kit de démarrage XXL",
+      "officialPrice": {
+        "amount": 89.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72269",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72269.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72269",
+      "name": "SKY TRAILS: Starter Kit XXL",
+      "officialPrice": {
+        "amount": 89.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "reference": "72269",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72269.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72269",
+      "name": "SKY TRAILS: Starter Kit XXL",
+      "officialPrice": null
+    },
+    {
+      "reference": "72286",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72286.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72286",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72286.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72286",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72286.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72287",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72287.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72287",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72287.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72287",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72287.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72288",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72288.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72288",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72288.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72288",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72288.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72289",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72289.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72289",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72289.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72289",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72289.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72290",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72290.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72290",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72290.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72290",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72290.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72291",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72291.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72291",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72291.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72291",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72291.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72292",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72292.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72292",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72292.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72292",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72292.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72293",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72293.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72293",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72293.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72293",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72293.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72294",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72294.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72294",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72294.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72294",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72294.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72295",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72295.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72295",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72295.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72295",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72295.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72296",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72296.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72296",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72296.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72296",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72296.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72299",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72299.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72299",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72299.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72299",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72299.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72300",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72300.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72300",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72300.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72300",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72300.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72307",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72307.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72307",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72307.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72307",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72307.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72308",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72308.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72308",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72308.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72308",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72308.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72309",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72309.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72309",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72309.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72309",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72309.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72310",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72310.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72310",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72310.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72310",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72310.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72311",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72311.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72311",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72311.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72311",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72311.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72316",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72316.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72316",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72316.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72316",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72316.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72317",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72317.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72317",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72317.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72317",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72317.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72326",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72326.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72326",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72326.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72326",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72326.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72327",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72327.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72327",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72327.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72327",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72327.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72328",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72328.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72328",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72328.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72328",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72328.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72329",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72329.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72329",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72329.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72329",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72329.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72330",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72330.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72330",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72330.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72330",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72330.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72331",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72331.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72331",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72331.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72331",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72331.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72332",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72332.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72332",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72332.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72332",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72332.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72333",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72333.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72333",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72333.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72333",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72333.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72334",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72334.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72334",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72334.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72334",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72334.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72335",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72335.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72335",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72335.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72335",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72335.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72342",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72342.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72342",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72342.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72342",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72342.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72343",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72343.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72343",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72343.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72343",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72343.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72344",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72344.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72344",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72344.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72344",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72344.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72345",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72345.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72345",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72345.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72345",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72345.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72365",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72365.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72365",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72365.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72365",
+      "name": "Ready-To-Play Set \"Reiterhof 72127\"",
+      "officialPrice": {
+        "amount": 189.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72365",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72365.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72366",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72366.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72366",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72366.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72366",
+      "name": "Ready-To-Play Set \"Piraten 71530\"",
+      "officialPrice": {
+        "amount": 189.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72366",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72366.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72367",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72367.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72367",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72367.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72367",
+      "name": "Ready-To-Play Set \"Polizei 71873\"",
+      "officialPrice": {
+        "amount": 189.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72367",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72367.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72368",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72368.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72368",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72368.html",
+      "httpStatus": 200,
+      "confirmed": true,
+      "observedReference": "72368",
+      "name": "Ready-To-Play Set \"Zoo 72070\"",
+      "officialPrice": {
+        "amount": 179.99,
+        "currency": "EUR",
+        "availability": "https://schema.org/OutOfStock"
+      }
+    },
+    {
+      "reference": "72368",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72368.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72370",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72370.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72370",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72370.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72370",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72370.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72371",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72371.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72371",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72371.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72371",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72371.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72372",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72372.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72372",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72372.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72372",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72372.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72373",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72373.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72373",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72373.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72373",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72373.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72374",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72374.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72374",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72374.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72374",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72374.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72375",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72375.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72375",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72375.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72375",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72375.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72403",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72403.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72403",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72403.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72403",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72403.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72404",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72404.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72404",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72404.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72404",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72404.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72405",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72405.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72405",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72405.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72405",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72405.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72408",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72408.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72408",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72408.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72408",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72408.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72409",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72409.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72409",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72409.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72409",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72409.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72410",
+      "market": "fr-FR",
+      "sourceUrl": "https://www.playmobil.com/fr-fr/72410.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72410",
+      "market": "de-DE",
+      "sourceUrl": "https://www.playmobil.com/de-de/72410.html",
+      "httpStatus": 404,
+      "confirmed": false
+    },
+    {
+      "reference": "72410",
+      "market": "en-US",
+      "sourceUrl": "https://www.playmobil.com/en-us/72410.html",
+      "httpStatus": 404,
+      "confirmed": false
+    }
+  ]
+}
