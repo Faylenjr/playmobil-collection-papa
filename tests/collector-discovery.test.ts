@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { classifyMarketRelation, isXxlCollectorCandidate } from "../lib/collector-taxonomy";
+import { classifyCommercialContext } from "../lib/commercial-context";
 
 describe("collector transverse categories", () => {
   it("keeps only structured XXL decoration figures", () => {
@@ -30,5 +31,30 @@ describe("market evidence", () => {
       marketCode: "FRANCE",
       rawPayload: { marketExclusive: { marketCode: "GERMANY", statement: "Germany only" } },
     }).kind).toBe("MARKET_EDITION");
+  });
+});
+
+describe("commercial context", () => {
+  it.each([
+    ["Kaufland", "RETAILER_DISTRIBUTOR"],
+    ["Idee & Spiel", "RETAILER_DISTRIBUTOR"],
+    ["Playmobil Magazin Ghostbusters", "MAGAZINE_PUBLICATION"],
+    ["Nüremberg International Toy Fair", "EVENT_VENUE"],
+    ["DFB Stars", "ORGANIZATION_ASSOCIATION"],
+    ["Cruz Roja", "ORGANIZATION_ASSOCIATION"],
+  ])("classifies %s independently from geography", (rawValue, expected) => {
+    expect(classifyCommercialContext(rawValue).kind).toBe(expected);
+  });
+
+  it("uses structured promotional evidence without calling it geographic exclusivity", () => {
+    expect(classifyCommercialContext("McDonald's", { tags: ["promotional"] })).toMatchObject({
+      kind: "PROMOTIONAL_CAMPAIGN",
+    });
+  });
+
+  it("keeps ambiguous community exclusivity wording unclassified", () => {
+    expect(classifyCommercialContext("Exclusive Greece LYRA")).toMatchObject({
+      kind: "OTHER_DOCUMENTED_CONTEXT",
+    });
   });
 });

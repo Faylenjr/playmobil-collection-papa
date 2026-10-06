@@ -102,6 +102,16 @@ enum MarketRelationKind {
   ATTESTED_EXCLUSIVE
 }
 
+enum CommercialContextKind {
+  RETAILER_DISTRIBUTOR
+  MAGAZINE_PUBLICATION
+  EVENT_VENUE
+  ORGANIZATION_ASSOCIATION
+  PROMOTIONAL_CAMPAIGN
+  BRAND_LICENSE_PARTNER
+  OTHER_DOCUMENTED_CONTEXT
+}
+
 enum RetailerType {
   SHOP
   MARKETPLACE
@@ -222,6 +232,7 @@ model ProductVariant {
   sourceRecords          SourceRecord[]
   categoryMemberships    VariantCategoryMembership[]
   marketEvidence         MarketEvidence[]
+  commercialContextEvidence CommercialContextEvidence[]
   offers                 Offer[]
   listPriceObservations  ListPriceObservation[]
   identifiers            ProductIdentifier[]
@@ -454,6 +465,41 @@ model MarketEvidence {
   @@map("market_evidence")
 }
 
+model CommercialContext {
+  id             String                       @id @default(uuid()) @db.Uuid
+  kind           CommercialContextKind
+  canonicalName  String                       @map("canonical_name")
+  normalizedName String                       @map("normalized_name")
+  createdAt      DateTime                     @default(now()) @map("created_at")
+  updatedAt      DateTime                     @updatedAt @map("updated_at")
+  evidence       CommercialContextEvidence[]
+
+  @@unique([kind, normalizedName])
+  @@index([kind, canonicalName])
+  @@map("commercial_contexts")
+}
+
+model CommercialContextEvidence {
+  id             String            @id @default(uuid()) @db.Uuid
+  contextId      String            @map("context_id") @db.Uuid
+  variantId      String            @map("variant_id") @db.Uuid
+  sourceId       String            @map("source_id") @db.Uuid
+  sourceRecordId String            @map("source_record_id") @db.Uuid
+  rawValue       String            @map("raw_value")
+  sourceUrl      String            @map("source_url")
+  reason         String
+  observedAt     DateTime          @map("observed_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  context        CommercialContext @relation(fields: [contextId], references: [id], onDelete: Restrict)
+  variant        ProductVariant    @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  source         Source            @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  sourceRecord   SourceRecord      @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
+
+  @@unique([sourceRecordId])
+  @@index([variantId])
+  @@map("commercial_context_evidence")
+}
+
 model VariantMarket {
   variantId String         @map("variant_id") @db.Uuid
   marketId  String         @map("market_id") @db.Uuid
@@ -587,6 +633,7 @@ model Source {
   releaseWaves        ReleaseWave[]
   categoryMemberships VariantCategoryMembership[]
   marketEvidence      MarketEvidence[]
+  commercialContextEvidence CommercialContextEvidence[]
   retailers           Retailer[]
   listPrices          ListPriceObservation[]
   productIdentifiers  ProductIdentifier[]
@@ -673,6 +720,7 @@ model SourceRecord {
   variant           ProductVariant?          @relation(fields: [variantId], references: [id], onDelete: SetNull)
   values            SourceValue[]
   mediaObservations SourceMediaObservation[]
+  commercialContextEvidence CommercialContextEvidence[]
 
   @@unique([sourceId, externalId])
   @@index([contentHash])

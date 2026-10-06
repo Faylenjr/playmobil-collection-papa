@@ -316,6 +316,15 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .country-card small { display: block; margin-top: 12px; color: var(--muted); }
 .country-heading { display: flex; align-items: center; gap: 24px; padding: 30px; background: white; border: 1px solid var(--line); border-radius: 22px; }
 .country-flag { font-size: 4.5rem; }
+.commercial-context-section { margin: 26px 0; }
+.commercial-context-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.commercial-context-card { padding: 20px; background: white; border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+.commercial-context-card h3 { margin: 0 0 6px; }
+.commercial-context-card > strong { color: var(--blue-dark); }
+.commercial-context-card ul { list-style: none; margin: 14px 0 0; padding: 0; }
+.commercial-context-card li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); }
+.commercial-context-card li span { overflow-wrap: anywhere; }
+.commercial-context-card small, .travel-callout li small { display: block; color: var(--muted); }
 .travel-callout { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 20px; margin-top: 22px; padding: 16px 19px; color: #704500; background: #fff3c5; border: 1px solid #ebcf72; border-radius: 14px; }
 .travel-callout ul { width: 100%; margin: 0; padding-left: 20px; }
 .travel-callout li + li { margin-top: 5px; }
@@ -428,6 +437,7 @@ footer strong { color: var(--blue-900); }
   .home-hero { grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); }
   .collector-showcase { padding-right: 28px; }
   .discovery-grid, .country-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .commercial-context-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
@@ -505,6 +515,7 @@ footer strong { color: var(--blue-900); }
   .collector-page-heading { align-items: start; flex-direction: column; }
   .collector-page-heading > strong { min-width: 110px; align-self: stretch; }
   .discovery-grid, .country-grid { grid-template-columns: 1fr; }
+  .commercial-context-grid { grid-template-columns: 1fr; }
   .country-heading, .travel-callout { align-items: start; flex-direction: column; }
   .country-flag { font-size: 3.5rem; }
   .list-price-grid { grid-template-columns: 1fr; }

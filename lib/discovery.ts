@@ -103,9 +103,32 @@ export async function getMarket(code: string) {
   });
   if (!market) return null;
   const ids = distinct(market.evidence.map((item) => item.variantId));
-  const [variants, statuses] = await Promise.all([getVariantsByIds(ids), getCollectorStatuses(ids)]);
+  const [variants, statuses, commercialEvidence] = await Promise.all([
+    getVariantsByIds(ids),
+    getCollectorStatuses(ids),
+    db.commercialContextEvidence.findMany({
+      where: { variantId: { in: ids } },
+      orderBy: [{ context: { kind: "asc" } }, { context: { canonicalName: "asc" } }, { variantId: "asc" }],
+      select: { variantId: true, rawValue: true, sourceUrl: true, reason: true, context: { select: { kind: true, canonicalName: true } } },
+    }),
+  ]);
   const evidenceByKey = new Map(market.evidence.map((item) => [`${item.variantId}:${item.kind}`, item]));
-  return { ...market, variants, statuses, evidenceByKey };
+  const commercialByVariant = new Map<string, typeof commercialEvidence>();
+  for (const item of commercialEvidence) {
+    const current = commercialByVariant.get(item.variantId) ?? [];
+    current.push(item);
+    commercialByVariant.set(item.variantId, current);
+  }
+  const contextGroups = [...commercialEvidence.reduce((groups, item) => {
+    const key = `${item.context.kind}:${item.context.canonicalName}`;
+    const group = groups.get(key) ?? { kind: item.context.kind, name: item.context.canonicalName, variantIds: new Set<string>() };
+    group.variantIds.add(item.variantId);
+    groups.set(key, group);
+    return groups;
+  }, new Map<string, { kind: typeof commercialEvidence[number]["context"]["kind"]; name: string; variantIds: Set<string> }>()).values()]
+    .map((group) => ({ kind: group.kind, name: group.name, variants: group.variantIds.size }))
+    .sort((left, right) => left.kind.localeCompare(right.kind) || right.variants - left.variants || left.name.localeCompare(right.name, "fr"));
+  return { ...market, variants, statuses, evidenceByKey, commercialEvidence, commercialByVariant, contextGroups };
 }
 
 export async function getVariantPriceSummary(variantId: string) {

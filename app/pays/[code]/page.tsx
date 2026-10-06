@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ProductCard } from "../../../components/ProductCard";
+import { commercialContextLabels, type CommercialContextKind } from "../../../lib/commercial-context";
 import { getMarket } from "../../../lib/discovery";
 
 export const dynamic = "force-dynamic";
@@ -27,10 +28,22 @@ export default async function CountryPage({ params, searchParams }: { params: Pr
   const exclusiveCount = countDistinctVariants("ATTESTED_EXCLUSIVE");
   const editionCount = countDistinctVariants("MARKET_EDITION");
   const presenceCount = countDistinctVariants("PRESENCE");
-  const travelTargets = market.variants.filter((variant) => market.statuses.get(variant.id)?.inWishlist && (byKind.has(`${variant.id}:ATTESTED_EXCLUSIVE`) || byKind.has(`${variant.id}:MARKET_EDITION`)));
+  const documentedVariants = new Set(market.evidence.map((item) => item.variantId)).size;
+  const travelTargets = market.variants.filter((variant) => market.statuses.get(variant.id)?.inWishlist && (byKind.has(`${variant.id}:ATTESTED_EXCLUSIVE`) || byKind.has(`${variant.id}:MARKET_EDITION`) || market.commercialByVariant.has(variant.id)));
+  const contextKinds = Object.keys(commercialContextLabels) as CommercialContextKind[];
   return <div className="page-shell listing-page">
-    <section className="page-heading country-heading"><span className="country-flag">{flags[code] ?? "🌍"}</span><div><span className="eyebrow">Marché documenté</span><h1>{names[code] ?? market.name}</h1><p>{exclusiveCount} exclusivités explicitement signalées · {editionCount} éditions locales · {presenceCount} présences documentées.</p></div></section>
-    {travelTargets.length > 0 && <section className="travel-callout"><strong>À chercher en {names[code] ?? market.name}</strong><span>{travelTargets.length} exclusivités ou éditions locales sont dans « Mes recherches ».</span><ul>{travelTargets.slice(0, 12).map((variant) => <li key={variant.id}><Link href={`/sets/${variant.id}?returnTo=${encodeURIComponent(`/pays/${code}`)}`}>♡ {variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey} — {variant.displayName}</Link></li>)}</ul></section>}
+    <section className="page-heading country-heading"><span className="country-flag">{flags[code] ?? "🌍"}</span><div><span className="eyebrow">Marché documenté</span><h1>{names[code] ?? market.name}</h1><p><strong>{documentedVariants}</strong> variantes documentées</p><p>{exclusiveCount} exclusivités géographiques attestées · {editionCount} éditions spécifiques au marché · {presenceCount} présences documentées.</p></div></section>
+    {travelTargets.length > 0 && <section className="travel-callout"><strong>À chercher en {names[code] ?? market.name}</strong><span>{travelTargets.length} objets documentés pour ce marché sont dans « Mes recherches ».</span><ul>{travelTargets.slice(0, 12).map((variant) => {
+      const contexts = market.commercialByVariant.get(variant.id) ?? [];
+      const nature = byKind.has(`${variant.id}:ATTESTED_EXCLUSIVE`) ? `Exclusivité géographique attestée` : byKind.has(`${variant.id}:MARKET_EDITION`) ? `Édition ${names[code]?.toLowerCase() ?? "locale"}` : "Présence documentée";
+      return <li key={variant.id}><Link href={`/sets/${variant.id}?returnTo=${encodeURIComponent(`/pays/${code}`)}`}>♡ {variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey} — {variant.displayName}</Link><small>{nature}{contexts[0] ? ` · Partenaire/contexte : ${contexts[0].context.canonicalName}` : ""} · Recherché</small></li>;
+    })}</ul></section>}
+    {market.contextGroups.length > 0 && <section className="commercial-context-section"><div className="section-title"><span className="eyebrow">Contexte commercial</span><h2>Éditions, partenaires et opérations documentés</h2><p>Ces mentions décrivent un canal commercial ou éditorial. Elles ne prouvent jamais, à elles seules, une exclusivité géographique.</p></div><div className="commercial-context-grid">{contextKinds.map((kind) => {
+      const groups = market.contextGroups.filter((group) => group.kind === kind);
+      if (!groups.length) return null;
+      const total = new Set(market.commercialEvidence.filter((item) => item.context.kind === kind).map((item) => item.variantId)).size;
+      return <article className="commercial-context-card" key={kind}><h3>{commercialContextLabels[kind]}</h3><strong>{total} variantes distinctes</strong><ul>{groups.slice(0, 12).map((group) => <li key={`${kind}:${group.name}`}><span>{group.name}</span><b>{group.variants}</b></li>)}</ul>{groups.length > 12 && <small>+ {groups.length - 12} autres contextes documentés</small>}</article>;
+    })}</div></section>}
     <nav className="filter-chips" aria-label="Filtrer les objets du marché">
       {[{ key: "all", label: "Toutes" }, { key: "exclusive", label: "Exclusivités attestées" }, { key: "edition", label: "Éditions locales" }, { key: "presence", label: "Présence marché" }, { key: "wanted", label: "Je recherche" }, { key: "owned", label: "Je possède" }].map((item) => <Link className={filter === item.key ? "active" : ""} href={`/pays/${encodeURIComponent(code)}${item.key === "all" ? "" : `?filter=${item.key}`}`} key={item.key}>{item.label}</Link>)}
     </nav>
@@ -40,7 +53,8 @@ export default async function CountryPage({ params, searchParams }: { params: Pr
         const status = market.statuses.get(variant.id)!;
         const exclusive = byKind.get(`${variant.id}:ATTESTED_EXCLUSIVE`);
         const edition = byKind.get(`${variant.id}:MARKET_EDITION`);
-        return <ProductCard key={variant.id} data={{ id: variant.id, name: variant.displayName, reference: variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey, year: variant.releaseYear ?? variant.product.releaseYear, theme: variant.themes[0]?.theme.name ?? null, market: exclusive ? "Exclusivité signalée" : edition ? "Édition locale" : "Présence documentée", variantLabel: variant.variantLabel, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} returnTo={returnTo} />;
+        const context = market.commercialByVariant.get(variant.id)?.[0];
+        return <ProductCard key={variant.id} data={{ id: variant.id, name: variant.displayName, reference: variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey, year: variant.releaseYear ?? variant.product.releaseYear, theme: variant.themes[0]?.theme.name ?? null, market: exclusive ? "Exclusivité géographique attestée" : edition ? context ? `Édition locale · ${context.context.canonicalName}` : "Édition locale" : context ? `Présence · ${context.context.canonicalName}` : "Présence documentée", variantLabel: variant.variantLabel, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} returnTo={returnTo} />;
       })}
     </div>
     {!variants.length && <section className="empty-state"><h2>Aucun objet dans ce filtre</h2><p>Aucune exclusivité n’est inventée lorsque la source ne l’atteste pas.</p></section>}
