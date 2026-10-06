@@ -6,19 +6,21 @@ type CountRow = { count: bigint };
 async function main() {
   const db = getNodeDatabaseClient();
   try {
+    const countQueries = [
+      ["Product", db.product.count()],
+      ["ProductVariant", db.productVariant.count()],
+      ["ProductReference", db.productReference.count()],
+      ["CollectionItem", db.collectionItem.count()],
+      ["WishlistItem", db.wishlistItem.count()],
+      ["ExternalCandidate", db.externalCandidate.count()],
+      ["ListPriceObservation", db.listPriceObservation.count()],
+      ["Retailer", db.retailer.count()],
+      ["Offer", db.offer.count()],
+      ["PriceObservation", db.priceObservation.count()],
+    ] as const;
+
     const [counts, identifiers, pricesByMarket, priceCoverage2026, candidateStatuses, provenanceColumn] = await Promise.all([
-      Promise.all([
-        ["Product", db.product.count()],
-        ["ProductVariant", db.productVariant.count()],
-        ["ProductReference", db.productReference.count()],
-        ["CollectionItem", db.collectionItem.count()],
-        ["WishlistItem", db.wishlistItem.count()],
-        ["ExternalCandidate", db.externalCandidate.count()],
-        ["ListPriceObservation", db.listPriceObservation.count()],
-        ["Retailer", db.retailer.count()],
-        ["Offer", db.offer.count()],
-        ["PriceObservation", db.priceObservation.count()],
-      ] as const),
+      Promise.all(countQueries.map(async ([model, query]) => [model, await query] as const)),
       db.$queryRaw<Array<{ type: string; observations: bigint; unique_values: bigint; products: bigint; variants: bigint }>>`
         SELECT type::text,
                count(*)::bigint AS observations,
