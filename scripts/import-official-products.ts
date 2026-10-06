@@ -38,6 +38,8 @@ async function main() {
       wouldCreate: {
         products: ready.filter((item) => !existingProducts.some((product) => product.canonicalKey === `official:playmobil:${item.reference}`)).length,
         variants: ready.filter((item) => !existingProducts.some((product) => product.canonicalKey === `official:playmobil:${item.reference}`)).length,
+      },
+      wouldEnsure: {
         references: ready.length,
         translations: ready.reduce((sum, item) => sum + new Set(item.translations.map((translation) => translation.locale)).size, 0),
         identifierObservations: ready.reduce((sum, item) => sum + item.identifiers.length, 0),
@@ -86,7 +88,7 @@ async function main() {
             await tx.translation.upsert({ where: { productId_locale: { productId: product.id, locale: config.locale } }, create: { productId: product.id, locale: config.locale, name: observation.name, description: observation.description ?? null }, update: { name: observation.name, ...(observation.description ? { description: observation.description } : {}) } });
             await tx.variantTranslation.upsert({ where: { variantId_locale: { variantId: variant.id, locale: config.locale } }, create: { variantId: variant.id, locale: config.locale, name: observation.name, description: observation.description ?? null }, update: { name: observation.name, ...(observation.description ? { description: observation.description } : {}) } });
           }
-          await tx.sourceRecord.upsert({
+          const sourceRecord = await tx.sourceRecord.upsert({
             where: { sourceId_externalId: { sourceId: source.id, externalId: `${observation.market}:${item.reference}` } },
             create: { sourceId: source.id, variantId: variant.id, externalId: `${observation.market}:${item.reference}`, sourceUrl: observation.sourceUrl, recordType: "OFFICIAL_PRODUCT", rawPayload: observation as unknown as Prisma.InputJsonValue, contentHash: digest(observation), firstSeenAt: new Date(snapshot.observedAt), lastSeenAt: new Date(snapshot.observedAt), lastCheckedAt: new Date(snapshot.observedAt) },
             update: { variantId: variant.id, sourceUrl: observation.sourceUrl, rawPayload: observation as unknown as Prisma.InputJsonValue, contentHash: digest(observation), lastSeenAt: new Date(snapshot.observedAt), lastCheckedAt: new Date(snapshot.observedAt) },
@@ -99,7 +101,32 @@ async function main() {
             if (!normalized) continue;
             const observationKey = identifierObservationKey({ target: { productId: product.id }, type: identifier.type, normalizedValue: normalized, sourceId: source.id, marketId: market.id });
             const previous = await tx.productIdentifier.findUnique({ where: { observationKey } });
-            await tx.productIdentifier.upsert({ where: { observationKey }, create: { observationKey, productId: product.id, type: identifier.type, rawValue: identifier.rawValue, normalizedValue: normalized, sourceId: source.id, marketId: market.id, sourceUrl: observation.sourceUrl, observedAt: new Date(snapshot.observedAt), confidence: "OFFICIAL_CONFIRMED" }, update: { rawValue: identifier.rawValue, sourceUrl: observation.sourceUrl, observedAt: new Date(snapshot.observedAt), confidence: "OFFICIAL_CONFIRMED" } });
+            await tx.productIdentifier.upsert({
+              where: { observationKey },
+              create: {
+                observationKey,
+                productId: product.id,
+                type: identifier.type,
+                rawValue: identifier.rawValue,
+                normalizedValue: normalized,
+                sourceId: source.id,
+                sourceRecordId: sourceRecord.id,
+                marketId: market.id,
+                sourceUrl: observation.sourceUrl,
+                observedAt: new Date(snapshot.observedAt),
+                firstObservedAt: new Date(snapshot.observedAt),
+                lastObservedAt: new Date(snapshot.observedAt),
+                confidence: "OFFICIAL_CONFIRMED",
+              },
+              update: {
+                rawValue: identifier.rawValue,
+                sourceRecordId: sourceRecord.id,
+                sourceUrl: observation.sourceUrl,
+                observedAt: new Date(snapshot.observedAt),
+                lastObservedAt: new Date(snapshot.observedAt),
+                confidence: "OFFICIAL_CONFIRMED",
+              },
+            });
             if (!previous) createdIdentifiers += 1;
           }
           if (observation.officialPrice && observation.market !== "en-US") {

@@ -159,25 +159,25 @@ enum ExternalCandidateStatus {
 }
 
 model Product {
-  id               String            @id @default(uuid()) @db.Uuid
-  canonicalKey     String            @unique @map("canonical_key")
-  baseReference    String?           @map("base_reference")
-  kind             ProductKind       @default(UNKNOWN)
-  releaseYear      Int?              @map("release_year")
-  discontinuedYear Int?              @map("discontinued_year")
-  name             String?
-  description      String?
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
-  variants         ProductVariant[]
-  translations     Translation[]
-  themes           ProductTheme[]
-  figures          ProductFigure[]
-  parts            ProductPart[]
-  rangeMemberships RangeMembership[]
-  releaseWaveItems ReleaseWaveItem[]
-  offers           Offer[]
-  identifiers      ProductIdentifier[]
+  id                 String              @id @default(uuid()) @db.Uuid
+  canonicalKey       String              @unique @map("canonical_key")
+  baseReference      String?             @map("base_reference")
+  kind               ProductKind         @default(UNKNOWN)
+  releaseYear        Int?                @map("release_year")
+  discontinuedYear   Int?                @map("discontinued_year")
+  name               String?
+  description        String?
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  variants           ProductVariant[]
+  translations       Translation[]
+  themes             ProductTheme[]
+  figures            ProductFigure[]
+  parts              ProductPart[]
+  rangeMemberships   RangeMembership[]
+  releaseWaveItems   ReleaseWaveItem[]
+  offers             Offer[]
+  identifiers        ProductIdentifier[]
   importedCandidates ExternalCandidate[]
 
   @@index([baseReference])
@@ -186,56 +186,56 @@ model Product {
 }
 
 model ProductVariant {
-  id                     String                      @id @default(uuid()) @db.Uuid
-  productId              String                      @map("product_id") @db.Uuid
-  canonicalKey           String                      @unique @map("canonical_key")
-  variantKind            VariantKind                 @default(STANDARD) @map("variant_kind")
-  variantLabel           String?                     @map("variant_label")
-  editionNumber          Int?                        @map("edition_number")
-  name                   String?
-  description            String?
-  releaseYear            Int?                        @map("release_year")
-  discontinuedYear       Int?                        @map("discontinued_year")
-  format                 String?
-  isCollectible          Boolean                     @default(true) @map("is_collectible")
-  isExclusive            Boolean?                    @map("is_exclusive")
-  isPromotion            Boolean?                    @map("is_promotion")
-  releaseDate            DateTime?                   @map("release_date") @db.Date
-  status                 String?
-  ageMin                 Int?                        @map("age_min")
-  ageMax                 Int?                        @map("age_max")
-  pieceCount             Int?                        @map("piece_count")
-  figureCount            Int?                        @map("figure_count")
-  widthMm                Decimal?                    @map("width_mm") @db.Decimal(10, 2)
-  heightMm               Decimal?                    @map("height_mm") @db.Decimal(10, 2)
-  depthMm                Decimal?                    @map("depth_mm") @db.Decimal(10, 2)
-  weightGrams            Decimal?                    @map("weight_grams") @db.Decimal(10, 2)
-  partsInventoryComplete Boolean?                    @map("parts_inventory_complete")
-  listPrice              Decimal?                    @map("list_price") @db.Decimal(12, 2)
-  listPriceCurrency      String?                     @map("list_price_currency") @db.VarChar(3)
-  firstSeenAt            DateTime                    @default(now()) @map("first_seen_at")
-  lastSeenAt             DateTime                    @default(now()) @map("last_seen_at")
-  lastCheckedAt          DateTime?                   @map("last_checked_at")
-  createdAt              DateTime                    @default(now()) @map("created_at")
-  updatedAt              DateTime                    @updatedAt @map("updated_at")
-  product                Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
-  references             ProductReference[]
-  translations           VariantTranslation[]
-  themes                 VariantTheme[]
-  markets                VariantMarket[]
-  media                  MediaAsset[]
-  instructions           Instruction[]
-  figures                VariantFigure[]
-  parts                  VariantPart[]
-  collectionItems        CollectionItem[]
-  wishlistItems          WishlistItem[]
-  sourceRecords          SourceRecord[]
-  categoryMemberships    VariantCategoryMembership[]
-  marketEvidence         MarketEvidence[]
+  id                        String                      @id @default(uuid()) @db.Uuid
+  productId                 String                      @map("product_id") @db.Uuid
+  canonicalKey              String                      @unique @map("canonical_key")
+  variantKind               VariantKind                 @default(STANDARD) @map("variant_kind")
+  variantLabel              String?                     @map("variant_label")
+  editionNumber             Int?                        @map("edition_number")
+  name                      String?
+  description               String?
+  releaseYear               Int?                        @map("release_year")
+  discontinuedYear          Int?                        @map("discontinued_year")
+  format                    String?
+  isCollectible             Boolean                     @default(true) @map("is_collectible")
+  isExclusive               Boolean?                    @map("is_exclusive")
+  isPromotion               Boolean?                    @map("is_promotion")
+  releaseDate               DateTime?                   @map("release_date") @db.Date
+  status                    String?
+  ageMin                    Int?                        @map("age_min")
+  ageMax                    Int?                        @map("age_max")
+  pieceCount                Int?                        @map("piece_count")
+  figureCount               Int?                        @map("figure_count")
+  widthMm                   Decimal?                    @map("width_mm") @db.Decimal(10, 2)
+  heightMm                  Decimal?                    @map("height_mm") @db.Decimal(10, 2)
+  depthMm                   Decimal?                    @map("depth_mm") @db.Decimal(10, 2)
+  weightGrams               Decimal?                    @map("weight_grams") @db.Decimal(10, 2)
+  partsInventoryComplete    Boolean?                    @map("parts_inventory_complete")
+  listPrice                 Decimal?                    @map("list_price") @db.Decimal(12, 2)
+  listPriceCurrency         String?                     @map("list_price_currency") @db.VarChar(3)
+  firstSeenAt               DateTime                    @default(now()) @map("first_seen_at")
+  lastSeenAt                DateTime                    @default(now()) @map("last_seen_at")
+  lastCheckedAt             DateTime?                   @map("last_checked_at")
+  createdAt                 DateTime                    @default(now()) @map("created_at")
+  updatedAt                 DateTime                    @updatedAt @map("updated_at")
+  product                   Product                     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  references                ProductReference[]
+  translations              VariantTranslation[]
+  themes                    VariantTheme[]
+  markets                   VariantMarket[]
+  media                     MediaAsset[]
+  instructions              Instruction[]
+  figures                   VariantFigure[]
+  parts                     VariantPart[]
+  collectionItems           CollectionItem[]
+  wishlistItems             WishlistItem[]
+  sourceRecords             SourceRecord[]
+  categoryMemberships       VariantCategoryMembership[]
+  marketEvidence            MarketEvidence[]
   commercialContextEvidence CommercialContextEvidence[]
-  offers                 Offer[]
-  listPriceObservations  ListPriceObservation[]
-  identifiers            ProductIdentifier[]
+  offers                    Offer[]
+  listPriceObservations     ListPriceObservation[]
+  identifiers               ProductIdentifier[]
 
   @@index([productId])
   @@index([releaseYear])
@@ -466,12 +466,12 @@ model MarketEvidence {
 }
 
 model CommercialContext {
-  id             String                       @id @default(uuid()) @db.Uuid
+  id             String                      @id @default(uuid()) @db.Uuid
   kind           CommercialContextKind
-  canonicalName  String                       @map("canonical_name")
-  normalizedName String                       @map("normalized_name")
-  createdAt      DateTime                     @default(now()) @map("created_at")
-  updatedAt      DateTime                     @updatedAt @map("updated_at")
+  canonicalName  String                      @map("canonical_name")
+  normalizedName String                      @map("normalized_name")
+  createdAt      DateTime                    @default(now()) @map("created_at")
+  updatedAt      DateTime                    @updatedAt @map("updated_at")
   evidence       CommercialContextEvidence[]
 
   @@unique([kind, normalizedName])
@@ -613,31 +613,31 @@ model ProductPart {
 }
 
 model Source {
-  id                  String                      @id @default(uuid()) @db.Uuid
-  key                 String                      @unique
-  name                String
-  baseUrl             String                      @map("base_url")
-  kind                SourceKind
-  priority            Int                         @default(100)
-  termsUrl            String?                     @map("terms_url")
-  license             String?
-  robotsCheckedAt     DateTime?                   @map("robots_checked_at")
-  enabled             Boolean                     @default(false)
-  records             SourceRecord[]
-  values              SourceValue[]
-  references          ProductReference[]
-  media               MediaAsset[]
-  instructions        Instruction[]
-  importRuns          ImportRun[]
-  productRanges       ProductRange[]
-  releaseWaves        ReleaseWave[]
-  categoryMemberships VariantCategoryMembership[]
-  marketEvidence      MarketEvidence[]
+  id                        String                         @id @default(uuid()) @db.Uuid
+  key                       String                         @unique
+  name                      String
+  baseUrl                   String                         @map("base_url")
+  kind                      SourceKind
+  priority                  Int                            @default(100)
+  termsUrl                  String?                        @map("terms_url")
+  license                   String?
+  robotsCheckedAt           DateTime?                      @map("robots_checked_at")
+  enabled                   Boolean                        @default(false)
+  records                   SourceRecord[]
+  values                    SourceValue[]
+  references                ProductReference[]
+  media                     MediaAsset[]
+  instructions              Instruction[]
+  importRuns                ImportRun[]
+  productRanges             ProductRange[]
+  releaseWaves              ReleaseWave[]
+  categoryMemberships       VariantCategoryMembership[]
+  marketEvidence            MarketEvidence[]
   commercialContextEvidence CommercialContextEvidence[]
-  retailers           Retailer[]
-  listPrices          ListPriceObservation[]
-  productIdentifiers  ProductIdentifier[]
-  candidateObservations ExternalCandidateObservation[]
+  retailers                 Retailer[]
+  listPrices                ListPriceObservation[]
+  productIdentifiers        ProductIdentifier[]
+  candidateObservations     ExternalCandidateObservation[]
 
   @@map("sources")
 }
@@ -651,34 +651,39 @@ model ProductIdentifier {
   rawValue        String                     @map("raw_value")
   normalizedValue String                     @map("normalized_value")
   sourceId        String                     @map("source_id") @db.Uuid
+  sourceRecordId  String?                    @map("source_record_id") @db.Uuid
   marketId        String?                    @map("market_id") @db.Uuid
   sourceUrl       String                     @map("source_url")
   observedAt      DateTime                   @map("observed_at")
+  firstObservedAt DateTime                   @map("first_observed_at")
+  lastObservedAt  DateTime                   @map("last_observed_at")
   confidence      IdentifierConfidenceStatus @default(SOURCE_OBSERVED)
   createdAt       DateTime                   @default(now()) @map("created_at")
   product         Product?                   @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant         ProductVariant?            @relation(fields: [variantId], references: [id], onDelete: Cascade)
   source          Source                     @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  sourceRecord    SourceRecord?              @relation(fields: [sourceRecordId], references: [id], onDelete: Restrict)
   market          Market?                    @relation(fields: [marketId], references: [id], onDelete: SetNull)
 
   @@index([type, normalizedValue])
   @@index([productId])
   @@index([variantId])
+  @@index([sourceRecordId])
   @@map("product_identifiers")
 }
 
 model ExternalCandidate {
-  id                  String                  @id @default(uuid()) @db.Uuid
-  displayReference    String                  @map("display_reference")
-  normalizedReference String                  @unique @map("normalized_reference")
-  status              ExternalCandidateStatus @default(DISCOVERED)
-  conflictReason      String?                 @map("conflict_reason")
-  importedProductId   String?                 @map("imported_product_id") @db.Uuid
-  firstObservedAt     DateTime                @map("first_observed_at")
-  lastObservedAt      DateTime                @map("last_observed_at")
-  createdAt           DateTime                @default(now()) @map("created_at")
-  updatedAt           DateTime                @updatedAt @map("updated_at")
-  importedProduct     Product?                @relation(fields: [importedProductId], references: [id], onDelete: SetNull)
+  id                  String                         @id @default(uuid()) @db.Uuid
+  displayReference    String                         @map("display_reference")
+  normalizedReference String                         @unique @map("normalized_reference")
+  status              ExternalCandidateStatus        @default(DISCOVERED)
+  conflictReason      String?                        @map("conflict_reason")
+  importedProductId   String?                        @map("imported_product_id") @db.Uuid
+  firstObservedAt     DateTime                       @map("first_observed_at")
+  lastObservedAt      DateTime                       @map("last_observed_at")
+  createdAt           DateTime                       @default(now()) @map("created_at")
+  updatedAt           DateTime                       @updatedAt @map("updated_at")
+  importedProduct     Product?                       @relation(fields: [importedProductId], references: [id], onDelete: SetNull)
   observations        ExternalCandidateObservation[]
 
   @@index([status, lastObservedAt(sort: Desc)])
@@ -704,23 +709,24 @@ model ExternalCandidateObservation {
 }
 
 model SourceRecord {
-  id                String                   @id @default(uuid()) @db.Uuid
-  sourceId          String                   @map("source_id") @db.Uuid
-  variantId         String?                  @map("variant_id") @db.Uuid
-  externalId        String                   @map("external_id")
-  sourceUrl         String                   @map("source_url")
-  recordType        String                   @map("record_type")
-  rawPayload        Json?                    @map("raw_payload")
-  contentHash       String                   @map("content_hash")
-  sourceUpdatedAt   DateTime?                @map("source_updated_at")
-  firstSeenAt       DateTime                 @default(now()) @map("first_seen_at")
-  lastSeenAt        DateTime                 @default(now()) @map("last_seen_at")
-  lastCheckedAt     DateTime                 @default(now()) @map("last_checked_at")
-  source            Source                   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
-  variant           ProductVariant?          @relation(fields: [variantId], references: [id], onDelete: SetNull)
-  values            SourceValue[]
-  mediaObservations SourceMediaObservation[]
+  id                        String                      @id @default(uuid()) @db.Uuid
+  sourceId                  String                      @map("source_id") @db.Uuid
+  variantId                 String?                     @map("variant_id") @db.Uuid
+  externalId                String                      @map("external_id")
+  sourceUrl                 String                      @map("source_url")
+  recordType                String                      @map("record_type")
+  rawPayload                Json?                       @map("raw_payload")
+  contentHash               String                      @map("content_hash")
+  sourceUpdatedAt           DateTime?                   @map("source_updated_at")
+  firstSeenAt               DateTime                    @default(now()) @map("first_seen_at")
+  lastSeenAt                DateTime                    @default(now()) @map("last_seen_at")
+  lastCheckedAt             DateTime                    @default(now()) @map("last_checked_at")
+  source                    Source                      @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  variant                   ProductVariant?             @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  values                    SourceValue[]
+  mediaObservations         SourceMediaObservation[]
   commercialContextEvidence CommercialContextEvidence[]
+  productIdentifiers        ProductIdentifier[]
 
   @@unique([sourceId, externalId])
   @@index([contentHash])
@@ -859,6 +865,7 @@ model Offer {
   matchEvidence   String?            @map("match_evidence")
   firstObservedAt DateTime           @default(now()) @map("first_observed_at")
   lastObservedAt  DateTime           @map("last_observed_at")
+  expiresAt       DateTime?          @map("expires_at")
   retailer        Retailer           @relation(fields: [retailerId], references: [id], onDelete: Cascade)
   product         Product?           @relation(fields: [productId], references: [id], onDelete: Cascade)
   variant         ProductVariant?    @relation(fields: [variantId], references: [id], onDelete: Cascade)

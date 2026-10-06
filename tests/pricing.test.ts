@@ -14,10 +14,13 @@ describe("prices and offers", () => {
     expect(exactReferenceInTitle("PLAYMOBIL 70201 Station-service neuve", "70201")).toBe(true);
     expect(exactReferenceInTitle("Lot 170201 accessoires", "70201")).toBe(false);
     expect(matchEbayItem({ itemId: "x", title: "Playmobil 70201 complet", itemWebUrl: "https://www.ebay.fr/itm/x" }, "70201").accepted).toBe(true);
+    expect(matchEbayItem({ itemId: "y", title: "Compatible 70201", itemWebUrl: "https://www.ebay.fr/itm/y" }, "70201").accepted).toBe(false);
+    expect(matchEbayItem({ itemId: "z", title: "Lot sans référence", itemWebUrl: "https://www.ebay.fr/itm/z", gtin: "4008789722164" }, "70201", ["4008789722164"]).accepted).toBe(true);
   });
 
   it("allows only known HTTPS marketplace links", () => {
     expect(safeExternalOfferUrl("https://www.ebay.fr/itm/123")).toContain("ebay.fr");
+    expect(safeExternalOfferUrl("https://www.koupobol.com/sets/72216")).toContain("koupobol.com");
     expect(safeExternalOfferUrl("http://www.ebay.fr/itm/123")).toBeNull();
     expect(safeExternalOfferUrl("https://evil.example/redirect")).toBeNull();
   });
@@ -35,6 +38,7 @@ describe("prices and offers", () => {
     const common = { currentPrice: 30, currentCurrency: "EUR", currentMarket: "FR", listPrice: 40, listCurrency: "EUR", listMarket: "FR", observedAt: new Date("2026-10-04T10:00:00Z"), now: new Date("2026-10-04T20:00:00Z") };
     expect(calculatePromotion({ ...common, condition: "NEW" })).toBe(0.25);
     expect(calculatePromotion({ ...common, condition: "USED" })).toBeNull();
+    expect(calculatePromotion({ ...common, condition: "UNKNOWN" })).toBeNull();
     expect(calculatePromotion({ ...common, condition: "NEW", currentCurrency: "USD" })).toBeNull();
     expect(calculatePromotion({ ...common, condition: "NEW", now: new Date("2026-10-07T20:01:00Z") })).toBeNull();
   });
