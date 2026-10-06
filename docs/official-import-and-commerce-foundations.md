@@ -4,7 +4,7 @@ Audit et implémentation du 5 octobre 2026. Ce document complète `recent-catalo
 
 ## ProductIdentifier
 
-`ProductIdentifier` conserve une observation sourcée, pas une valeur globale écrasable. Il accepte `EAN`, `GTIN`, `UPC`, `MPN` et `OFFICIAL_SKU`, avec valeur brute, valeur normalisée, source, URL, marché, date et niveau de confiance. Une contrainte SQL impose exactement une cible : `Product` ou `ProductVariant`. La clé d'observation déterministe empêche la duplication d'un même constat, tandis que l'index `(type, normalizedValue)` permet de détecter les collisions entre produits sans supprimer les observations contradictoires.
+`ProductIdentifier` conserve une observation sourcée, pas une valeur globale écrasable. Il accepte `EAN`, `GTIN`, `UPC`, `MPN` et `OFFICIAL_SKU`, avec valeur brute, valeur normalisée, source, `SourceRecord` lorsque disponible, URL, marché, première/dernière observation et niveau de confiance. Une contrainte SQL impose exactement une cible : `Product` ou `ProductVariant`. La clé d'observation déterministe empêche la duplication d'un même constat, tandis que l'index `(type, normalizedValue)` permet de détecter les collisions entre produits sans supprimer les observations contradictoires.
 
 Audit avant migration :
 
@@ -15,7 +15,7 @@ Audit avant migration :
 
 ## Pipeline officiel isolé
 
-Le pipeline utilise uniquement `playmobil-official-import-2026.json`. Son dry-run bloque une référence locale existante, une absence de confirmation officielle, un nom absent ou une collision d'identifiant. L'application crée un `Product` et un unique `ProductVariant` commercial sans inventer de variante nationale. Les pages marché deviennent des `VariantMarket`, des traductions et des `SourceRecord` séparés.
+Le pipeline utilise uniquement `playmobil-official-import-2026.json`. Son dry-run bloque une référence locale existante, une absence de confirmation officielle, un nom absent ou une collision d'identifiant. L'application crée un `Product` et un unique `ProductVariant` commercial sans inventer de variante nationale. Les pages marché deviennent des `VariantMarket`, des traductions et des `SourceRecord` séparés ; chaque observation SKU/MPN pointe vers le `SourceRecord` qui la porte.
 
 Pour les dix références 72216, 72220, 72221, 72222, 72224, 72269, 72365, 72366, 72367 et 72368, le dry-run prévoit :
 
@@ -54,8 +54,8 @@ La catégorie `Géants / XXL` reste la seule catégorie transversale créée : 4
 
 `Retailer`, `Offer`, `PriceObservation` et `ListPriceObservation` existaient déjà et sont conservés. `PriceObservation` reste append-only. L'interface sépare maintenant offres neuves/scellées et occasion, montre prix, livraison et total, et ne calcule une remise que pour une offre neuve/scellée fraîche, du même marché et de la même devise qu'un prix officiel.
 
-- eBay Browse : adaptateur de candidats existant ; activation impossible sans identifiants développeur. `EBAY_FR` et `EBAY_DE` sont supportés officiellement.
-- Kelkoo Publisher Shopping API : adaptateur de matching EAN/référence ajouté ; nécessite un compte Publisher et un JWT. Aucune requête n'est faite sans contrat/clé.
+- eBay Browse : adaptateur de candidats existant ; activation impossible sans identifiants développeur. `EBAY_FR` et `EBAY_DE` sont supportés officiellement. Le matching exige un EAN/GTIN exact ou la marque PLAYMOBIL avec une référence exacte isolée.
+- Kelkoo Publisher Shopping API : adaptateur de matching ajouté ; nécessite un compte Publisher et un JWT. Un EAN exact est prioritaire ; sans EAN, la référence exacte et la marque structurée PLAYMOBIL sont toutes deux obligatoires. Aucune requête n'est faite sans contrat/clé.
 - Koupobol : aucune ingestion de prix sans API, feed ou partenariat explicite.
 - Leboncoin et Dealabs : liens de recherche manuels uniquement.
 

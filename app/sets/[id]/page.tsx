@@ -54,6 +54,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   );
   const newOffers = prices.offers.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED");
   const usedOffers = prices.offers.filter((offer) => offer.condition === "USED");
+  const koupobolUrl = prices.koupobolUrl ? safeExternalOfferUrl(prices.koupobolUrl) : null;
 
   return (
     <div className="page-shell detail-page">
@@ -107,7 +108,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
         {prices.listPrices.length > 0 ? <div className="list-price-grid">{prices.listPrices.map((price) => <div className="detail-field" key={price.id}><dt>Prix conseillé · {price.market.name}</dt><dd>{Number(price.amount).toLocaleString("fr-FR", { style: "currency", currency: price.currency })}</dd><small>{price.source.name} · observé le {price.observedAt.toLocaleDateString("fr-FR")}</small></div>)}</div> : <p className="muted-copy">Prix conseillé non documenté pour le moment.</p>}
         <OfferGroup title="Offres neuves" empty="Aucune offre neuve suivie pour le moment." offers={newOffers} listPrices={prices.listPrices} />
         <OfferGroup title="Occasion" empty="Aucune offre d’occasion suivie pour le moment." offers={usedOffers} listPrices={prices.listPrices} />
-        {reference && <div className="manual-market-links"><a href={marketplaceSearchLinks(reference).ebay} target="_blank" rel="noreferrer">Voir sur eBay ↗</a><a href={marketplaceSearchLinks(reference).leboncoin} target="_blank" rel="noreferrer">Voir sur Leboncoin ↗</a><a href={marketplaceSearchLinks(reference).dealabs} target="_blank" rel="noreferrer">Rechercher sur Dealabs ↗</a></div>}
+        {reference && <div className="manual-market-links">{koupobolUrl && <a href={koupobolUrl} target="_blank" rel="noreferrer sponsored">Voir les prix sur Koupobol ↗</a>}<a href={marketplaceSearchLinks(reference).ebay} target="_blank" rel="noreferrer">Voir sur eBay ↗</a><a href={marketplaceSearchLinks(reference).leboncoin} target="_blank" rel="noreferrer">Voir sur Leboncoin ↗</a><a href={marketplaceSearchLinks(reference).dealabs} target="_blank" rel="noreferrer">Rechercher sur Dealabs ↗</a></div>}
       </section>
 
       {otherImages.length > 0 && (

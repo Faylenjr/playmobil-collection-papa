@@ -20,9 +20,10 @@ export async function findEbayOfferCandidates(
   client: EbayBrowseClient,
   reference: string,
   marketplaceId = "EBAY_FR",
+  eans: readonly string[] = [],
 ): Promise<OfferCandidate[]> {
   const items = await client.search(`PLAYMOBIL ${reference}`, marketplaceId);
-  return items.map((item) => ({ item, ...matchEbayItem(item, reference) }));
+  return items.map((item) => ({ item, ...matchEbayItem(item, reference, eans) }));
 }
 
 export function ebayAdapterConfiguration(environment: NodeJS.ProcessEnv = process.env) {

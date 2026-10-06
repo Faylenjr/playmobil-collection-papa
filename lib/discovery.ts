@@ -133,13 +133,17 @@ export async function getMarket(code: string) {
 
 export async function getVariantPriceSummary(variantId: string) {
   const db = await getDatabaseClient();
-  const [allListPrices, offers] = await Promise.all([
+  const [allListPrices, offers, koupobolCandidate] = await Promise.all([
     db.listPriceObservation.findMany({ where: { variantId }, orderBy: { observedAt: "desc" }, include: { market: true, source: true }, take: 50 }),
     db.offer.findMany({
       where: { OR: [{ variantId }, { product: { variants: { some: { id: variantId } } } }] },
       orderBy: { lastObservedAt: "desc" },
       include: { retailer: { include: { market: true } }, observations: { orderBy: { observedAt: "desc" }, take: 1 } },
       take: 20,
+    }),
+    db.externalCandidate.findFirst({
+      where: { importedProduct: { variants: { some: { id: variantId } } } },
+      select: { observations: { where: { source: { key: "koupobol-discovery" } }, orderBy: { lastObservedAt: "desc" }, take: 1, select: { sourceUrl: true } } },
     }),
   ]);
   const seenMarkets = new Set<string>();
@@ -148,5 +152,5 @@ export async function getVariantPriceSummary(variantId: string) {
     seenMarkets.add(price.marketId);
     return true;
   });
-  return { listPrices, offers };
+  return { listPrices, offers, koupobolUrl: koupobolCandidate?.observations[0]?.sourceUrl ?? null };
 }

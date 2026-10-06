@@ -1,4 +1,4 @@
-const allowedOfferHosts = new Set(["ebay.fr", "www.ebay.fr", "leboncoin.fr", "www.leboncoin.fr", "dealabs.com", "www.dealabs.com", "kelkoo.fr", "www.kelkoo.fr"]);
+const allowedOfferHosts = new Set(["ebay.fr", "www.ebay.fr", "leboncoin.fr", "www.leboncoin.fr", "dealabs.com", "www.dealabs.com", "kelkoo.fr", "www.kelkoo.fr", "koupobol.com", "www.koupobol.com"]);
 
 export function safeExternalOfferUrl(value: string) {
   try {
@@ -35,20 +35,22 @@ export function calculatePromotion(input: {
   now?: Date;
   maxAgeHours?: number;
 }) {
-  if (input.condition === "USED" || input.currentPrice < 0 || input.listPrice <= 0) return null;
+  if (!["NEW", "SEALED"].includes(input.condition) || input.currentPrice < 0 || input.listPrice <= 0) return null;
   if (input.currentCurrency !== input.listCurrency || input.currentMarket !== input.listMarket) return null;
   const ageMs = (input.now ?? new Date()).getTime() - input.observedAt.getTime();
   if (ageMs > (input.maxAgeHours ?? 24) * 3_600_000 || ageMs < 0) return null;
   return Math.max(0, (input.listPrice - input.currentPrice) / input.listPrice);
 }
 
-export type EbaySearchItem = { itemId: string; title: string; itemWebUrl: string; price?: { value: string; currency: string }; condition?: string };
+export type EbaySearchItem = { itemId: string; title: string; itemWebUrl: string; price?: { value: string; currency: string }; condition?: string; gtin?: string | readonly string[] };
 
-export function matchEbayItem(item: EbaySearchItem, reference: string) {
-  const exact = exactReferenceInTitle(item.title, reference);
+export function matchEbayItem(item: EbaySearchItem, reference: string, eans: readonly string[] = []) {
+  const observedGtins = (Array.isArray(item.gtin) ? item.gtin : item.gtin ? [item.gtin] : []).map((value) => value.replace(/\D/g, ""));
+  if (observedGtins.some((value) => eans.includes(value))) return { accepted: true, confidence: 1, reason: "EAN/GTIN exact fourni par eBay" };
+  const exact = /\bPLAYMOBIL\b/i.test(item.title) && exactReferenceInTitle(item.title, reference);
   return {
     accepted: exact,
     confidence: exact ? 0.95 : 0,
-    reason: exact ? "Référence exacte isolée dans le titre eBay" : "Référence absente ou seulement partielle",
+    reason: exact ? "Marque PLAYMOBIL et référence exacte isolées dans le titre eBay" : "Marque ou référence exacte absente",
   };
 }
