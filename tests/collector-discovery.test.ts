@@ -15,7 +15,20 @@ describe("market evidence", () => {
     expect(classifyMarketRelation({ variantKind: "MARKET", rawPayload: { markets: ["germany"] } }).kind).toBe("MARKET_EDITION");
   });
 
-  it("requires an explicit source claim for an attested exclusivity", () => {
-    expect(classifyMarketRelation({ variantKind: "MARKET", rawPayload: { exclusive: "Karstadt" } })).toMatchObject({ kind: "ATTESTED_EXCLUSIVE", confidence: 0.9 });
+  it("does not confuse a commercial channel with a geographic exclusivity", () => {
+    expect(classifyMarketRelation({ variantKind: "MARKET", rawPayload: { exclusive: "Karstadt" }, marketCode: "GERMANY" })).toMatchObject({ kind: "MARKET_EDITION", confidence: 0.8 });
+  });
+
+  it("requires an explicit market-scoped statement for an attested exclusivity", () => {
+    expect(classifyMarketRelation({
+      variantKind: "MARKET",
+      marketCode: "GERMANY",
+      rawPayload: { marketExclusive: { marketCode: "GERMANY", statement: "Germany only" } },
+    })).toMatchObject({ kind: "ATTESTED_EXCLUSIVE", confidence: 0.95 });
+    expect(classifyMarketRelation({
+      variantKind: "MARKET",
+      marketCode: "FRANCE",
+      rawPayload: { marketExclusive: { marketCode: "GERMANY", statement: "Germany only" } },
+    }).kind).toBe("MARKET_EDITION");
   });
 });

@@ -103,7 +103,7 @@ try {
 
     for (const link of marketLinks) {
       const record = link.variant.sourceRecords[0];
-      const relation = classifyMarketRelation({ variantKind: link.variant.variantKind, rawPayload: record?.rawPayload });
+      const relation = classifyMarketRelation({ variantKind: link.variant.variantKind, rawPayload: record?.rawPayload, marketCode: link.market.code });
       const { kind } = relation;
       const evidence = relation.kind === "PRESENCE" ? `Présence documentée pour ${link.market.code}` : relation.evidence;
       await tx.marketEvidence.upsert({

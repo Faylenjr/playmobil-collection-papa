@@ -8,9 +8,43 @@ export function explicitExclusiveClaim(raw: unknown) {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-export function classifyMarketRelation(input: { variantKind: string; rawPayload: unknown }) {
-  const exclusive = explicitExclusiveClaim(input.rawPayload);
-  if (exclusive) return { kind: "ATTESTED_EXCLUSIVE" as const, evidence: `Source explicitement exclusive : ${exclusive}`, confidence: 0.9 };
-  if (input.variantKind === "MARKET") return { kind: "MARKET_EDITION" as const, evidence: "Variante structurée pour un marché, sans preuve explicite d’exclusivité", confidence: 0.8 };
-  return { kind: "PRESENCE" as const, evidence: "Présence documentée sur ce marché", confidence: 0.7 };
+export function explicitMarketExclusiveClaim(raw: unknown, marketCode?: string) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+  const value = (raw as Record<string, unknown>).marketExclusive;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const claim = value as Record<string, unknown>;
+  const claimMarket = typeof claim.marketCode === "string" ? claim.marketCode.trim().toUpperCase() : "";
+  const statement = typeof claim.statement === "string" ? claim.statement.trim() : "";
+  if (!claimMarket || !statement || (marketCode && claimMarket !== marketCode.trim().toUpperCase())) return null;
+  return { marketCode: claimMarket, statement };
+}
+
+const marketEditionKinds = new Set(["MARKET", "EDITION", "EXCLUSIVE", "PROMOTION"]);
+
+export function classifyMarketRelation(input: { variantKind: string; rawPayload: unknown; marketCode?: string }) {
+  const geographicClaim = explicitMarketExclusiveClaim(input.rawPayload, input.marketCode);
+  if (geographicClaim) {
+    return {
+      kind: "ATTESTED_EXCLUSIVE" as const,
+      evidence: `Exclusivité géographique attestée pour ${geographicClaim.marketCode} : ${geographicClaim.statement}`,
+      confidence: 0.95,
+    };
+  }
+
+  const commercialChannel = explicitExclusiveClaim(input.rawPayload);
+  const context = commercialChannel
+    ? ` Canal ou partenaire observé : ${commercialChannel}; ce champ ne prouve pas une exclusivité géographique.`
+    : "";
+  if (marketEditionKinds.has(input.variantKind)) {
+    return {
+      kind: "MARKET_EDITION" as const,
+      evidence: `Variante structurée pour ce marché, sans preuve d’exclusivité géographique.${context}`,
+      confidence: 0.8,
+    };
+  }
+  return {
+    kind: "PRESENCE" as const,
+    evidence: `Présence documentée sur ce marché, sans preuve d’exclusivité géographique.${context}`,
+    confidence: 0.7,
+  };
 }

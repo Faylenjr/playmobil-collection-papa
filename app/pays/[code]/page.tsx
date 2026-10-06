@@ -23,9 +23,10 @@ export default async function CountryPage({ params, searchParams }: { params: Pr
     if (filter === "owned") return status.inCollection;
     return true;
   });
-  const exclusiveCount = market.evidence.filter((item) => item.kind === "ATTESTED_EXCLUSIVE").length;
-  const editionCount = market.evidence.filter((item) => item.kind === "MARKET_EDITION").length;
-  const presenceCount = market.evidence.filter((item) => item.kind === "PRESENCE").length;
+  const countDistinctVariants = (kind: "ATTESTED_EXCLUSIVE" | "MARKET_EDITION" | "PRESENCE") => new Set(market.evidence.filter((item) => item.kind === kind).map((item) => item.variantId)).size;
+  const exclusiveCount = countDistinctVariants("ATTESTED_EXCLUSIVE");
+  const editionCount = countDistinctVariants("MARKET_EDITION");
+  const presenceCount = countDistinctVariants("PRESENCE");
   const travelTargets = market.variants.filter((variant) => market.statuses.get(variant.id)?.inWishlist && (byKind.has(`${variant.id}:ATTESTED_EXCLUSIVE`) || byKind.has(`${variant.id}:MARKET_EDITION`)));
   return <div className="page-shell listing-page">
     <section className="page-heading country-heading"><span className="country-flag">{flags[code] ?? "🌍"}</span><div><span className="eyebrow">Marché documenté</span><h1>{names[code] ?? market.name}</h1><p>{exclusiveCount} exclusivités explicitement signalées · {editionCount} éditions locales · {presenceCount} présences documentées.</p></div></section>
