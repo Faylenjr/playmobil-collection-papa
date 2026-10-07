@@ -139,7 +139,7 @@ export async function getVariantPriceSummary(variantId: string) {
     db.offer.findMany({
       where: { OR: [{ variantId }, { product: { variants: { some: { id: variantId } } } }] },
       orderBy: { lastObservedAt: "desc" },
-      include: { retailer: { include: { market: true } }, observations: { orderBy: { observedAt: "desc" }, take: 1 } },
+      include: { retailer: { include: { market: true } }, observations: { orderBy: { observedAt: "desc" }, take: 30 } },
       take: 20,
     }),
     db.externalCandidate.findFirst({
@@ -153,7 +153,7 @@ export async function getVariantPriceSummary(variantId: string) {
     seenMarkets.add(price.marketId);
     return true;
   });
-  return { listPrices, offers, koupobolUrl: koupobolCandidate?.observations[0]?.sourceUrl ?? null };
+  return { listPrices, listPriceHistory: allListPrices, offers, koupobolUrl: koupobolCandidate?.observations[0]?.sourceUrl ?? null };
 }
 
 export async function getVariantPriceHighlights(variantIds: readonly string[], now = new Date()) {
@@ -186,7 +186,7 @@ export async function getVariantPriceHighlights(variantIds: readonly string[], n
     const usedOffers = matching.filter((offer) => offer.condition === "USED").sort((left, right) => total(left) - total(right));
     const best = newOffers[0] ?? null;
     const latest = best?.observations[0];
-    const listPrice = best?.retailer.marketId && latest ? prices.find((price) => price.marketId === best.retailer.marketId && price.currency === latest.currency) : null;
+    const listPrice = best?.retailer.marketId && latest ? prices.find((price) => !price.validUntil && price.marketId === best.retailer.marketId && price.currency === latest.currency) : null;
     const promotion = best && latest && listPrice ? calculatePromotion({ condition: best.condition, currentPrice: Number(latest.itemPrice), currentCurrency: latest.currency, currentMarket: best.retailer.market?.code ?? null, listPrice: Number(listPrice.amount), listCurrency: listPrice.currency, listMarket: listPrice.market.code, observedAt: latest.observedAt, now }) : null;
     result.set(variant.id, { bestNew: best ? { ...best, promotion } : null, bestUsed: usedOffers[0] ?? null, listPrices: prices });
   }

@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { calculatePromotion, deliveryEstimateLabel, exactReferenceInTitle, isOfferFresh, matchEbayItem, normalizeEbayCondition, relativeRefreshLabel, safeExternalOfferUrl } from "../lib/pricing";
+import { calculatePromotion, deliveryEstimateLabel, exactReferenceInTitle, isOfferFresh, latestOfficialPrice, matchEbayItem, normalizeEbayCondition, priceDrop, priceHistoryStats, relativeRefreshLabel, safeExternalOfferUrl } from "../lib/pricing";
 import { EbayApiClient, ebayAdapterConfiguration, findEbayOfferCandidates } from "../lib/ebay-adapter";
 import { persistOfferRefresh } from "../lib/offer-refresh";
 import { createEmbeddedDatabaseClient } from "../src/db/embedded";
@@ -77,6 +77,24 @@ describe("prices and offers", () => {
     expect(deliveryEstimateLabel("FR")).toBe("Livraison estimée pour la France");
     expect(deliveryEstimateLabel("FR", "77300")).toBe("Livraison estimée pour 77xxx");
     expect(relativeRefreshLabel(new Date("2026-10-07T10:00:00Z"), new Date("2026-10-07T12:15:00Z"))).toBe("Actualisé il y a 2 h");
+  });
+
+  it("distinguishes a current official price from the last known price of a retired item", () => {
+    const current = { amount: 39.99, currency: "EUR", observedAt: new Date("2026-10-01"), validUntil: null };
+    const retired = { amount: 29.99, currency: "EUR", observedAt: new Date("2026-10-02"), validUntil: new Date("2026-10-02") };
+    expect(latestOfficialPrice([current])).toMatchObject({ status: "CURRENT", price: current });
+    expect(latestOfficialPrice([current, retired])).toMatchObject({ status: "LAST_KNOWN", price: retired });
+  });
+
+  it("detects a price drop and computes delivered-price history statistics", () => {
+    const history = [
+      { itemPrice: 24.99, totalPrice: 29.99, observedAt: new Date("2026-10-03") },
+      { itemPrice: 24.99, totalPrice: 29.99, observedAt: new Date("2026-10-04") },
+      { itemPrice: 19.99, totalPrice: 22.98, observedAt: new Date("2026-10-06") },
+    ];
+    expect(priceDrop(history)).toMatchObject({ amount: 5, percentage: 5 / 24.99 });
+    expect(priceHistoryStats(history)).toMatchObject({ current: 22.98, lowest: 22.98, highest: 29.99 });
+    expect(priceDrop([history[0]!])).toBeNull();
   });
 
   it("keeps price observations append-only", async () => {

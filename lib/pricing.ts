@@ -67,6 +67,42 @@ export function relativeRefreshLabel(observedAt: Date, now = new Date()) {
   return `Actualisé il y a ${elapsedDays} j`;
 }
 
+export type OfficialPriceFact = {
+  amount: number;
+  currency: string;
+  observedAt: Date;
+  validUntil?: Date | null;
+};
+
+export function latestOfficialPrice<T extends OfficialPriceFact>(prices: readonly T[]) {
+  const latest = [...prices].sort((left, right) => right.observedAt.getTime() - left.observedAt.getTime())[0] ?? null;
+  return latest ? { price: latest, status: latest.validUntil ? "LAST_KNOWN" as const : "CURRENT" as const } : null;
+}
+
+export function priceDrop(observations: readonly { itemPrice: number; observedAt: Date }[]) {
+  const ordered = [...observations].sort((left, right) => left.observedAt.getTime() - right.observedAt.getTime());
+  if (ordered.length < 2) return null;
+  const previous = ordered.at(-2)!;
+  const current = ordered.at(-1)!;
+  const amount = previous.itemPrice - current.itemPrice;
+  if (amount <= 0 || previous.itemPrice <= 0) return null;
+  return { previous: previous.itemPrice, current: current.itemPrice, amount, percentage: amount / previous.itemPrice };
+}
+
+export function priceHistoryStats(observations: readonly { itemPrice: number; totalPrice?: number | null; observedAt: Date }[]) {
+  if (!observations.length) return null;
+  const ordered = [...observations].sort((left, right) => left.observedAt.getTime() - right.observedAt.getTime());
+  const totals = ordered.map((item) => item.totalPrice ?? item.itemPrice);
+  return {
+    current: totals.at(-1)!,
+    lowest: Math.min(...totals),
+    highest: Math.max(...totals),
+    firstObservedAt: ordered[0]!.observedAt,
+    lastObservedAt: ordered.at(-1)!.observedAt,
+    drop: priceDrop(ordered),
+  };
+}
+
 export function normalizeEbayCondition(value: string | undefined, conditionId?: string): "NEW" | "USED" | "UNKNOWN" {
   if (["1000", "1500"].includes(conditionId ?? "")) return "NEW";
   if (["2000", "2500", "2750", "3000", "4000", "5000", "6000", "7000"].includes(conditionId ?? "")) return "USED";

@@ -33,6 +33,20 @@ describe("official PLAYMOBIL audit parsing", () => {
     expect(parseOfficialPageObservation(html, "https://example.test/72168.html", "fr-FR").figureCount).toBe(2);
   });
 
+  it("keeps the catalogue price separate from the current discounted official offer", () => {
+    const html = page("de").replace("</body>", '<div class="pdpMain__price"><span class="price price--list price--strikeThrough"><span class="value" content="49.99">49,99 €</span></span><span class="price price--sale"><span class="value" content="37.99">37,99 €</span></span></div></body>');
+    expect(parseOfficialPageObservation(html, "https://example.test/72168.html", "de-DE")).toMatchObject({
+      officialPrice: { amount: 49.99, currency: "EUR" },
+      officialCurrentPrice: { amount: 37.99, currency: "EUR" },
+      isArchived: false,
+    });
+  });
+
+  it("marks only an explicit official archive box as archived", () => {
+    const html = page("fr").replace("</body>", '<div class="pdpMain__archiveInfoBox">Article retiré</div></body>');
+    expect(parseOfficialPageObservation(html, "https://example.test/72168.html", "fr-FR").isArchived).toBe(true);
+  });
+
   it("accepts an assigned unique numeric base including a suffixed market variant", () => {
     expect(isSafeOfficialCandidate({ identityClass: "ASSIGNED", baseValue: "72168", variantsUsingBase: 1 })).toBe(true);
   });

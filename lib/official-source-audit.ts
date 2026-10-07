@@ -20,7 +20,9 @@ export interface OfficialPageObservation {
   officialImages?: Array<{ url: string; kind: "box_front" | "box_back" | "main" | "gallery" }>;
   officialIdentifiers?: Array<{ type: "GTIN" | "MPN" | "OFFICIAL_SKU"; rawValue: string }>;
   breadcrumbs: string[];
+  isArchived?: boolean;
   officialPrice?: { amount: number; currency: string; availability?: string };
+  officialCurrentPrice?: { amount: number; currency: string; availability?: string };
 }
 
 const dimensionPattern = /([\d.,]+)\s*x\s*([\d.,]+)\s*x\s*([\d.,]+)\s*cm/i;
@@ -49,7 +51,6 @@ function structuredProduct($: ReturnType<typeof load>): Record<string, unknown> 
 export function parseOfficialPageObservation(html: string, sourceUrl: string, market: OfficialMarket): OfficialPageObservation {
   const $ = load(html);
   const product = structuredProduct($);
-  const bodyText = $("body").text().replace(/\s+/g, " ");
   const bodyHtml = $("body").html() ?? html;
   const reference = bodyHtml.match(/(?:Artikelnummer|Référence de l.article|Item number)\s*:\s*([A-Za-z]*\d{3,8}[A-Za-z]?)/i)?.[1]
     ?? (typeof product?.sku === "string" ? product.sku : undefined);
@@ -85,6 +86,7 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
     if (typeof value === "string" && value.trim()) officialIdentifiers.push({ type: "GTIN", rawValue: value.trim() });
   }
   const breadcrumbs = $(".breadcrumbs__list a").map((_, element) => $(element).text().replace(/\s+/g, " ").trim()).get().filter(Boolean);
+  const isArchived = $(".pdpMain__archiveInfoBox").length > 0;
   const releaseYearText = $(".badges__badge--year").first().text().trim() || breadcrumbs.findLast((value) => /^(?:19|20)\d{2}$/.test(value));
   const releaseYear = releaseYearText && /^(?:19|20)\d{2}$/.test(releaseYearText) ? Number(releaseYearText) : undefined;
   const name = typeof product?.name === "string" ? product.name : $("h1").first().text().replace(/\s+/g, " ").trim();
@@ -92,9 +94,14 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
   const offer = product?.offers && typeof product.offers === "object" ? product.offers as Record<string, unknown> : undefined;
   const offerAmount = typeof offer?.price === "number" ? offer.price : typeof offer?.price === "string" ? Number(offer.price.replace(",", ".")) : undefined;
   const offerCurrency = typeof offer?.priceCurrency === "string" && /^[A-Z]{3}$/.test(offer.priceCurrency) ? offer.priceCurrency : undefined;
-  const officialPrice = offerAmount !== undefined && Number.isFinite(offerAmount) && offerAmount >= 0 && offerCurrency
+  const currentPrice = offerAmount !== undefined && Number.isFinite(offerAmount) && offerAmount >= 0 && offerCurrency
     ? { amount: offerAmount, currency: offerCurrency, ...(typeof offer?.availability === "string" ? { availability: offer.availability } : {}) }
     : undefined;
+  const listPriceRaw = $(".pdpMain__price .price--list .value").first().attr("content");
+  const listPriceAmount = listPriceRaw ? Number(listPriceRaw.replace(",", ".")) : undefined;
+  const officialPrice = listPriceAmount !== undefined && Number.isFinite(listPriceAmount) && listPriceAmount >= 0 && offerCurrency
+    ? { amount: listPriceAmount, currency: offerCurrency, ...(typeof offer?.availability === "string" ? { availability: offer.availability } : {}) }
+    : currentPrice;
 
   return {
     market, sourceUrl, reference, ...(name ? { name } : {}), ...(description ? { description } : {}),
@@ -104,8 +111,9 @@ export function parseOfficialPageObservation(html: string, sourceUrl: string, ma
     ...(packageDimensions ? { packageDimensions } : {}),
     ...(productDimensions ? { productDimensions } : {}),
     ...(weightGrams !== undefined && Number.isFinite(weightGrams) ? { weightGrams } : {}),
-    imageKinds, ...(officialImages.length ? { officialImages } : {}),
+    imageKinds, ...(officialImages.length ? { officialImages } : {}), isArchived,
     ...(officialIdentifiers.length ? { officialIdentifiers } : {}), breadcrumbs, ...(officialPrice ? { officialPrice } : {}),
+    ...(currentPrice ? { officialCurrentPrice: currentPrice } : {}),
   };
 }
 
