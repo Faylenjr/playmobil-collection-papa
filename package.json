@@ -44,6 +44,8 @@
     "prices:apply-official-recent": "tsx scripts/apply-official-list-prices.ts --apply",
     "identifiers:audit": "tsx scripts/audit-product-identifiers.ts",
     "commerce:audit": "tsx scripts/audit-commerce-foundations.ts",
+    "commerce:refresh:kelkoo": "tsx scripts/refresh-commerce-offers.ts kelkoo",
+    "commerce:refresh:ebay": "tsx scripts/refresh-commerce-offers.ts ebay",
     "official-products:snapshot": "tsx scripts/refresh-official-import-snapshot.ts --refresh",
     "official-products:dry-run": "tsx scripts/import-official-products.ts",
     "official-products:apply": "tsx scripts/import-official-products.ts --apply",

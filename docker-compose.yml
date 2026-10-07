@@ -31,6 +31,12 @@ services:
     environment:
       DATABASE_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
       DIRECT_URL: postgresql://playmobil:playmobil@postgres:5432/playmobil
+      KELKOO_PUBLISHER_TOKEN: ${KELKOO_PUBLISHER_TOKEN:-}
+      KELKOO_COUNTRY: ${KELKOO_COUNTRY:-fr}
+      EBAY_ENVIRONMENT: ${EBAY_ENVIRONMENT:-sandbox}
+      EBAY_CLIENT_ID: ${EBAY_CLIENT_ID:-}
+      EBAY_CLIENT_SECRET: ${EBAY_CLIENT_SECRET:-}
+      EBAY_MARKETPLACE_ID: ${EBAY_MARKETPLACE_ID:-EBAY_FR}
     ports:
       - "3003:3000"
     depends_on:

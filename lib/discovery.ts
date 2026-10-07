@@ -1,6 +1,7 @@
 import { getVariantsByIds } from "./catalogue";
 import { getCollectorStatuses } from "./collector";
 import { getDatabaseClient } from "./db";
+import { calculatePromotion, isOfferFresh } from "./pricing";
 
 function distinct<T>(values: T[]) {
   return [...new Set(values)];
@@ -153,4 +154,59 @@ export async function getVariantPriceSummary(variantId: string) {
     return true;
   });
   return { listPrices, offers, koupobolUrl: koupobolCandidate?.observations[0]?.sourceUrl ?? null };
+}
+
+export async function getVariantPriceHighlights(variantIds: readonly string[], now = new Date()) {
+  if (!variantIds.length) return new Map<string, { bestNew: null; bestUsed: null; listPrices: never[] }>();
+  const db = await getDatabaseClient();
+  const variants = await db.productVariant.findMany({ where: { id: { in: [...variantIds] } }, select: { id: true, productId: true } });
+  const productIds = distinct(variants.map((variant) => variant.productId));
+  const [offers, listPrices] = await Promise.all([
+    db.offer.findMany({
+      where: { availability: "AVAILABLE", OR: [{ variantId: { in: [...variantIds] } }, { productId: { in: productIds } }] },
+      include: { retailer: { include: { market: true } }, observations: { orderBy: { observedAt: "desc" }, take: 1 } },
+      take: 1_000,
+    }),
+    db.listPriceObservation.findMany({ where: { variantId: { in: [...variantIds] } }, orderBy: { observedAt: "desc" }, include: { market: true, source: true } }),
+  ]);
+  const latestListPrices = new Map<string, typeof listPrices>();
+  for (const price of listPrices) {
+    const key = `${price.variantId}:${price.marketId}`;
+    if (!latestListPrices.has(key)) latestListPrices.set(key, [price]);
+  }
+  const total = (offer: typeof offers[number]) => {
+    const latest = offer.observations[0];
+    return latest ? Number(latest.totalPrice ?? latest.itemPrice) : Number.POSITIVE_INFINITY;
+  };
+  const result = new Map<string, { bestNew: (typeof offers[number] & { promotion: number | null }) | null; bestUsed: typeof offers[number] | null; listPrices: typeof listPrices }>();
+  for (const variant of variants) {
+    const prices = [...latestListPrices.entries()].filter(([key]) => key.startsWith(`${variant.id}:`)).flatMap(([, value]) => value);
+    const matching = offers.filter((offer) => (offer.variantId === variant.id || offer.productId === variant.productId) && offer.observations[0] && isOfferFresh(offer.lastObservedAt, now));
+    const newOffers = matching.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED").sort((left, right) => total(left) - total(right));
+    const usedOffers = matching.filter((offer) => offer.condition === "USED").sort((left, right) => total(left) - total(right));
+    const best = newOffers[0] ?? null;
+    const latest = best?.observations[0];
+    const listPrice = best?.retailer.marketId && latest ? prices.find((price) => price.marketId === best.retailer.marketId && price.currency === latest.currency) : null;
+    const promotion = best && latest && listPrice ? calculatePromotion({ condition: best.condition, currentPrice: Number(latest.totalPrice ?? latest.itemPrice), currentCurrency: latest.currency, currentMarket: best.retailer.market?.code ?? null, listPrice: Number(listPrice.amount), listCurrency: listPrice.currency, listMarket: listPrice.market.code, observedAt: latest.observedAt, now }) : null;
+    result.set(variant.id, { bestNew: best ? { ...best, promotion } : null, bestUsed: usedOffers[0] ?? null, listPrices: prices });
+  }
+  return result;
+}
+
+export async function getFreshDeals(now = new Date()) {
+  const db = await getDatabaseClient();
+  const freshSince = new Date(now.getTime() - 24 * 3_600_000);
+  const rows = await db.offer.findMany({
+    where: { variantId: { not: null }, availability: "AVAILABLE", condition: { in: ["NEW", "SEALED"] }, lastObservedAt: { gte: freshSince } },
+    orderBy: { lastObservedAt: "desc" },
+    select: { variantId: true },
+    take: 1_000,
+  });
+  const ids = distinct(rows.flatMap((row) => row.variantId ? [row.variantId] : []));
+  const [variants, highlights, statuses] = await Promise.all([getVariantsByIds(ids), getVariantPriceHighlights(ids, now), getCollectorStatuses(ids)]);
+  return variants.flatMap((variant) => {
+    const pricing = highlights.get(variant.id);
+    if (!pricing?.bestNew || pricing.bestNew.promotion === null || pricing.bestNew.promotion <= 0) return [];
+    return [{ variant, pricing, status: statuses.get(variant.id) }];
+  }).sort((left, right) => (right.pricing.bestNew?.promotion ?? 0) - (left.pricing.bestNew?.promotion ?? 0));
 }

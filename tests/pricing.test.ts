@@ -2,8 +2,9 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { calculatePromotion, exactReferenceInTitle, matchEbayItem, safeExternalOfferUrl } from "../lib/pricing";
-import { ebayAdapterConfiguration, findEbayOfferCandidates } from "../lib/ebay-adapter";
+import { calculatePromotion, exactReferenceInTitle, isOfferFresh, matchEbayItem, normalizeEbayCondition, safeExternalOfferUrl } from "../lib/pricing";
+import { EbayApiClient, ebayAdapterConfiguration, findEbayOfferCandidates } from "../lib/ebay-adapter";
+import { persistOfferRefresh } from "../lib/offer-refresh";
 import { createEmbeddedDatabaseClient } from "../src/db/embedded";
 
 const directories: string[] = [];
@@ -34,6 +35,20 @@ describe("prices and offers", () => {
     expect(ebayAdapterConfiguration({ EBAY_ENVIRONMENT: "sandbox" })).toMatchObject({ enabled: false, environment: "sandbox" });
   });
 
+  it("uses OAuth client credentials and the requested eBay marketplace", async () => {
+    const calls: Array<{ url: string; authorization: string; marketplace: string }> = [];
+    const request = async (input: string | URL | Request, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      calls.push({ url: String(input), authorization: headers.get("authorization") ?? "", marketplace: headers.get("x-ebay-c-marketplace-id") ?? "" });
+      if (String(input).includes("oauth2/token")) return new Response(JSON.stringify({ access_token: "access", expires_in: 7200 }), { status: 200 });
+      return new Response(JSON.stringify({ itemSummaries: [{ itemId: "v1|1|0", title: "PLAYMOBIL 70201 neuf", itemWebUrl: "https://www.ebay.fr/itm/1", condition: "New", price: { value: "29.99", currency: "EUR" }, shippingOptions: [{ shippingCost: { value: "4.90", currency: "EUR" } }] }] }), { status: 200 });
+    };
+    const items = await new EbayApiClient("id", "secret", "production", request as typeof fetch).search("PLAYMOBIL 70201", "EBAY_FR");
+    expect(calls[0]?.authorization).toMatch(/^Basic /);
+    expect(calls[1]).toMatchObject({ authorization: "Bearer access", marketplace: "EBAY_FR" });
+    expect(items[0]).toMatchObject({ price: { value: "29.99", currency: "EUR" }, shippingPrice: "4.90" });
+  });
+
   it("calculates a fresh comparable new promotion but never labels used goods as a promotion", () => {
     const common = { currentPrice: 30, currentCurrency: "EUR", currentMarket: "FR", listPrice: 40, listCurrency: "EUR", listMarket: "FR", observedAt: new Date("2026-10-04T10:00:00Z"), now: new Date("2026-10-04T20:00:00Z") };
     expect(calculatePromotion({ ...common, condition: "NEW" })).toBe(0.25);
@@ -41,6 +56,14 @@ describe("prices and offers", () => {
     expect(calculatePromotion({ ...common, condition: "UNKNOWN" })).toBeNull();
     expect(calculatePromotion({ ...common, condition: "NEW", currentCurrency: "USD" })).toBeNull();
     expect(calculatePromotion({ ...common, condition: "NEW", now: new Date("2026-10-07T20:01:00Z") })).toBeNull();
+  });
+
+  it("expires old offers and never invents a sealed condition from free text", () => {
+    expect(isOfferFresh(new Date("2026-10-04T10:00:00Z"), new Date("2026-10-05T09:59:00Z"))).toBe(true);
+    expect(isOfferFresh(new Date("2026-10-04T10:00:00Z"), new Date("2026-10-05T10:01:00Z"))).toBe(false);
+    expect(normalizeEbayCondition("New")).toBe("NEW");
+    expect(normalizeEbayCondition("Used")).toBe("USED");
+    expect(normalizeEbayCondition("Boîte scellée jamais ouverte")).toBe("UNKNOWN");
   });
 
   it("keeps price observations append-only", async () => {
@@ -52,6 +75,25 @@ describe("prices and offers", () => {
       const offer = await db.offer.create({ data: { retailerId: retailer.id, variantId: product.variants[0]!.id, externalId: "offer-1", url: "https://www.ebay.fr/itm/offer-1", condition: "NEW", availability: "AVAILABLE", lastObservedAt: new Date(), observations: { create: [{ itemPrice: 39.99, currency: "EUR", availability: "AVAILABLE", observedAt: new Date("2026-10-01") }, { itemPrice: 29.99, currency: "EUR", availability: "AVAILABLE", observedAt: new Date("2026-10-02") }] } }, include: { observations: true } });
       expect(offer.observations).toHaveLength(2);
       expect((await db.priceObservation.aggregate({ where: { offerId: offer.id }, _min: { itemPrice: true }, _max: { itemPrice: true } }))._min.itemPrice?.toString()).toBe("29.99");
+    } finally { await db.$disconnect(); await database.close(); }
+  }, 30_000);
+
+  it("refreshes offers idempotently, appends new observations and expires missing offers", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "playmobil-refresh-")); directories.push(directory);
+    const { db, database } = await createEmbeddedDatabaseClient(directory);
+    try {
+      await db.market.create({ data: { code: "FRANCE", name: "France" } });
+      const product = await db.product.create({ data: { canonicalKey: "refresh-product", baseReference: "70201", kind: "SET", variants: { create: { canonicalKey: "refresh-variant", name: "Station" } } }, include: { variants: true } });
+      const variantId = product.variants[0]!.id;
+      const provider = { sourceKey: "test-commerce", sourceName: "Test Commerce", sourceBaseUrl: "https://www.ebay.fr", sourceTermsUrl: "https://www.ebay.fr/help/policies/default/ebays-rules-policies?id=4205" };
+      const baseOffer = { variantId, retailerKey: "test-marketplace-fr", retailerName: "Test Marketplace", retailerBaseUrl: "https://www.ebay.fr", retailerType: "MARKETPLACE" as const, countryCode: "FR", marketCode: "FRANCE", externalId: "offer-70201", url: "https://www.ebay.fr/itm/offer-70201", condition: "NEW" as const, availability: "AVAILABLE" as const, matchConfidence: 1, matchEvidence: "EAN exact", itemPrice: 29.99, shippingPrice: 4.9, currency: "EUR", observedAt: new Date("2026-10-07T08:00:00Z") };
+      expect(await persistOfferRefresh(db, provider, [variantId], [baseOffer])).toMatchObject({ createdOffers: 1, createdObservations: 1 });
+      expect(await persistOfferRefresh(db, provider, [variantId], [baseOffer])).toMatchObject({ createdOffers: 0, createdObservations: 0 });
+      expect(await persistOfferRefresh(db, provider, [variantId], [{ ...baseOffer, itemPrice: 27.99, observedAt: new Date("2026-10-07T12:00:00Z") }])).toMatchObject({ createdObservations: 1 });
+      expect(await db.priceObservation.count()).toBe(2);
+      expect(await persistOfferRefresh(db, provider, [variantId], [])).toMatchObject({ expiredOffers: 1 });
+      expect(await db.offer.findFirst()).toMatchObject({ availability: "ENDED" });
+      expect(await db.offer.count()).toBe(1);
     } finally { await db.$disconnect(); await database.close(); }
   }, 30_000);
 });

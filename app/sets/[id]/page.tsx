@@ -7,7 +7,7 @@ import { getVariantCollectorState } from "../../../lib/collector";
 import { updateCollectionItem } from "../../actions/collector";
 import { returnLabel, sanitizeReturnTo } from "../../../lib/navigation-context";
 import { getVariantPriceSummary } from "../../../lib/discovery";
-import { calculatePromotion, marketplaceSearchLinks, safeExternalOfferUrl } from "../../../lib/pricing";
+import { calculatePromotion, isOfferFresh, marketplaceSearchLinks, safeExternalOfferUrl } from "../../../lib/pricing";
 
 type ProductPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string | string[] }> };
 
@@ -52,8 +52,9 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const klickypediaRecords = variant.sourceRecords.filter(({ source }) =>
     source.key.toLowerCase().includes("klickypedia") || source.baseUrl.toLowerCase().includes("klickypedia"),
   );
-  const newOffers = prices.offers.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED");
-  const usedOffers = prices.offers.filter((offer) => offer.condition === "USED");
+  const currentOffers = prices.offers.filter((offer) => offer.availability === "AVAILABLE" && isOfferFresh(offer.lastObservedAt));
+  const newOffers = currentOffers.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED");
+  const usedOffers = currentOffers.filter((offer) => offer.condition === "USED");
   const koupobolUrl = prices.koupobolUrl ? safeExternalOfferUrl(prices.koupobolUrl) : null;
 
   return (
@@ -170,7 +171,7 @@ function OfferGroup({ title, empty, offers, listPrices }: { title: string; empty
     const safeUrl = safeExternalOfferUrl(offer.url);
     const listPrice = latest && offer.retailer.marketId ? listPrices.find((price) => price.marketId === offer.retailer.marketId && price.currency === latest.currency) : null;
     const promotion = latest && listPrice ? calculatePromotion({ condition: offer.condition, currentPrice: Number(latest.totalPrice ?? latest.itemPrice), currentCurrency: latest.currency, currentMarket: offer.retailer.market?.code ?? null, listPrice: Number(listPrice.amount), listCurrency: listPrice.currency, listMarket: listPrice.market.code, observedAt: latest.observedAt }) : null;
-    return <article key={offer.id}><div><strong>{offer.retailer.name}</strong><span>{offer.condition === "USED" ? "Occasion" : offer.condition === "SEALED" ? "Scellé" : "Neuf"}</span></div>{latest ? <div className="offer-prices"><b>{Number(latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</b><small>Livraison {latest.shippingPrice === null ? "non renseignée" : Number(latest.shippingPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })} · Total {Number(latest.totalPrice ?? latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</small>{promotion !== null && promotion > 0 && <span className="promotion-badge">−{Math.round(promotion * 100)} % vs prix officiel</span>}</div> : <b>Prix indisponible</b>}{safeUrl && <a href={safeUrl} target="_blank" rel="noreferrer sponsored">Voir l’offre ↗</a>}</article>;
+    return <article key={offer.id}><div><strong>{offer.retailer.name}</strong><span>{offer.condition === "USED" ? "Occasion" : offer.condition === "SEALED" ? "Scellé" : "Neuf"}</span></div>{latest ? <div className="offer-prices"><b>{Number(latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</b><small>Livraison {latest.shippingPrice === null ? "non renseignée" : Number(latest.shippingPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })} · Total {Number(latest.totalPrice ?? latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</small><small>Vérifié le {latest.observedAt.toLocaleString("fr-FR")}</small>{promotion !== null && promotion > 0 && <span className="promotion-badge">−{Math.round(promotion * 100)} % vs prix officiel</span>}</div> : <b>Prix indisponible</b>}{safeUrl && <a href={safeUrl} target="_blank" rel="noreferrer sponsored">Voir l’offre ↗</a>}</article>;
   })}</div> : <p className="muted-copy">{empty}</p>}</div>;
 }
 

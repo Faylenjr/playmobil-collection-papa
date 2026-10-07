@@ -1,4 +1,4 @@
-const allowedOfferHosts = new Set(["ebay.fr", "www.ebay.fr", "leboncoin.fr", "www.leboncoin.fr", "dealabs.com", "www.dealabs.com", "kelkoo.fr", "www.kelkoo.fr", "koupobol.com", "www.koupobol.com"]);
+const allowedOfferHosts = new Set(["ebay.fr", "www.ebay.fr", "ebay.de", "www.ebay.de", "leboncoin.fr", "www.leboncoin.fr", "dealabs.com", "www.dealabs.com", "kelkoo.fr", "www.kelkoo.fr", "fr-go.kelkoogroup.net", "koupobol.com", "www.koupobol.com"]);
 
 export function safeExternalOfferUrl(value: string) {
   try {
@@ -42,7 +42,19 @@ export function calculatePromotion(input: {
   return Math.max(0, (input.listPrice - input.currentPrice) / input.listPrice);
 }
 
-export type EbaySearchItem = { itemId: string; title: string; itemWebUrl: string; price?: { value: string; currency: string }; condition?: string; gtin?: string | readonly string[] };
+export type EbaySearchItem = { itemId: string; title: string; itemWebUrl: string; price?: { value: string; currency: string }; shippingPrice?: string; condition?: string; gtin?: string | readonly string[] };
+
+export function isOfferFresh(lastObservedAt: Date, now = new Date(), maxAgeHours = 24) {
+  const age = now.getTime() - lastObservedAt.getTime();
+  return age >= 0 && age <= maxAgeHours * 3_600_000;
+}
+
+export function normalizeEbayCondition(value: string | undefined): "NEW" | "USED" | "UNKNOWN" {
+  const normalized = value?.trim().toUpperCase().replaceAll(" ", "_") ?? "";
+  if (normalized === "NEW") return "NEW";
+  if (normalized.includes("USED") || normalized.includes("PRE_OWNED") || normalized.includes("PREOWNED")) return "USED";
+  return "UNKNOWN";
+}
 
 export function matchEbayItem(item: EbaySearchItem, reference: string, eans: readonly string[] = []) {
   const observedGtins = (Array.isArray(item.gtin) ? item.gtin : item.gtin ? [item.gtin] : []).map((value) => value.replace(/\D/g, ""));
