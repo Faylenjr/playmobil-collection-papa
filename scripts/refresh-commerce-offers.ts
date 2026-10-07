@@ -105,7 +105,7 @@ async function refreshEbay(db: ReturnType<typeof getNodeDatabaseClient>) {
   const configuration = ebayAdapterConfiguration();
   if (!configuration.enabled || !process.env.EBAY_CLIENT_ID || !process.env.EBAY_CLIENT_SECRET) return { blocked: "EBAY_CLIENT_ID / EBAY_CLIENT_SECRET absents" };
   if (configuration.marketplaceId !== "EBAY_FR") return { blocked: `Marketplace refusée pour cette phase: ${configuration.marketplaceId}` };
-  const client = new EbayApiClient(process.env.EBAY_CLIENT_ID, process.env.EBAY_CLIENT_SECRET, configuration.environment);
+  const client = new EbayApiClient(process.env.EBAY_CLIENT_ID, process.env.EBAY_CLIENT_SECRET, configuration.environment, fetch, configuration.deliveryPostalCode);
   const selected = await targets(db);
   const offers: NormalizedCommerceOffer[] = [];
   const rejected: Array<{ reference: string; offerId: string; reason: string }> = [];
@@ -133,7 +133,7 @@ async function refreshEbay(db: ReturnType<typeof getNodeDatabaseClient>) {
           title: row.title,
           reason: candidate.reason,
           price: row.price?.value ?? null,
-          condition: row.condition ?? null,
+          condition: row.conditionId ? `${row.condition ?? "inconnu"} (${row.conditionId})` : row.condition ?? null,
         });
         offers.push({
           variantId: target.id,
@@ -145,7 +145,7 @@ async function refreshEbay(db: ReturnType<typeof getNodeDatabaseClient>) {
           marketCode: "FRANCE",
           externalId: row.itemId,
           url: row.itemWebUrl,
-          condition: normalizeEbayCondition(row.condition),
+          condition: normalizeEbayCondition(row.condition, row.conditionId),
           availability: "AVAILABLE",
           matchConfidence: candidate.confidence,
           matchEvidence: candidate.reason,

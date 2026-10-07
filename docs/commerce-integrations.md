@@ -37,8 +37,8 @@ ou envoyées en revue. Le coût livré n'est calculé que si le port est connu.
 ## eBay — neuf ancien et occasion
 
 L'adaptateur cible la Browse API officielle, via OAuth client credentials, avec
-`EBAY_FR` ou `EBAY_DE`. L'accès réseau réel n'est pas activé tant que les clés et
-l'éligibilité production ne sont pas disponibles.
+`EBAY_FR` ou `EBAY_DE`. Le keyset Production est actif sur le homelab ; les
+secrets restent exclusivement dans son fichier `.env` non versionné.
 
 Source : [eBay Browse API](https://developer.ebay.com/develop/api/buy/browse_api).
 
@@ -47,7 +47,8 @@ Variables attendues :
 - `EBAY_CLIENT_ID` ;
 - `EBAY_CLIENT_SECRET` ;
 - `EBAY_ENVIRONMENT=sandbox|production` ;
-- `EBAY_MARKETPLACE_ID=EBAY_FR|EBAY_DE`.
+- `EBAY_MARKETPLACE_ID=EBAY_FR|EBAY_DE` ;
+- `EBAY_DELIVERY_POSTAL_CODE` (optionnel, recommandé pour fiabiliser le port) ;
 - `EBAY_ACCOUNT_DELETION_ENDPOINT` ;
 - `EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN` (32 a 80 caracteres, secret hors Git).
 
@@ -72,6 +73,13 @@ Le matching accepte un EAN/GTIN structuré exact, ou le couple marque PLAYMOBIL 
 référence exacte isolée dans le titre. Une réponse par mots-clés seuls reste un
 candidat refusé. Les états neuf/scellé et occasion demeurent séparés ; l'occasion
 ne génère jamais de pourcentage de promotion.
+
+La recherche filtre le pays de livraison correspondant à la marketplace. Quand
+un code postal est configuré, il est aussi envoyé dans le contexte acheteur afin
+qu'eBay puisse calculer des frais de port plus précis. Les états sont normalisés
+en priorité depuis le `conditionId` stable d'eBay, et non depuis le libellé
+localisé (`Neuf`, `Occasion`, `Neu`, etc.). Aucun libellé libre ne suffit à
+inventer l'état `SEALED`.
 
 ## Leboncoin et Dealabs
 
@@ -103,8 +111,8 @@ quotas Browse pour eBay.
 
 ## État d'activation
 
-Au 7 octobre 2026, `KELKOO_PUBLISHER_TOKEN`, `EBAY_CLIENT_ID` et
-`EBAY_CLIENT_SECRET` sont absents du homelab. Les commandes s'arrêtent donc avec
-un blocage explicite avant tout appel réseau ou toute écriture. Après ajout des
-secrets hors Git, exécuter d'abord le dry-run de 20 références et contrôler les
-marchands, EAN, frais de port, URLs, états et rejets avant `--apply`.
+Au 7 octobre 2026, Kelkoo reste inactif faute de jeton Publisher. eBay Production
+est configuré et son callback de conformité est validé. Le premier dry-run de
+20 références commerciales réelles a reçu 14 annonces, toutes acceptées par la
+règle marque + référence exacte ; l'écriture reste précédée d'une sauvegarde et
+d'un second contrôle après normalisation des états localisés.

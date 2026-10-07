@@ -42,17 +42,19 @@ export function calculatePromotion(input: {
   return Math.max(0, (input.listPrice - input.currentPrice) / input.listPrice);
 }
 
-export type EbaySearchItem = { itemId: string; title: string; itemWebUrl: string; price?: { value: string; currency: string }; shippingPrice?: string; condition?: string; gtin?: string | readonly string[] };
+export type EbaySearchItem = { itemId: string; title: string; itemWebUrl: string; price?: { value: string; currency: string }; shippingPrice?: string; condition?: string; conditionId?: string; gtin?: string | readonly string[] };
 
 export function isOfferFresh(lastObservedAt: Date, now = new Date(), maxAgeHours = 24) {
   const age = now.getTime() - lastObservedAt.getTime();
   return age >= 0 && age <= maxAgeHours * 3_600_000;
 }
 
-export function normalizeEbayCondition(value: string | undefined): "NEW" | "USED" | "UNKNOWN" {
-  const normalized = value?.trim().toUpperCase().replaceAll(" ", "_") ?? "";
-  if (normalized === "NEW") return "NEW";
-  if (normalized.includes("USED") || normalized.includes("PRE_OWNED") || normalized.includes("PREOWNED")) return "USED";
+export function normalizeEbayCondition(value: string | undefined, conditionId?: string): "NEW" | "USED" | "UNKNOWN" {
+  if (["1000", "1500"].includes(conditionId ?? "")) return "NEW";
+  if (["2000", "2500", "2750", "3000", "4000", "5000", "6000", "7000"].includes(conditionId ?? "")) return "USED";
+  const normalized = value?.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replaceAll(" ", "_") ?? "";
+  if (["NEW", "NEUF", "NEU"].includes(normalized)) return "NEW";
+  if (normalized.includes("USED") || normalized.includes("OCCASION") || normalized.includes("GEBRAUCHT") || normalized.includes("PRE_OWNED") || normalized.includes("PREOWNED")) return "USED";
   return "UNKNOWN";
 }
 

@@ -33,6 +33,7 @@ export function ebayAdapterConfiguration(environment: NodeJS.ProcessEnv = proces
     enabled: Boolean(clientId && clientSecret),
     environment: environment.EBAY_ENVIRONMENT === "production" ? "production" as const : "sandbox" as const,
     marketplaceId: environment.EBAY_MARKETPLACE_ID?.trim() || "EBAY_FR",
+    deliveryPostalCode: environment.EBAY_DELIVERY_POSTAL_CODE?.trim() || null,
   };
 }
 
@@ -47,6 +48,7 @@ export class EbayApiClient implements EbayBrowseClient {
     private readonly clientSecret: string,
     private readonly environment: "sandbox" | "production" = "production",
     private readonly request: typeof fetch = fetch,
+    private readonly deliveryPostalCode: string | null = null,
   ) {}
 
   private get apiBase() { return this.environment === "production" ? "https://api.ebay.com" : "https://api.sandbox.ebay.com"; }
@@ -72,7 +74,11 @@ export class EbayApiClient implements EbayBrowseClient {
     const url = new URL(`${this.apiBase}/buy/browse/v1/item_summary/search`);
     url.searchParams.set("q", query);
     url.searchParams.set("limit", "50");
-    const response = await this.request(url, { headers: { Authorization: `Bearer ${token}`, "X-EBAY-C-MARKETPLACE-ID": marketplaceId, Accept: "application/json" } });
+    const country = marketplaceId === "EBAY_DE" ? "DE" : marketplaceId === "EBAY_FR" ? "FR" : null;
+    if (country) url.searchParams.set("filter", `deliveryCountry:${country}${this.deliveryPostalCode ? `,deliveryPostalCode:${this.deliveryPostalCode}` : ""}`);
+    const headers: Record<string, string> = { Authorization: `Bearer ${token}`, "X-EBAY-C-MARKETPLACE-ID": marketplaceId, Accept: "application/json" };
+    if (country && this.deliveryPostalCode) headers["X-EBAY-C-ENDUSERCTX"] = `contextualLocation=country%3D${country}%2Czip%3D${encodeURIComponent(this.deliveryPostalCode)}`;
+    const response = await this.request(url, { headers });
     if (!response.ok) throw new Error(`eBay Browse HTTP ${response.status}`);
     const payload = await response.json() as EbaySearchResponse;
     return (payload.itemSummaries ?? []).flatMap((row) => {
@@ -88,6 +94,7 @@ export class EbayApiClient implements EbayBrowseClient {
         title: item.title,
         itemWebUrl: item.itemWebUrl,
         ...(typeof item.condition === "string" ? { condition: item.condition } : {}),
+        ...(typeof item.conditionId === "string" ? { conditionId: item.conditionId } : {}),
         ...(typeof item.gtin === "string" || Array.isArray(item.gtin) ? { gtin: item.gtin as string | string[] } : {}),
         ...(price && typeof price.value === "string" && typeof price.currency === "string" ? { price: { value: price.value, currency: price.currency } } : {}),
         ...(shippingCost && typeof shippingCost.value === "string" ? { shippingPrice: shippingCost.value } : {}),

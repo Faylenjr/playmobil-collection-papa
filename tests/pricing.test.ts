@@ -36,17 +36,18 @@ describe("prices and offers", () => {
   });
 
   it("uses OAuth client credentials and the requested eBay marketplace", async () => {
-    const calls: Array<{ url: string; authorization: string; marketplace: string }> = [];
+    const calls: Array<{ url: string; authorization: string; marketplace: string; context: string }> = [];
     const request = async (input: string | URL | Request, init?: RequestInit) => {
       const headers = new Headers(init?.headers);
-      calls.push({ url: String(input), authorization: headers.get("authorization") ?? "", marketplace: headers.get("x-ebay-c-marketplace-id") ?? "" });
+      calls.push({ url: String(input), authorization: headers.get("authorization") ?? "", marketplace: headers.get("x-ebay-c-marketplace-id") ?? "", context: headers.get("x-ebay-c-enduserctx") ?? "" });
       if (String(input).includes("oauth2/token")) return new Response(JSON.stringify({ access_token: "access", expires_in: 7200 }), { status: 200 });
-      return new Response(JSON.stringify({ itemSummaries: [{ itemId: "v1|1|0", title: "PLAYMOBIL 70201 neuf", itemWebUrl: "https://www.ebay.fr/itm/1", condition: "New", price: { value: "29.99", currency: "EUR" }, shippingOptions: [{ shippingCost: { value: "4.90", currency: "EUR" } }] }] }), { status: 200 });
+      return new Response(JSON.stringify({ itemSummaries: [{ itemId: "v1|1|0", title: "PLAYMOBIL 70201 neuf", itemWebUrl: "https://www.ebay.fr/itm/1", condition: "Neuf", conditionId: "1000", price: { value: "29.99", currency: "EUR" }, shippingOptions: [{ shippingCost: { value: "4.90", currency: "EUR" } }] }] }), { status: 200 });
     };
-    const items = await new EbayApiClient("id", "secret", "production", request as typeof fetch).search("PLAYMOBIL 70201", "EBAY_FR");
+    const items = await new EbayApiClient("id", "secret", "production", request as typeof fetch, "75001").search("PLAYMOBIL 70201", "EBAY_FR");
     expect(calls[0]?.authorization).toMatch(/^Basic /);
-    expect(calls[1]).toMatchObject({ authorization: "Bearer access", marketplace: "EBAY_FR" });
-    expect(items[0]).toMatchObject({ price: { value: "29.99", currency: "EUR" }, shippingPrice: "4.90" });
+    expect(calls[1]).toMatchObject({ authorization: "Bearer access", marketplace: "EBAY_FR", context: "contextualLocation=country%3DFR%2Czip%3D75001" });
+    expect(calls[1]?.url).toContain("deliveryCountry%3AFR%2CdeliveryPostalCode%3A75001");
+    expect(items[0]).toMatchObject({ condition: "Neuf", conditionId: "1000", price: { value: "29.99", currency: "EUR" }, shippingPrice: "4.90" });
   });
 
   it("calculates a fresh comparable new promotion but never labels used goods as a promotion", () => {
@@ -63,6 +64,11 @@ describe("prices and offers", () => {
     expect(isOfferFresh(new Date("2026-10-04T10:00:00Z"), new Date("2026-10-05T10:01:00Z"))).toBe(false);
     expect(normalizeEbayCondition("New")).toBe("NEW");
     expect(normalizeEbayCondition("Used")).toBe("USED");
+    expect(normalizeEbayCondition("Neuf")).toBe("NEW");
+    expect(normalizeEbayCondition("Occasion")).toBe("USED");
+    expect(normalizeEbayCondition("Unbekannt", "1000")).toBe("NEW");
+    expect(normalizeEbayCondition("Unbekannt", "3000")).toBe("USED");
+    expect(normalizeEbayCondition("Neuf avec défauts", "1750")).toBe("UNKNOWN");
     expect(normalizeEbayCondition("Boîte scellée jamais ouverte")).toBe("UNKNOWN");
   });
 
