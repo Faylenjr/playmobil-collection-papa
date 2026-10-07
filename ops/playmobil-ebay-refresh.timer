@@ -1,0 +1,11 @@
+[Unit]
+Description=Rafraîchissement eBay Playmobil toutes les six heures
+
+[Timer]
+OnCalendar=*-*-* 00/6:45:00 Europe/Paris
+RandomizedDelaySec=10m
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+

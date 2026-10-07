@@ -100,6 +100,17 @@ La cadence automatique ne doit être choisie qu'après connaissance des quotas :
 quelques heures pour Kelkoo si le contrat l'autorise, et une cadence adaptée aux
 quotas Browse pour eBay.
 
+Sur le homelab, le pilote eBay est limité à 20 références commerciales et tourne
+toutes les six heures via `playmobil-ebay-refresh.timer`. Cela représente au plus
+80 recherches par jour, hors jetons OAuth. Une réponse fournisseur vide ou en
+erreur bloque l'écriture ; les offres absentes d'un rafraîchissement réussi sont
+marquées terminées, jamais supprimées. État et journaux :
+
+```bash
+systemctl status playmobil-ebay-refresh.timer
+journalctl -u playmobil-ebay-refresh.service -n 100 --no-pager
+```
+
 ## Interface
 
 - la fiche affiche uniquement les offres disponibles et fraîches, avec coût

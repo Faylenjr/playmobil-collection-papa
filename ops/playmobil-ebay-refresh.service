@@ -1,0 +1,14 @@
+[Unit]
+Description=Rafraîchissement contrôlé des offres eBay Playmobil
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/root/playmobil-collection-papa
+ExecStart=/usr/bin/docker compose run --rm --no-deps web pnpm commerce:refresh:ebay -- --limit=20 --apply
+TimeoutStartSec=10min
+Nice=10
+NoNewPrivileges=true
+
