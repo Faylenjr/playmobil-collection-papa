@@ -4,6 +4,7 @@ import { EbayApiClient, ebayAdapterConfiguration, findEbayOfferCandidates } from
 import { KelkooPublisherClient, kelkooAdapterConfiguration, matchKelkooOffer } from "../lib/kelkoo-adapter";
 import { persistOfferRefresh, type NormalizedCommerceOffer } from "../lib/offer-refresh";
 import { normalizeEbayCondition } from "../lib/pricing";
+import { classifyCollectorReference } from "../lib/collector-reference";
 
 const providerName = process.argv.find((value) => value === "kelkoo" || value === "ebay");
 const apply = process.argv.includes("--apply");
@@ -15,21 +16,36 @@ function slug(value: string) {
 }
 
 async function targets(db: ReturnType<typeof getNodeDatabaseClient>) {
-  return db.productVariant.findMany({
+  const candidates = await db.productVariant.findMany({
     where: {
       OR: [{ releaseYear: 2026 }, { releaseYear: null, product: { releaseYear: 2026 } }],
       references: { some: { identityClass: "ASSIGNED" } },
     },
     orderBy: [{ releaseDate: { sort: "desc", nulls: "last" } }, { canonicalKey: "asc" }],
-    take: limit,
+    take: Math.min(500, limit * 20),
     select: {
       id: true,
       productId: true,
       references: { where: { isPrimary: true }, take: 1, select: { baseValue: true, normalizedValue: true, displayValue: true } },
       identifiers: { where: { type: { in: ["EAN", "GTIN"] } }, select: { normalizedValue: true } },
-      product: { select: { identifiers: { where: { type: { in: ["EAN", "GTIN"] } }, select: { normalizedValue: true } } } },
+      product: { select: {
+        kind: true,
+        identifiers: { where: { type: { in: ["EAN", "GTIN"] } }, select: { normalizedValue: true } },
+      } },
     },
   });
+
+  return candidates.filter((candidate) => {
+    const reference = candidate.references[0];
+    if (!reference) return false;
+    return classifyCollectorReference({
+      ...reference,
+      identityClass: "ASSIGNED",
+      suffix: null,
+      productKind: candidate.product.kind,
+      format: null,
+    }) === "COMMERCIAL";
+  }).slice(0, limit);
 }
 
 async function refreshKelkoo(db: ReturnType<typeof getNodeDatabaseClient>) {
@@ -94,6 +110,7 @@ async function refreshEbay(db: ReturnType<typeof getNodeDatabaseClient>) {
   const offers: NormalizedCommerceOffer[] = [];
   const rejected: Array<{ reference: string; offerId: string; reason: string }> = [];
   const errors: Array<{ reference: string; error: string }> = [];
+  const acceptedSamples: Array<{ reference: string; offerId: string; title: string; reason: string; price: string | null; condition: string | null }> = [];
   const successfulTargets: string[] = [];
   let received = 0;
   for (const target of selected) {
@@ -110,6 +127,14 @@ async function refreshEbay(db: ReturnType<typeof getNodeDatabaseClient>) {
         const price = Number(row.price?.value);
         if (!Number.isFinite(price) || price < 0 || row.price?.currency !== "EUR") { rejected.push({ reference, offerId: row.itemId, reason: "Prix EUR valide absent" }); continue; }
         const shipping = row.shippingPrice === undefined ? null : Number(row.shippingPrice);
+        acceptedSamples.push({
+          reference,
+          offerId: row.itemId,
+          title: row.title,
+          reason: candidate.reason,
+          price: row.price?.value ?? null,
+          condition: row.condition ?? null,
+        });
         offers.push({
           variantId: target.id,
           retailerKey: "ebay-fr",
@@ -133,7 +158,7 @@ async function refreshEbay(db: ReturnType<typeof getNodeDatabaseClient>) {
     } catch (error) { errors.push({ reference, error: error instanceof Error ? error.message : String(error) }); }
   }
   const report = { provider: "ebay", mode: apply ? "APPLY" : "DRY_RUN", targets: selected.length, successfulTargets: successfulTargets.length, received, accepted: offers.length, rejected: rejected.length, errors };
-  if (!apply) return { ...report, rejectedSamples: rejected.slice(0, 20) };
+  if (!apply) return { ...report, acceptedSamples: acceptedSamples.slice(0, 20), rejectedSamples: rejected.slice(0, 20) };
   if (errors.length || received === 0 || offers.length === 0) return { ...report, blocked: "Écriture refusée: échantillon vide, aucun match accepté ou erreur fournisseur" };
   return { ...report, persistence: await persistOfferRefresh(db, { sourceKey: "ebay-browse", sourceName: "eBay Browse API", sourceBaseUrl: "https://www.ebay.fr", sourceTermsUrl: "https://developer.ebay.com/develop/api/buy/browse_api" }, successfulTargets, offers) };
 }
