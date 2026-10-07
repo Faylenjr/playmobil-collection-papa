@@ -21,7 +21,8 @@ export function matchKelkooOffer(item: KelkooOfferItem, input: { reference: stri
   if (normalizedEan && input.eans.includes(normalizedEan)) return { accepted: true, confidence: 1, reason: "EAN exact" };
   const playmobilBrand = item.brand?.trim().toUpperCase() === "PLAYMOBIL";
   if (playmobilBrand && exactReferenceInTitle(item.title, input.reference)) return { accepted: true, confidence: 0.95, reason: "Référence commerciale exacte et marque PLAYMOBIL" };
-  return { accepted: false, confidence: 0, reason: "Ni EAN exact ni couple référence exacte + marque PLAYMOBIL" };
+  if (!item.brand && /\bPLAYMOBIL\b/i.test(item.title) && exactReferenceInTitle(item.title, input.reference)) return { accepted: true, confidence: 0.95, reason: "Référence commerciale exacte et marque PLAYMOBIL explicite dans le titre" };
+  return { accepted: false, confidence: 0, reason: "Ni EAN/GTIN exact ni référence exacte accompagnée de la marque PLAYMOBIL" };
 }
 
 export function kelkooAdapterConfiguration(environment: NodeJS.ProcessEnv = process.env) {

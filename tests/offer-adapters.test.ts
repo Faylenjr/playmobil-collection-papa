@@ -6,7 +6,9 @@ describe("offer adapters", () => {
   it("matches Kelkoo by exact EAN before title", () => expect(matchKelkooOffer({ offerId: "1", title: "Lot de jouets", offerUrl: "https://www.kelkoo.fr/x", codeEan: "4008789722164", price: 19.99, currency: "EUR" }, { reference: "72216", eans: ["4008789722164"] })).toMatchObject({ accepted: true, confidence: 1 }));
   it("requires the PLAYMOBIL brand when Kelkoo only supplies a matching reference", () => {
     expect(matchKelkooOffer({ offerId: "1", title: "PLAYMOBIL 72216", brand: "PLAYMOBIL", offerUrl: "https://www.kelkoo.fr/x", price: 19.99, currency: "EUR" }, { reference: "72216", eans: [] }).accepted).toBe(true);
+    expect(matchKelkooOffer({ offerId: "1b", title: "PLAYMOBIL 72216 - coffret", offerUrl: "https://www.kelkoo.fr/x", price: 19.99, currency: "EUR" }, { reference: "72216", eans: [] })).toMatchObject({ accepted: true, confidence: 0.95 });
     expect(matchKelkooOffer({ offerId: "2", title: "Compatible 72216", brand: "Autre", offerUrl: "https://www.kelkoo.fr/x", price: 9.99, currency: "EUR" }, { reference: "72216", eans: [] }).accepted).toBe(false);
+    expect(matchKelkooOffer({ offerId: "3", title: "PLAYMOBIL 72216", brand: "Autre", offerUrl: "https://www.kelkoo.fr/x", price: 9.99, currency: "EUR" }, { reference: "72216", eans: [] }).accepted).toBe(false);
   });
   it("rejects a keyword-only candidate", () => expect(matchKelkooOffer({ offerId: "1", title: "PLAYMOBIL licorne", offerUrl: "https://www.kelkoo.fr/x", price: 19.99, currency: "EUR" }, { reference: "72216", eans: [] }).accepted).toBe(false));
   it("calls the Kelkoo Publisher API with the bearer token and parses delivered totals", async () => {

@@ -49,6 +49,24 @@ export function isOfferFresh(lastObservedAt: Date, now = new Date(), maxAgeHours
   return age >= 0 && age <= maxAgeHours * 3_600_000;
 }
 
+export function deliveryEstimateLabel(country: string, postalCode?: string | null) {
+  const normalizedCountry = country.trim().toUpperCase();
+  const normalizedPostalCode = postalCode?.replace(/\s+/g, "").toUpperCase() ?? "";
+  if (normalizedCountry === "FR" && /^\d{5}$/.test(normalizedPostalCode)) return `Livraison estimée pour ${normalizedPostalCode.slice(0, 2)}xxx`;
+  const countryName = normalizedCountry === "FR" ? "la France" : normalizedCountry === "DE" ? "l’Allemagne" : normalizedCountry;
+  return `Livraison estimée pour ${countryName}`;
+}
+
+export function relativeRefreshLabel(observedAt: Date, now = new Date()) {
+  const elapsedMinutes = Math.max(0, Math.floor((now.getTime() - observedAt.getTime()) / 60_000));
+  if (elapsedMinutes < 1) return "Actualisé à l’instant";
+  if (elapsedMinutes < 60) return `Actualisé il y a ${elapsedMinutes} min`;
+  const elapsedHours = Math.floor(elapsedMinutes / 60);
+  if (elapsedHours < 24) return `Actualisé il y a ${elapsedHours} h`;
+  const elapsedDays = Math.floor(elapsedHours / 24);
+  return `Actualisé il y a ${elapsedDays} j`;
+}
+
 export function normalizeEbayCondition(value: string | undefined, conditionId?: string): "NEW" | "USED" | "UNKNOWN" {
   if (["1000", "1500"].includes(conditionId ?? "")) return "NEW";
   if (["2000", "2500", "2750", "3000", "4000", "5000", "6000", "7000"].includes(conditionId ?? "")) return "USED";

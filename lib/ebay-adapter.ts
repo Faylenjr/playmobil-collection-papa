@@ -29,11 +29,14 @@ export async function findEbayOfferCandidates(
 export function ebayAdapterConfiguration(environment: NodeJS.ProcessEnv = process.env) {
   const clientId = environment.EBAY_CLIENT_ID?.trim();
   const clientSecret = environment.EBAY_CLIENT_SECRET?.trim();
+  const requestedCountry = environment.EBAY_DELIVERY_COUNTRY?.trim().toUpperCase() || "FR";
+  const requestedPostalCode = environment.EBAY_DELIVERY_POSTAL_CODE?.trim() || "";
   return {
     enabled: Boolean(clientId && clientSecret),
     environment: environment.EBAY_ENVIRONMENT === "production" ? "production" as const : "sandbox" as const,
     marketplaceId: environment.EBAY_MARKETPLACE_ID?.trim() || "EBAY_FR",
-    deliveryPostalCode: environment.EBAY_DELIVERY_POSTAL_CODE?.trim() || null,
+    deliveryCountry: /^[A-Z]{2}$/.test(requestedCountry) ? requestedCountry : "FR",
+    deliveryPostalCode: /^[A-Z0-9 -]{2,10}$/i.test(requestedPostalCode) ? requestedPostalCode : null,
   };
 }
 
@@ -48,6 +51,7 @@ export class EbayApiClient implements EbayBrowseClient {
     private readonly clientSecret: string,
     private readonly environment: "sandbox" | "production" = "production",
     private readonly request: typeof fetch = fetch,
+    private readonly deliveryCountry: string | null = null,
     private readonly deliveryPostalCode: string | null = null,
   ) {}
 
@@ -74,7 +78,7 @@ export class EbayApiClient implements EbayBrowseClient {
     const url = new URL(`${this.apiBase}/buy/browse/v1/item_summary/search`);
     url.searchParams.set("q", query);
     url.searchParams.set("limit", "50");
-    const country = marketplaceId === "EBAY_DE" ? "DE" : marketplaceId === "EBAY_FR" ? "FR" : null;
+    const country = this.deliveryCountry ?? (marketplaceId === "EBAY_DE" ? "DE" : marketplaceId === "EBAY_FR" ? "FR" : null);
     if (country) url.searchParams.set("filter", `deliveryCountry:${country}${this.deliveryPostalCode ? `,deliveryPostalCode:${this.deliveryPostalCode}` : ""}`);
     const headers: Record<string, string> = { Authorization: `Bearer ${token}`, "X-EBAY-C-MARKETPLACE-ID": marketplaceId, Accept: "application/json" };
     if (country && this.deliveryPostalCode) headers["X-EBAY-C-ENDUSERCTX"] = `contextualLocation=country%3D${country}%2Czip%3D${encodeURIComponent(this.deliveryPostalCode)}`;

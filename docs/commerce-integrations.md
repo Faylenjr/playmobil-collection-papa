@@ -11,6 +11,15 @@ JSON, XML ou CSV. L'accès passe par un compte Publisher approuvé et un jeton J
 du Publisher Center. Les droits et quotas sont propres à chaque pays ; pour ce
 projet, la configuration reste limitée à la France (`KELKOO_COUNTRY=fr`).
 
+L'inscription se fait auprès du programme Publisher, puis l'accès et les pays
+sont activés après approbation dans Publisher Center. Le JWT est construit dans
+ce centre et ne doit jamais être versionné. La réponse documentée peut fournir
+prix courant, ancien prix/remise, port, total, devise, disponibilité, EAN,
+marchand, URL de redirection et date de mise à jour. Les flux ne doivent pas être
+téléchargés plus de cinq fois par jour et par pays ; le contrat du compte peut
+ajouter ses propres limites. Tant qu'aucun token n'est présent, l'adaptateur et
+ses tests restent actifs mais aucun appel ni aucune écriture n'est effectué.
+
 Sources : [documentation Publisher](https://docs.kelkoogroup.com/for-publishers),
 [construction d'une requête](https://docs.kelkoogroup.com/for-publishers/quick-starts/how-to-build-a-shopping-api-or-reporting-api-request),
 [schéma des offres](https://docs.kelkoogroup.com/for-publishers/shopping-api-feeds/feeds-offers/offers-feeds-response).
@@ -30,9 +39,12 @@ pnpm commerce:refresh:kelkoo -- --limit=20 --apply
 La première commande est un dry-run. La seconde n'écrit que si l'échantillon
 contient au moins une réponse et un match accepté, sans erreur fournisseur.
 
-Le matching automatique accepte, dans cet ordre : EAN exact ; puis référence
-exacte isolée avec marque structurée `PLAYMOBIL`. Les autres réponses sont rejetées
-ou envoyées en revue. Le coût livré n'est calculé que si le port est connu.
+Le matching automatique accepte, dans cet ordre : EAN/GTIN exact ; puis
+référence exacte isolée avec marque structurée `PLAYMOBIL` ; enfin référence
+exacte avec `PLAYMOBIL` explicitement présent dans le titre lorsque le champ
+marque manque. Un champ marque contradictoire provoque toujours le rejet. Les
+autres réponses sont rejetées ou envoyées en revue. Le coût livré n'est calculé
+que si le port est connu.
 
 ## eBay — neuf ancien et occasion
 
@@ -48,6 +60,7 @@ Variables attendues :
 - `EBAY_CLIENT_SECRET` ;
 - `EBAY_ENVIRONMENT=sandbox|production` ;
 - `EBAY_MARKETPLACE_ID=EBAY_FR|EBAY_DE` ;
+- `EBAY_DELIVERY_COUNTRY=FR` ;
 - `EBAY_DELIVERY_POSTAL_CODE` (optionnel, recommandé pour fiabiliser le port) ;
 - `EBAY_ACCOUNT_DELETION_ENDPOINT` ;
 - `EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN` (32 a 80 caracteres, secret hors Git).
@@ -100,9 +113,14 @@ La cadence automatique ne doit être choisie qu'après connaissance des quotas :
 quelques heures pour Kelkoo si le contrat l'autorise, et une cadence adaptée aux
 quotas Browse pour eBay.
 
-Sur le homelab, le pilote eBay est limité à 20 références commerciales et tourne
-toutes les six heures via `playmobil-ebay-refresh.timer`. Cela représente au plus
-80 recherches par jour, hors jetons OAuth. Une réponse fournisseur vide ou en
+Sur le homelab, le service se réveille toutes les six heures via
+`playmobil-ebay-refresh.timer`, mais sa file est calculée : wishlist prioritaire
+toutes les 6 h, wishlist normale et nouveautés toutes les 12 h, rotation de 100
+objets possédés toutes les 24 h. Le catalogue historique restant est exclu et
+reste manuel. Avec 21 objets en wishlist, 50 nouveautés et 100 objets de
+collection par rotation, le maximum théorique courant est inférieur à 300
+recherches par jour, bien en dessous du quota Browse par défaut publié par eBay.
+Une réponse fournisseur vide ou en
 erreur bloque l'écriture ; les offres absentes d'un rafraîchissement réussi sont
 marquées terminées, jamais supprimées. État et journaux :
 

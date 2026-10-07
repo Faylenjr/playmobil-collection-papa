@@ -2,10 +2,9 @@ import type { Prisma } from "../generated/prisma/client";
 import { getDatabaseClient } from "./db";
 import { PAGE_SIZE, visibleMediaWhere } from "./catalogue";
 import { orderMediaForDisplay } from "./media";
+import { COLLECTION_NAME, COLLECTOR_EMAIL, WISHLIST_NAME } from "./collector-constants";
 
-export const COLLECTOR_EMAIL = "collectionneur@playmobil.local";
-export const COLLECTION_NAME = "Ma collection";
-export const WISHLIST_NAME = "Mes recherches";
+export { COLLECTION_NAME, COLLECTOR_EMAIL, WISHLIST_NAME } from "./collector-constants";
 
 export async function getCollectorContext(create = false) {
   const db = await getDatabaseClient();

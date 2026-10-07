@@ -7,6 +7,7 @@ import { PageJump } from "../../components/PageJump";
 import { buildInternalUrl, productHref, type SearchParamRecord } from "../../lib/navigation-context";
 import { redirect } from "next/navigation";
 import { getVariantPriceHighlights } from "../../lib/discovery";
+import { relativeRefreshLabel } from "../../lib/pricing";
 
 type Props = { searchParams: Promise<SearchParamRecord> };
 export const dynamic = "force-dynamic";
@@ -46,9 +47,10 @@ export default async function WishlistPage({ searchParams }: Props) {
         const newObservation = bestNew?.observations[0];
         const bestUsed = pricing?.bestUsed;
         const usedObservation = bestUsed?.observations[0];
+        const latestObservation = [newObservation?.observedAt, usedObservation?.observedAt].filter((value): value is Date => Boolean(value)).sort((left, right) => right.getTime() - left.getTime())[0];
         return <article className={`wishlist-row priority-${item.priority}`} key={item.id}>
           <Link className="wishlist-image" href={productHref(variant.id, returnTo)}><ProductImage src={variant.media[0]?.sourceUrl ?? null} alt={name} /></Link>
-          <div><p className="reference">{variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey}</p><h2><Link href={productHref(variant.id, returnTo)}>{name}</Link></h2><p className="priority-label">Priorité : <strong>{priorityLabel[item.priority] ?? "Normale"}</strong></p>{item.notes && <p className="item-notes">{item.notes}</p>}<div className="wishlist-prices">{officialFr && <span>Prix officiel FR <strong>{formatMoney(Number(officialFr.amount), officialFr.currency)}</strong></span>}{newObservation && <span>Meilleur neuf <strong>{formatMoney(Number(newObservation.totalPrice ?? newObservation.itemPrice), newObservation.currency)}</strong>{bestNew.promotion !== null && bestNew.promotion > 0 && <em>−{Math.round(bestNew.promotion * 100)} %</em>}</span>}{usedObservation && <span>Meilleure occasion <strong>{formatMoney(Number(usedObservation.totalPrice ?? usedObservation.itemPrice), usedObservation.currency)}</strong></span>}{!officialFr && !newObservation && !usedObservation && <small>Aucune offre suivie pour le moment.</small>}</div></div>
+          <div><p className="reference">{variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey}</p><h2><Link href={productHref(variant.id, returnTo)}>{name}</Link></h2><p className="priority-label">Priorité : <strong>{priorityLabel[item.priority] ?? "Normale"}</strong></p>{item.notes && <p className="item-notes">{item.notes}</p>}<div className="wishlist-prices"><span>Prix officiel FR <strong>{officialFr ? formatMoney(Number(officialFr.amount), officialFr.currency) : "—"}</strong></span>{newObservation && <span>Meilleure offre neuve <strong>{formatMoney(Number(newObservation.totalPrice ?? newObservation.itemPrice), newObservation.currency)}</strong>{bestNew.promotion !== null && bestNew.promotion > 0 && <em>−{Math.round(bestNew.promotion * 100)} % sur le prix article</em>}</span>}{usedObservation && <span>Meilleure occasion <strong>{formatMoney(Number(usedObservation.totalPrice ?? usedObservation.itemPrice), usedObservation.currency)}</strong></span>}{latestObservation ? <small>{relativeRefreshLabel(latestObservation)}</small> : <small>Aucune offre eBay fiable actuellement.</small>}</div></div>
           <div className="wishlist-actions">
             <form action={update}><label>Priorité<select name="priority" defaultValue={item.priority}><option value="0">Normale</option><option value="1">Souhaitée</option><option value="2">Importante</option><option value="3">Prioritaire</option></select></label><label>Note<input name="notes" defaultValue={item.notes ?? ""} /></label><button type="submit">Enregistrer</button></form>
             <form action={add}><button className="primary-action" type="submit">Passer dans ma collection</button></form>

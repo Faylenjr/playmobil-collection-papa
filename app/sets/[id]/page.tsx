@@ -7,7 +7,7 @@ import { getVariantCollectorState } from "../../../lib/collector";
 import { updateCollectionItem } from "../../actions/collector";
 import { returnLabel, sanitizeReturnTo } from "../../../lib/navigation-context";
 import { getVariantPriceSummary } from "../../../lib/discovery";
-import { calculatePromotion, isOfferFresh, marketplaceSearchLinks, safeExternalOfferUrl } from "../../../lib/pricing";
+import { calculatePromotion, deliveryEstimateLabel, isOfferFresh, marketplaceSearchLinks, relativeRefreshLabel, safeExternalOfferUrl } from "../../../lib/pricing";
 
 type ProductPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string | string[] }> };
 
@@ -53,9 +53,11 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
     source.key.toLowerCase().includes("klickypedia") || source.baseUrl.toLowerCase().includes("klickypedia"),
   );
   const currentOffers = prices.offers.filter((offer) => offer.availability === "AVAILABLE" && isOfferFresh(offer.lastObservedAt));
-  const newOffers = currentOffers.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED");
-  const usedOffers = currentOffers.filter((offer) => offer.condition === "USED");
+  const deliveredTotal = (offer: typeof currentOffers[number]) => Number(offer.observations[0]?.totalPrice ?? offer.observations[0]?.itemPrice ?? Number.POSITIVE_INFINITY);
+  const newOffers = currentOffers.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED").sort((left, right) => deliveredTotal(left) - deliveredTotal(right));
+  const usedOffers = currentOffers.filter((offer) => offer.condition === "USED").sort((left, right) => deliveredTotal(left) - deliveredTotal(right));
   const koupobolUrl = prices.koupobolUrl ? safeExternalOfferUrl(prices.koupobolUrl) : null;
+  const deliveryLabel = deliveryEstimateLabel(process.env.EBAY_DELIVERY_COUNTRY ?? "FR", process.env.EBAY_DELIVERY_POSTAL_CODE);
 
   return (
     <div className="page-shell detail-page">
@@ -107,6 +109,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
       <section className="price-panel">
         <div className="section-heading"><span className="eyebrow">Prix et disponibilités</span><h2>Où trouver ce Playmobil ?</h2></div>
         {prices.listPrices.length > 0 ? <div className="list-price-grid">{prices.listPrices.map((price) => <div className="detail-field" key={price.id}><dt>Prix conseillé · {price.market.name}</dt><dd>{Number(price.amount).toLocaleString("fr-FR", { style: "currency", currency: price.currency })}</dd><small>{price.source.name} · observé le {price.observedAt.toLocaleDateString("fr-FR")}</small></div>)}</div> : <p className="muted-copy">Prix conseillé non documenté pour le moment.</p>}
+        <p className="muted-copy">{deliveryLabel}. Le classement privilégie le total livré lorsqu’il est connu.</p>
         <OfferGroup title="Offres neuves" empty="Aucune offre neuve suivie pour le moment." offers={newOffers} listPrices={prices.listPrices} />
         <OfferGroup title="Occasion" empty="Aucune offre d’occasion suivie pour le moment." offers={usedOffers} listPrices={prices.listPrices} />
         {reference && <div className="manual-market-links">{koupobolUrl && <a href={koupobolUrl} target="_blank" rel="noreferrer sponsored">Voir les prix sur Koupobol ↗</a>}<a href={marketplaceSearchLinks(reference).ebay} target="_blank" rel="noreferrer">Voir sur eBay ↗</a><a href={marketplaceSearchLinks(reference).leboncoin} target="_blank" rel="noreferrer">Voir sur Leboncoin ↗</a><a href={marketplaceSearchLinks(reference).dealabs} target="_blank" rel="noreferrer">Rechercher sur Dealabs ↗</a></div>}
@@ -170,8 +173,8 @@ function OfferGroup({ title, empty, offers, listPrices }: { title: string; empty
     const latest = offer.observations[0];
     const safeUrl = safeExternalOfferUrl(offer.url);
     const listPrice = latest && offer.retailer.marketId ? listPrices.find((price) => price.marketId === offer.retailer.marketId && price.currency === latest.currency) : null;
-    const promotion = latest && listPrice ? calculatePromotion({ condition: offer.condition, currentPrice: Number(latest.totalPrice ?? latest.itemPrice), currentCurrency: latest.currency, currentMarket: offer.retailer.market?.code ?? null, listPrice: Number(listPrice.amount), listCurrency: listPrice.currency, listMarket: listPrice.market.code, observedAt: latest.observedAt }) : null;
-    return <article key={offer.id}><div><strong>{offer.retailer.name}</strong><span>{offer.condition === "USED" ? "Occasion" : offer.condition === "SEALED" ? "Scellé" : "Neuf"}</span></div>{latest ? <div className="offer-prices"><b>{Number(latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</b><small>Livraison {latest.shippingPrice === null ? "non renseignée" : Number(latest.shippingPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })} · Total {Number(latest.totalPrice ?? latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</small><small>Vérifié le {latest.observedAt.toLocaleString("fr-FR")}</small>{promotion !== null && promotion > 0 && <span className="promotion-badge">−{Math.round(promotion * 100)} % vs prix officiel</span>}</div> : <b>Prix indisponible</b>}{safeUrl && <a href={safeUrl} target="_blank" rel="noreferrer sponsored">Voir l’offre ↗</a>}</article>;
+    const promotion = latest && listPrice ? calculatePromotion({ condition: offer.condition, currentPrice: Number(latest.itemPrice), currentCurrency: latest.currency, currentMarket: offer.retailer.market?.code ?? null, listPrice: Number(listPrice.amount), listCurrency: listPrice.currency, listMarket: listPrice.market.code, observedAt: latest.observedAt }) : null;
+    return <article key={offer.id}><div><strong>{offer.retailer.name}</strong><span>{offer.condition === "USED" ? "Occasion" : offer.condition === "SEALED" ? "Scellé" : "Neuf"} · {offer.availability === "AVAILABLE" ? "Disponible" : offer.availability}</span></div>{latest ? <div className="offer-prices"><b>{Number(latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</b><small>Livraison {latest.shippingPrice === null ? "non renseignée" : Number(latest.shippingPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })} · Total {Number(latest.totalPrice ?? latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</small><small>{relativeRefreshLabel(latest.observedAt)} · {latest.observedAt.toLocaleString("fr-FR")}</small>{promotion !== null && promotion > 0 && <span className="promotion-badge">−{Math.round(promotion * 100)} % sur le prix article</span>}</div> : <b>Prix indisponible</b>}{safeUrl && <a href={safeUrl} target="_blank" rel="noreferrer sponsored">Voir l’offre ↗</a>}</article>;
   })}</div> : <p className="muted-copy">{empty}</p>}</div>;
 }
 

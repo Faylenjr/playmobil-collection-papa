@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { calculatePromotion, exactReferenceInTitle, isOfferFresh, matchEbayItem, normalizeEbayCondition, safeExternalOfferUrl } from "../lib/pricing";
+import { calculatePromotion, deliveryEstimateLabel, exactReferenceInTitle, isOfferFresh, matchEbayItem, normalizeEbayCondition, relativeRefreshLabel, safeExternalOfferUrl } from "../lib/pricing";
 import { EbayApiClient, ebayAdapterConfiguration, findEbayOfferCandidates } from "../lib/ebay-adapter";
 import { persistOfferRefresh } from "../lib/offer-refresh";
 import { createEmbeddedDatabaseClient } from "../src/db/embedded";
@@ -33,6 +33,7 @@ describe("prices and offers", () => {
     ] }, "70201");
     expect(candidates.map(({ accepted }) => accepted)).toEqual([true, false]);
     expect(ebayAdapterConfiguration({ EBAY_ENVIRONMENT: "sandbox" })).toMatchObject({ enabled: false, environment: "sandbox" });
+    expect(ebayAdapterConfiguration({ EBAY_CLIENT_ID: "id", EBAY_CLIENT_SECRET: "secret" })).toMatchObject({ enabled: true, deliveryCountry: "FR", deliveryPostalCode: null });
   });
 
   it("uses OAuth client credentials and the requested eBay marketplace", async () => {
@@ -43,7 +44,7 @@ describe("prices and offers", () => {
       if (String(input).includes("oauth2/token")) return new Response(JSON.stringify({ access_token: "access", expires_in: 7200 }), { status: 200 });
       return new Response(JSON.stringify({ itemSummaries: [{ itemId: "v1|1|0", title: "PLAYMOBIL 70201 neuf", itemWebUrl: "https://www.ebay.fr/itm/1", condition: "Neuf", conditionId: "1000", price: { value: "29.99", currency: "EUR" }, shippingOptions: [{ shippingCost: { value: "4.90", currency: "EUR" } }] }] }), { status: 200 });
     };
-    const items = await new EbayApiClient("id", "secret", "production", request as typeof fetch, "75001").search("PLAYMOBIL 70201", "EBAY_FR");
+    const items = await new EbayApiClient("id", "secret", "production", request as typeof fetch, "FR", "75001").search("PLAYMOBIL 70201", "EBAY_FR");
     expect(calls[0]?.authorization).toMatch(/^Basic /);
     expect(calls[1]).toMatchObject({ authorization: "Bearer access", marketplace: "EBAY_FR", context: "contextualLocation=country%3DFR%2Czip%3D75001" });
     expect(calls[1]?.url).toContain("deliveryCountry%3AFR%2CdeliveryPostalCode%3A75001");
@@ -70,6 +71,12 @@ describe("prices and offers", () => {
     expect(normalizeEbayCondition("Unbekannt", "3000")).toBe("USED");
     expect(normalizeEbayCondition("Neuf avec défauts", "1750")).toBe("UNKNOWN");
     expect(normalizeEbayCondition("Boîte scellée jamais ouverte")).toBe("UNKNOWN");
+  });
+
+  it("keeps delivery useful without exposing a full French postal code", () => {
+    expect(deliveryEstimateLabel("FR")).toBe("Livraison estimée pour la France");
+    expect(deliveryEstimateLabel("FR", "77300")).toBe("Livraison estimée pour 77xxx");
+    expect(relativeRefreshLabel(new Date("2026-10-07T10:00:00Z"), new Date("2026-10-07T12:15:00Z"))).toBe("Actualisé il y a 2 h");
   });
 
   it("keeps price observations append-only", async () => {

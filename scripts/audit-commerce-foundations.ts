@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { getNodeDatabaseClient } from "../lib/db-node";
+import { selectCommerceTargets } from "../lib/commerce-targets-node";
 
 type CountRow = { count: bigint };
 
@@ -19,7 +20,7 @@ async function main() {
       ["PriceObservation", db.priceObservation.count()],
     ] as const;
 
-    const [counts, identifiers, pricesByMarket, priceCoverage2026, candidateStatuses, provenanceColumn] = await Promise.all([
+    const [counts, identifiers, pricesByMarket, priceCoverage2026, candidateStatuses, provenanceColumn, offersBySource, offerCoverage, promotionCoverage, targetPlan] = await Promise.all([
       Promise.all(countQueries.map(async ([model, query]) => [model, await query] as const)),
       db.$queryRaw<Array<{ type: string; observations: bigint; unique_values: bigint; products: bigint; variants: bigint }>>`
         SELECT type::text,
@@ -56,6 +57,45 @@ async function main() {
           WHERE table_schema = 'public' AND table_name = 'product_identifiers'
             AND column_name = 'source_record_id'
         ) AS exists`,
+      db.$queryRaw<Array<{ source: string; offers: bigint; variants: bigint; observations: bigint }>>`
+        SELECT COALESCE(s.key, 'unknown') AS source,
+               count(DISTINCT o.id)::bigint AS offers,
+               count(DISTINCT o.variant_id)::bigint AS variants,
+               count(po.id)::bigint AS observations
+        FROM offers o
+        JOIN retailers r ON r.id = o.retailer_id
+        LEFT JOIN sources s ON s.id = r.source_id
+        LEFT JOIN price_observations po ON po.offer_id = o.id
+        GROUP BY COALESCE(s.key, 'unknown') ORDER BY source`,
+      db.$queryRaw<Array<{ source: string; variants: bigint; new_variants: bigint; used_variants: bigint }>>`
+        SELECT COALESCE(s.key, 'unknown') AS source,
+               count(DISTINCT o.variant_id)::bigint AS variants,
+               count(DISTINCT o.variant_id) FILTER (WHERE o.condition IN ('NEW', 'SEALED'))::bigint AS new_variants,
+               count(DISTINCT o.variant_id) FILTER (WHERE o.condition = 'USED')::bigint AS used_variants
+        FROM offers o
+        JOIN retailers r ON r.id = o.retailer_id
+        LEFT JOIN sources s ON s.id = r.source_id
+        WHERE o.availability = 'AVAILABLE'
+        GROUP BY COALESCE(s.key, 'unknown') ORDER BY source`,
+      db.$queryRaw<Array<{ variants: bigint }>>`
+        WITH latest_offer_price AS (
+          SELECT DISTINCT ON (po.offer_id) po.offer_id, po.item_price, po.currency, po.observed_at
+          FROM price_observations po ORDER BY po.offer_id, po.observed_at DESC
+        ), latest_list_price AS (
+          SELECT DISTINCT ON (lp.variant_id, lp.market_id, lp.currency)
+                 lp.variant_id, lp.market_id, lp.currency, lp.amount
+          FROM list_price_observations lp
+          ORDER BY lp.variant_id, lp.market_id, lp.currency, lp.observed_at DESC
+        )
+        SELECT count(DISTINCT o.variant_id)::bigint AS variants
+        FROM offers o
+        JOIN retailers r ON r.id = o.retailer_id
+        JOIN latest_offer_price po ON po.offer_id = o.id
+        JOIN latest_list_price lp ON lp.variant_id = o.variant_id AND lp.market_id = r.market_id AND lp.currency = po.currency
+        WHERE o.availability = 'AVAILABLE' AND o.condition IN ('NEW', 'SEALED')
+          AND o.last_observed_at >= now() - interval '24 hours'
+          AND po.item_price < lp.amount`,
+      selectCommerceTargets(db, { scheduled: false, limit: 500 }),
     ]);
 
     let linkedSourceRecords: number | null = null;
@@ -71,6 +111,16 @@ async function main() {
       officialPrices: pricesByMarket.map((row) => ({ market: row.market, observations: Number(row.observations), variants: Number(row.variants) })),
       priceCoverage2026: priceCoverage2026.map((row) => ({ market: row.market, referencesWithPrice: Number(row.references_with_price) })),
       candidates: Object.fromEntries(candidateStatuses.map((row) => [row.status, Number(row.count)])),
+      tracking: {
+        candidates: targetPlan.candidates,
+        selectedWithinSafetyLimit: targetPlan.selected.length,
+        selectedByReason: targetPlan.selectedByReason,
+        cycleLimit: 250,
+        rationale: "priorité wishlist, puis nouveautés, puis rotation collection; catalogue historique exclu des cycles automatiques",
+      },
+      offersBySource: offersBySource.map((row) => ({ source: row.source, offers: Number(row.offers), variants: Number(row.variants), observations: Number(row.observations) })),
+      activeOfferCoverage: offerCoverage.map((row) => ({ source: row.source, variants: Number(row.variants), withNew: Number(row.new_variants), withUsed: Number(row.used_variants) })),
+      promotionComparableVariants: Number(promotionCoverage[0]?.variants ?? 0),
       adapters: {
         kelkoo: { configured: Boolean(process.env.KELKOO_PUBLISHER_TOKEN?.trim()), country: process.env.KELKOO_COUNTRY?.trim().toLowerCase() || "fr" },
         ebay: { configured: Boolean(process.env.EBAY_CLIENT_ID?.trim() && process.env.EBAY_CLIENT_SECRET?.trim()), marketplace: process.env.EBAY_MARKETPLACE_ID?.trim() || "EBAY_FR" },

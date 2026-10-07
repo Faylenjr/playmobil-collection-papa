@@ -187,7 +187,7 @@ export async function getVariantPriceHighlights(variantIds: readonly string[], n
     const best = newOffers[0] ?? null;
     const latest = best?.observations[0];
     const listPrice = best?.retailer.marketId && latest ? prices.find((price) => price.marketId === best.retailer.marketId && price.currency === latest.currency) : null;
-    const promotion = best && latest && listPrice ? calculatePromotion({ condition: best.condition, currentPrice: Number(latest.totalPrice ?? latest.itemPrice), currentCurrency: latest.currency, currentMarket: best.retailer.market?.code ?? null, listPrice: Number(listPrice.amount), listCurrency: listPrice.currency, listMarket: listPrice.market.code, observedAt: latest.observedAt, now }) : null;
+    const promotion = best && latest && listPrice ? calculatePromotion({ condition: best.condition, currentPrice: Number(latest.itemPrice), currentCurrency: latest.currency, currentMarket: best.retailer.market?.code ?? null, listPrice: Number(listPrice.amount), listCurrency: listPrice.currency, listMarket: listPrice.market.code, observedAt: latest.observedAt, now }) : null;
     result.set(variant.id, { bestNew: best ? { ...best, promotion } : null, bestUsed: usedOffers[0] ?? null, listPrices: prices });
   }
   return result;
@@ -208,5 +208,11 @@ export async function getFreshDeals(now = new Date()) {
     const pricing = highlights.get(variant.id);
     if (!pricing?.bestNew || pricing.bestNew.promotion === null || pricing.bestNew.promotion <= 0) return [];
     return [{ variant, pricing, status: statuses.get(variant.id) }];
-  }).sort((left, right) => (right.pricing.bestNew?.promotion ?? 0) - (left.pricing.bestNew?.promotion ?? 0));
+  }).sort((left, right) => {
+    const leftObservation = left.pricing.bestNew?.observations[0];
+    const rightObservation = right.pricing.bestNew?.observations[0];
+    const leftTotal = leftObservation ? Number(leftObservation.totalPrice ?? leftObservation.itemPrice) : Number.POSITIVE_INFINITY;
+    const rightTotal = rightObservation ? Number(rightObservation.totalPrice ?? rightObservation.itemPrice) : Number.POSITIVE_INFINITY;
+    return leftTotal - rightTotal || (right.pricing.bestNew?.promotion ?? 0) - (left.pricing.bestNew?.promotion ?? 0);
+  });
 }
