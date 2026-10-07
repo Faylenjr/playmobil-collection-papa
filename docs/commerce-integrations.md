@@ -48,6 +48,15 @@ Variables attendues :
 - `EBAY_CLIENT_SECRET` ;
 - `EBAY_ENVIRONMENT=sandbox|production` ;
 - `EBAY_MARKETPLACE_ID=EBAY_FR|EBAY_DE`.
+- `EBAY_ACCOUNT_DELETION_ENDPOINT` ;
+- `EBAY_ACCOUNT_DELETION_VERIFICATION_TOKEN` (32 a 80 caracteres, secret hors Git).
+
+Le keyset Production doit etre abonne aux notifications de suppression de compte
+eBay avant son premier appel. Le callback
+`/api/ebay/account-deletion` repond au challenge officiel, accuse reception des
+notifications valides et ne journalise ni ne conserve leurs identifiants. Le
+catalogue ne stocke aucun compte ni aucune donnee personnelle de membre eBay ;
+les offres publiques et leurs prix restent independants de ces identifiants.
 
 Test contrôlé France :
 
