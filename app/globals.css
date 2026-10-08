@@ -312,7 +312,7 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .discovery-card strong, .discovery-card small { display: block; margin-top: 8px; }
 .discovery-card strong { color: var(--blue-700); }
 .discovery-products { margin-top: 28px; }
-.country-flag { display: inline-flex; width: 58px; aspect-ratio: 3 / 2; flex: 0 0 auto; overflow: hidden; border: 1px solid #c8d1dc; border-radius: 8px; box-shadow: 0 3px 9px rgb(19 48 73 / 14%); background: white; }
+.country-flag { display: inline-flex; width: 58px; aspect-ratio: 3 / 2; flex: 0 0 auto; align-self: flex-start; overflow: hidden; border: 1px solid #c8d1dc; border-radius: 8px; box-shadow: 0 3px 9px rgb(19 48 73 / 14%); background: white; }
 .country-flag img { width: 100%; height: 100%; object-fit: cover; }
 .country-flag.large { width: 96px; border-radius: 12px; }
 .country-card small { display: block; margin-top: 12px; color: var(--muted); }

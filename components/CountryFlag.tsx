@@ -1,17 +1,6 @@
-const marketCountries: Record<string, { name: string; flag: string }> = {
-  GERMANY: { name: "Allemagne", flag: "de" },
-  FRANCE: { name: "France", flag: "fr" },
-  ITALY: { name: "Italie", flag: "it" },
-  NETHERLANDS: { name: "Pays-Bas", flag: "nl" },
-  BELGIUM: { name: "Belgique", flag: "be" },
-  "USA-PLAYMOBIL": { name: "États-Unis", flag: "us" },
-  "SPAIN-PLAYMOBIL": { name: "Espagne", flag: "es" },
-  "UK-PLAYMOBIL": { name: "Royaume-Uni", flag: "gb" },
-};
+import { marketCountries, marketDisplayName } from "../lib/country-markets";
 
-export function marketDisplayName(code: string, fallback: string) {
-  return marketCountries[code]?.name ?? fallback;
-}
+export { marketDisplayName };
 
 export function CountryFlag({ code, label, large = false }: { code: string; label: string; large?: boolean }) {
   const flag = marketCountries[code]?.flag;
