@@ -29,6 +29,11 @@ function Field({ label, value }: { label: string; value: string | number | null 
   return <div className="detail-field"><dt>{label}</dt><dd>{value}</dd></div>;
 }
 
+function LinkedField({ label, links }: { label: string; links: Array<{ href: string; label: string }> }) {
+  if (!links.length) return null;
+  return <div className="detail-field"><dt>{label}</dt><dd className="metadata-links">{links.map((link, index) => <span key={`${link.href}-${link.label}`}>{index > 0 ? ", " : ""}<Link href={link.href}>{link.label}</Link></span>)}</dd></div>;
+}
+
 export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const id = (await params).id;
   const returnTo = sanitizeReturnTo((await searchParams).returnTo);
@@ -79,15 +84,17 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
           <h1>{name}</h1>
           {(variant.description ?? variant.product.description) && <p className="description">{variant.description ?? variant.product.description}</p>}
           <dl className="detail-grid">
-            <Field label="Année" value={year} />
+            <LinkedField label="Année" links={year ? [{ href: `/catalogue?year=${year}`, label: String(year) }] : []} />
             <Field label="Titre original" value={originalName && originalName !== name ? originalName : null} />
-            <Field label="Marché" value={variant.markets.map(({ market }) => market.name).join(", ")} />
+            <LinkedField label="Marchés" links={variant.markets.map(({ market }) => ({ href: `/pays/${encodeURIComponent(market.code)}`, label: market.name }))} />
             <Field label="Format" value={variant.format} />
             <Field label="Variante" value={variant.variantLabel} />
             <Field label="Pièces" value={variant.pieceCount} />
             <Field label="Figurines" value={variant.figureCount} />
             <Field label="Âge" value={variant.ageMin || variant.ageMax ? `${variant.ageMin ?? "?"}–${variant.ageMax ?? "?"} ans` : null} />
-            <Field label="Thème" value={themes.map(({ theme }) => getFrenchThemeName(theme)).join(", ")} />
+            <LinkedField label="Thèmes" links={themes.map(({ theme }) => ({ href: `/themes/${encodeURIComponent(theme.slug)}`, label: getFrenchThemeName(theme) }))} />
+            <LinkedField label="Gammes" links={variant.product.rangeMemberships.map(({ range }) => ({ href: `/gammes/${range.slug}`, label: range.canonicalName }))} />
+            <LinkedField label="Vagues" links={variant.product.releaseWaveItems.map(({ releaseWave }) => ({ href: `/nouveautes?year=${releaseWave.releaseYear}#${releaseWave.slug}`, label: releaseWave.name }))} />
           </dl>
         </div>
       </section>

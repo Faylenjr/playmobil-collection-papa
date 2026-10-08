@@ -24,7 +24,7 @@ export default async function CollectionPage({ searchParams }: Props) {
   const pageHref = (target: number) => { const search = new URLSearchParams(); if (query) search.set("q", query); if (theme) search.set("theme", theme); if (sort !== "recent") search.set("sort", sort); if (target > 1) search.set("page", String(target)); return `/collection${search.size ? `?${search}` : ""}`; };
   return (
     <div className="page-shell listing-page">
-      <section className="page-heading collector-page-heading collection-heading"><div><span className="eyebrow">Mon inventaire</span><h1>Ma collection</h1><p>Les boîtes et objets que je possède déjà.</p></div><strong>{result.total.toLocaleString("fr-FR")}<small>objet{result.total > 1 ? "s" : ""}</small></strong></section>
+      <section className="page-heading collector-page-heading collection-heading"><div><span className="eyebrow">Mon inventaire</span><h1>Ma collection</h1><p>Les boîtes et objets que je possède déjà.</p><Link className="inline-collector-link" href="/collection/statistiques">Voir mes statistiques et mes multiples →</Link></div><strong>{result.total.toLocaleString("fr-FR")}<small>objet{result.total > 1 ? "s" : ""}</small></strong></section>
       <form className="filter-form" method="get">
         <label>Rechercher<input name="q" type="search" defaultValue={query} placeholder="Nom ou référence…" /></label>
         <label>Thème<select name="theme" defaultValue={theme}><option value="">Tous les thèmes</option>{themes.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></label>

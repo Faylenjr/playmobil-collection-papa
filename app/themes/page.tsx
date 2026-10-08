@@ -14,7 +14,7 @@ export default async function ThemesPage() {
         <p>Choisissez un univers visuel. Dans chaque thème, les grands sets et les boîtes complètes apparaissent en premier.</p>
       </section>
       <section className="theme-grid" aria-label="Thèmes du catalogue">
-        {themes.map((theme) => <ThemeCard theme={theme} key={theme.slug} />)}
+        {themes.map((theme) => <ThemeCard href={`/themes/${theme.slug}`} theme={theme} key={theme.slug} />)}
         {collectorCategories.map((category) => <ThemeCard href={`/themes/${category.slug}`} theme={{ slug: category.slug, name: category.name, count: category.total, imageUrl: category.imageUrl }} key={`collector-${category.slug}`} />)}
       </section>
     </div>

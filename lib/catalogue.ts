@@ -345,7 +345,13 @@ const getVariantCached = cache(async (id: string) => {
   const variant = await db.productVariant.findUnique({
     where: { id },
     include: {
-      product: { include: { translations: true, themes: { include: { theme: true } }, identifiers: { include: { source: true, market: true }, orderBy: { createdAt: "asc" } } } },
+      product: { include: {
+        translations: true,
+        themes: { include: { theme: true } },
+        identifiers: { include: { source: true, market: true }, orderBy: { createdAt: "asc" } },
+        rangeMemberships: { include: { range: { select: { slug: true, canonicalName: true } } }, orderBy: { range: { canonicalName: "asc" } } },
+        releaseWaveItems: { include: { releaseWave: { select: { slug: true, name: true, releaseYear: true } } }, orderBy: { releaseWave: { periodStart: "desc" } } },
+      } },
       references: { orderBy: [{ isPrimary: "desc" }, { displayValue: "asc" }] },
       translations: { orderBy: { locale: "asc" } },
       themes: { include: { theme: true }, orderBy: { isPrimary: "desc" } },
