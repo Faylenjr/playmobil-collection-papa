@@ -1,10 +1,11 @@
 import { getThemes } from "../../lib/catalogue";
 import { ThemeCard } from "../../components/ThemeCard";
+import { getCollectorCategories } from "../../lib/discovery";
 
 export const dynamic = "force-dynamic";
 
 export default async function ThemesPage() {
-  const themes = await getThemes(36);
+  const [themes, collectorCategories] = await Promise.all([getThemes(36), getCollectorCategories()]);
   return (
     <div className="page-shell listing-page">
       <section className="page-heading themes-heading">
@@ -14,6 +15,7 @@ export default async function ThemesPage() {
       </section>
       <section className="theme-grid" aria-label="Thèmes du catalogue">
         {themes.map((theme) => <ThemeCard theme={theme} key={theme.slug} />)}
+        {collectorCategories.map((category) => <ThemeCard href={`/themes/${category.slug}`} theme={{ slug: category.slug, name: category.name, count: category.total, imageUrl: category.imageUrl }} key={`collector-${category.slug}`} />)}
       </section>
     </div>
   );

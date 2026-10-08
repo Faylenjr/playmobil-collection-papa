@@ -4,11 +4,12 @@ import { ProductImage } from "./ProductImage";
 type ThemeCardProps = {
   theme: { slug: string; name: string; count: number; imageUrl?: string | null };
   compact?: boolean;
+  href?: string;
 };
 
-export function ThemeCard({ theme, compact = false }: ThemeCardProps) {
+export function ThemeCard({ theme, compact = false, href }: ThemeCardProps) {
   return (
-    <Link className={`theme-card ${compact ? "theme-card--compact" : ""}`} href={`/catalogue?theme=${encodeURIComponent(theme.slug)}`}>
+    <Link className={`theme-card ${compact ? "theme-card--compact" : ""}`} href={href ?? `/catalogue?theme=${encodeURIComponent(theme.slug)}`}>
       <span className="theme-card__media"><ProductImage src={theme.imageUrl ?? null} alt={`Univers ${theme.name}`} /></span>
       <span className="theme-card__shade" aria-hidden="true" />
       <span className="theme-card__content">

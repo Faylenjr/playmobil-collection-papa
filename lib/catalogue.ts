@@ -3,6 +3,7 @@ import { cache } from "react";
 import { getDatabaseClient } from "./db";
 import { getFrenchNames, getPreferredDisplayName } from "./display-name";
 import { orderMediaForDisplay } from "./media";
+import { getFrenchThemeName } from "./theme-names";
 import {
   collectorFactsCtesSql,
   collectorFactsJoinsSql,
@@ -146,7 +147,12 @@ export async function getVariantsByIds(ids: string[]) {
   const byId = new Map(unordered.map((variant) => [variant.id, variant]));
   return ids.flatMap((id) => {
     const variant = byId.get(id);
-    return variant ? [{ ...variant, media: orderMediaForDisplay(variant.media), displayName: getPreferredDisplayName({ frenchName: frenchNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }) }] : [];
+    return variant ? [{
+      ...variant,
+      themes: variant.themes.map((membership) => ({ ...membership, theme: { ...membership.theme, name: getFrenchThemeName(membership.theme) } })),
+      media: orderMediaForDisplay(variant.media),
+      displayName: getPreferredDisplayName({ frenchName: frenchNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }),
+    }] : [];
   });
 }
 
@@ -202,7 +208,7 @@ export async function getCatalogue(
 
 export async function getThemes(limit = 30) {
   const db = await getDatabaseClient();
-  return db.$queryRaw<{ slug: string; name: string; count: number; imageUrl: string | null }[]>(Prisma.sql`
+  const themes = await db.$queryRaw<{ slug: string; name: string; count: number; imageUrl: string | null }[]>(Prisma.sql`
     WITH themed AS (
       SELECT "theme_id", "variant_id" FROM "variant_themes"
       UNION ALL
@@ -239,14 +245,16 @@ export async function getThemes(limit = 30) {
     ORDER BY "count" DESC, t."name" ASC
     LIMIT ${limit}
   `);
+  return themes.map((theme) => ({ ...theme, name: getFrenchThemeName(theme) }));
 }
 
 export async function getTheme(slug: string) {
   const db = await getDatabaseClient();
-  return db.theme.findUnique({
+  const theme = await db.theme.findUnique({
     where: { slug },
     select: { slug: true, name: true, parent: { select: { slug: true, name: true } } },
   });
+  return theme ? { ...theme, name: getFrenchThemeName(theme), parent: theme.parent ? { ...theme.parent, name: getFrenchThemeName(theme.parent) } : null } : null;
 }
 
 export async function getThemeNavigation(slug: string) {
@@ -287,7 +295,7 @@ export async function getThemeNavigation(slug: string) {
       ORDER BY "year" DESC
     `),
   ]);
-  return { children, years };
+  return { children: children.map((theme) => ({ ...theme, name: getFrenchThemeName(theme) })), years };
 }
 
 export async function getLatestReleases(yearLimit = 3, perYear = 24) {

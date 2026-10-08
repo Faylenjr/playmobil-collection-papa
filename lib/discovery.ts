@@ -55,12 +55,15 @@ export async function getCollectorCategories() {
     include: { memberships: { select: { variantId: true } } },
   });
   const ids = distinct(categories.flatMap((category) => category.memberships.map((membership) => membership.variantId)));
-  const statuses = await getCollectorStatuses(ids);
+  const representativeIds = categories.flatMap((category) => category.memberships[0]?.variantId ? [category.memberships[0].variantId] : []);
+  const [statuses, representatives] = await Promise.all([getCollectorStatuses(ids), getVariantsByIds(representativeIds)]);
+  const representativeById = new Map(representatives.map((variant) => [variant.id, variant]));
   return categories.map((category) => ({
     ...category,
     total: category.memberships.length,
     owned: category.memberships.filter(({ variantId }) => statuses.get(variantId)?.inCollection).length,
     wanted: category.memberships.filter(({ variantId }) => !statuses.get(variantId)?.inCollection && statuses.get(variantId)?.inWishlist).length,
+    imageUrl: category.memberships[0]?.variantId ? representativeById.get(category.memberships[0].variantId)?.media[0]?.sourceUrl ?? null : null,
   }));
 }
 

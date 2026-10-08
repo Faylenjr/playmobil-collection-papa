@@ -8,6 +8,7 @@ import { updateCollectionItem } from "../../actions/collector";
 import { returnLabel, sanitizeReturnTo } from "../../../lib/navigation-context";
 import { getVariantPriceSummary } from "../../../lib/discovery";
 import { calculatePromotion, deliveryEstimateLabel, isOfferFresh, marketplaceSearchLinks, priceHistoryStats, relativeRefreshLabel, safeExternalOfferUrl } from "../../../lib/pricing";
+import { getFrenchThemeName } from "../../../lib/theme-names";
 
 type ProductPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string | string[] }> };
 
@@ -86,7 +87,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
             <Field label="Pièces" value={variant.pieceCount} />
             <Field label="Figurines" value={variant.figureCount} />
             <Field label="Âge" value={variant.ageMin || variant.ageMax ? `${variant.ageMin ?? "?"}–${variant.ageMax ?? "?"} ans` : null} />
-            <Field label="Thème" value={themes.map(({ theme }) => theme.name).join(", ")} />
+            <Field label="Thème" value={themes.map(({ theme }) => getFrenchThemeName(theme)).join(", ")} />
           </dl>
         </div>
       </section>
