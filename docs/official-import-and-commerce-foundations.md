@@ -13,6 +13,19 @@ Audit avant migration :
 - échantillon contrôlé Koupobol des 12 absences 2026 : 10 EAN valides, conservés uniquement dans le snapshot d'audit et non importés comme valeurs canoniques ;
 - dix références officielles : 19 pages marché confirmées, exposant 19 SKU et 19 MPN, mais aucun GTIN/EAN officiel.
 
+Audit complémentaire du 8 octobre 2026 : la table est déjà déployée et aucune
+migration supplémentaire n'est nécessaire. Les 240 pages FR/DE du corpus
+prioritaire (wishlist, offres eBay, nouveautés et références 2026) ont été
+analysées dans leurs JSON-LD et données structurées : elles publient la
+référence comme `sku`/`mpn`, mais aucun `gtin`, `gtin13`, EAN ou UPC. Le parseur
+accepte désormais aussi les blocs JSON-LD sous forme de tableau ou de
+`@graph`, et refuse tout EAN/GTIN/UPC dont le checksum est invalide.
+
+Couverture commerciale constatée : 0/21 en wishlist, 0/10 parmi les références
+ayant une offre eBay active, 0/50 parmi les nouveautés prioritaires et 0/388
+variantes 2026. Les 10 EAN valides du petit snapshot Koupobol restent non
+importés tant qu'aucun feed, API ou accord de réutilisation n'est disponible.
+
 ## Pipeline officiel isolé
 
 Le pipeline utilise uniquement `playmobil-official-import-2026.json`. Son dry-run bloque une référence locale existante, une absence de confirmation officielle, un nom absent ou une collision d'identifiant. L'application crée un `Product` et un unique `ProductVariant` commercial sans inventer de variante nationale. Les pages marché deviennent des `VariantMarket`, des traductions et des `SourceRecord` séparés ; chaque observation SKU/MPN pointe vers le `SourceRecord` qui la porte.
@@ -56,6 +69,7 @@ La catégorie `Géants / XXL` reste la seule catégorie transversale créée : 4
 
 - eBay Browse : adaptateur de candidats existant ; activation impossible sans identifiants développeur. `EBAY_FR` et `EBAY_DE` sont supportés officiellement. Le matching exige un EAN/GTIN exact ou la marque PLAYMOBIL avec une référence exacte isolée.
 - Kelkoo Publisher Shopping API : adaptateur de matching ajouté ; nécessite un compte Publisher et un JWT. Un EAN exact est prioritaire ; sans EAN, la référence exacte et la marque structurée PLAYMOBIL sont toutes deux obligatoires. Aucune requête n'est faite sans contrat/clé.
+- Lorsqu'une source commerce fournit un EAN/GTIN différent d'un identifiant déjà connu, le résultat est rejeté même si le titre contient la bonne référence. Le fallback référence + marque ne s'applique que lorsque la source ne fournit pas d'identifiant contradictoire.
 - Koupobol : aucune ingestion de prix sans API, feed ou partenariat explicite.
 - Leboncoin et Dealabs : liens de recherche manuels uniquement.
 

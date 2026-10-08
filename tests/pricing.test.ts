@@ -17,6 +17,7 @@ describe("prices and offers", () => {
     expect(matchEbayItem({ itemId: "x", title: "Playmobil 70201 complet", itemWebUrl: "https://www.ebay.fr/itm/x" }, "70201").accepted).toBe(true);
     expect(matchEbayItem({ itemId: "y", title: "Compatible 70201", itemWebUrl: "https://www.ebay.fr/itm/y" }, "70201").accepted).toBe(false);
     expect(matchEbayItem({ itemId: "z", title: "Lot sans référence", itemWebUrl: "https://www.ebay.fr/itm/z", gtin: "4008789722164" }, "70201", ["4008789722164"]).accepted).toBe(true);
+    expect(matchEbayItem({ itemId: "bad-gtin", title: "PLAYMOBIL 70201", itemWebUrl: "https://www.ebay.fr/itm/bad", gtin: "4008789722201" }, "70201", ["4008789722164"]).accepted).toBe(false);
   });
 
   it("allows only known HTTPS marketplace links", () => {

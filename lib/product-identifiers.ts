@@ -12,6 +12,7 @@ export function normalizeProductIdentifier(type: ProductIdentifierTypeValue, raw
   if (type in digitLengths) {
     const digits = trimmed.replace(/[\s-]/g, "");
     if (!/^\d+$/.test(digits) || !digitLengths[type]!.includes(digits.length)) return null;
+    if (!isValidGtinChecksum(digits)) return null;
     return digits;
   }
   const normalized = trimmed.toUpperCase().replace(/\s+/g, " ");

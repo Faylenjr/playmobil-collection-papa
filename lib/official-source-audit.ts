@@ -35,14 +35,27 @@ function dimensions(value: string | undefined): DimensionsMm | undefined {
   return { width: numbers[0]!, depth: numbers[1]!, height: numbers[2]! };
 }
 
+function findStructuredProduct(value: unknown): Record<string, unknown> | undefined {
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const product = findStructuredProduct(entry);
+      if (product) return product;
+    }
+    return undefined;
+  }
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const types = Array.isArray(record["@type"]) ? record["@type"] : [record["@type"]];
+  if (types.includes("Product")) return record;
+  return findStructuredProduct(record["@graph"]);
+}
+
 function structuredProduct($: ReturnType<typeof load>): Record<string, unknown> | undefined {
   let product: Record<string, unknown> | undefined;
   $("script[type='application/ld+json']").each((_, element) => {
+    if (product) return;
     try {
-      const value = JSON.parse($(element).text()) as Record<string, unknown>;
-      if (value["@type"] === "Product") product = value;
-      const graph = Array.isArray(value["@graph"]) ? value["@graph"] as Array<Record<string, unknown>> : [];
-      product ??= graph.find((entry) => entry["@type"] === "Product");
+      product = findStructuredProduct(JSON.parse($(element).text()));
     } catch { /* Other structured-data blocks may be malformed or unrelated. */ }
   });
   return product;

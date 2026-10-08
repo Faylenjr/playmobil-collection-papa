@@ -52,6 +52,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const klickypediaRecords = variant.sourceRecords.filter(({ source }) =>
     source.key.toLowerCase().includes("klickypedia") || source.baseUrl.toLowerCase().includes("klickypedia"),
   );
+  const identifiers = [...variant.productIdentifiers, ...variant.product.identifiers];
   const currentOffers = prices.offers.filter((offer) => offer.availability === "AVAILABLE" && isOfferFresh(offer.lastObservedAt));
   const deliveredTotal = (offer: typeof currentOffers[number]) => Number(offer.observations[0]?.totalPrice ?? offer.observations[0]?.itemPrice ?? Number.POSITIVE_INFINITY);
   const newOffers = currentOffers.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED").sort((left, right) => deliveredTotal(left) - deliveredTotal(right));
@@ -160,6 +161,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
             <Field label="Références" value={variant.references.map((item) => item.displayValue).join(", ")} />
             <Field label="Statut" value={variant.status} />
             <Field label="Date de sortie" value={variant.releaseDate?.toLocaleDateString("fr-FR")} />
+            {identifiers.map((identifier) => <Field key={identifier.id} label={identifier.type === "EAN" ? "EAN" : identifier.type.replaceAll("_", " ")} value={`${identifier.rawValue} · ${identifier.source.name}${identifier.market ? ` · ${identifier.market.name}` : ""}`} />)}
           </dl>
           {klickypediaRecords.length > 0 && <div className="source-links"><h3>Klickypedia</h3>{klickypediaRecords.map((record) => <a key={record.id} href={record.sourceUrl} target="_blank" rel="noreferrer">Voir la fiche source ↗</a>)}</div>}
         </details>

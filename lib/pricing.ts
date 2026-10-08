@@ -115,6 +115,7 @@ export function normalizeEbayCondition(value: string | undefined, conditionId?: 
 export function matchEbayItem(item: EbaySearchItem, reference: string, eans: readonly string[] = []) {
   const observedGtins = (Array.isArray(item.gtin) ? item.gtin : item.gtin ? [item.gtin] : []).map((value) => value.replace(/\D/g, ""));
   if (observedGtins.some((value) => eans.includes(value))) return { accepted: true, confidence: 1, reason: "EAN/GTIN exact fourni par eBay" };
+  if (observedGtins.length > 0 && eans.length > 0) return { accepted: false, confidence: 0, reason: "EAN/GTIN eBay différent de l’identifiant connu" };
   const exact = /\bPLAYMOBIL\b/i.test(item.title) && exactReferenceInTitle(item.title, reference);
   return {
     accepted: exact,

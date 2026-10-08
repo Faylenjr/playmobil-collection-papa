@@ -47,6 +47,17 @@ describe("official PLAYMOBIL audit parsing", () => {
     expect(parseOfficialPageObservation(html, "https://example.test/72168.html", "fr-FR").isArchived).toBe(true);
   });
 
+  it("extracts a checksum-valid GTIN from an array-shaped JSON-LD block", () => {
+    const structured = page("fr").replace(
+      /<script type="application\/ld\+json">.*?<\/script>/,
+      `<script type="application/ld+json">${JSON.stringify([{ "@type": "BreadcrumbList" }, { "@type": ["Thing", "Product"], sku: "72216", gtin13: "4008789722164", name: "Calèche des licornes" }])}</script>`,
+    );
+    expect(parseOfficialPageObservation(structured, "https://www.playmobil.com/fr-fr/72216.html", "fr-FR").officialIdentifiers).toEqual([
+      { type: "OFFICIAL_SKU", rawValue: "72216" },
+      { type: "GTIN", rawValue: "4008789722164" },
+    ]);
+  });
+
   it("accepts an assigned unique numeric base including a suffixed market variant", () => {
     expect(isSafeOfficialCandidate({ identityClass: "ASSIGNED", baseValue: "72168", variantsUsingBase: 1 })).toBe(true);
   });

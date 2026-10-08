@@ -337,7 +337,7 @@ const getVariantCached = cache(async (id: string) => {
   const variant = await db.productVariant.findUnique({
     where: { id },
     include: {
-      product: { include: { translations: true, themes: { include: { theme: true } } } },
+      product: { include: { translations: true, themes: { include: { theme: true } }, identifiers: { include: { source: true, market: true }, orderBy: { createdAt: "asc" } } } },
       references: { orderBy: [{ isPrimary: "desc" }, { displayValue: "asc" }] },
       translations: { orderBy: { locale: "asc" } },
       themes: { include: { theme: true }, orderBy: { isPrimary: "desc" } },
@@ -351,6 +351,7 @@ const getVariantCached = cache(async (id: string) => {
       figures: { include: { figure: true }, take: 100 },
       parts: { include: { part: true }, take: 100 },
       sourceRecords: { include: { source: true }, orderBy: { lastSeenAt: "desc" } },
+      productIdentifiers: { include: { source: true, market: true }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!variant) return null;

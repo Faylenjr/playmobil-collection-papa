@@ -28,8 +28,10 @@ Koupobol, quelques meilleures offres françaises et renvoyer les visiteurs vers
 vos fiches ou liens trackés.
 
 Disposez-vous d'une API, d'un feed, d'un export partenaire ou d'un programme
-d'affiliation autorisant cet usage ? Nous respecterions vos quotas, vos règles
-d'affichage et n'effectuerions aucun scraping sans votre accord.
+d'affiliation autorisant cet usage ? Les champs qui nous seraient utiles sont :
+référence PLAYMOBIL, EAN/GTIN, prix, marchand, frais de port, URL d'offre et date
+de mise à jour. Nous respecterions vos quotas, vos règles d'affichage et
+n'effectuerions aucun scraping sans votre accord.
 
 Merci d'avance pour les modalités techniques et commerciales éventuelles.
 
