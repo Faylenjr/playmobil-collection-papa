@@ -41,6 +41,7 @@
     "apply:collector-discovery": "tsx scripts/apply-collector-discovery.ts",
     "catalogue:snapshot-official-recent": "tsx scripts/refresh-official-recent-snapshot.ts --refresh",
     "catalogue:audit-recent": "tsx scripts/audit-recent-catalogue.ts",
+    "catalogue:audit-collector": "tsx scripts/audit-collector-catalogue.ts",
     "prices:apply-official-recent": "tsx scripts/apply-official-list-prices.ts --apply",
     "prices:priority:plan": "tsx scripts/refresh-priority-official-prices.ts",
     "prices:priority:refresh": "tsx scripts/refresh-priority-official-prices.ts --refresh",

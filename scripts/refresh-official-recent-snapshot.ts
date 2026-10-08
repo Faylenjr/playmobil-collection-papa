@@ -2,7 +2,7 @@ import "dotenv/config";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { Prisma } from "../generated/prisma-node/client";
-import { getDatabaseClient } from "../lib/db";
+import { getNodeDatabaseClient } from "../lib/db-node";
 import { official2026References } from "../lib/official-release-waves";
 import { parseOfficialPageObservation, type OfficialMarket } from "../lib/official-source-audit";
 import type { LocalReference, SnapshotEntry } from "../lib/recent-catalogue-audit";
@@ -22,7 +22,7 @@ async function entries(file: string) {
 
 async function main() {
   if (!process.argv.includes("--refresh")) throw new Error("Use --refresh explicitly; this performs controlled official page checks.");
-  const db = await getDatabaseClient();
+  const db = getNodeDatabaseClient();
   try {
     const local = await db.$queryRaw<Pick<LocalReference, "baseValue" | "normalizedValue">[]>(Prisma.sql`
       SELECT pr."base_value" AS "baseValue", pr."normalized_value" AS "normalizedValue" FROM "product_references" pr
