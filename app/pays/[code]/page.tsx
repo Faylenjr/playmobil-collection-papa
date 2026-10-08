@@ -1,18 +1,17 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CountryFlag, marketDisplayName } from "../../../components/CountryFlag";
 import { ProductCard } from "../../../components/ProductCard";
 import { commercialContextLabels, type CommercialContextKind } from "../../../lib/commercial-context";
 import { getMarket } from "../../../lib/discovery";
 
 export const dynamic = "force-dynamic";
-const flags: Record<string, string> = { GERMANY: "🇩🇪", FRANCE: "🇫🇷", ITALY: "🇮🇹", NETHERLANDS: "🇳🇱", BELGIUM: "🇧🇪", "USA-PLAYMOBIL": "🇺🇸", "SPAIN-PLAYMOBIL": "🇪🇸", "UK-PLAYMOBIL": "🇬🇧" };
-const names: Record<string, string> = { GERMANY: "Allemagne", FRANCE: "France", ITALY: "Italie", NETHERLANDS: "Pays-Bas", BELGIUM: "Belgique", "USA-PLAYMOBIL": "États-Unis", "SPAIN-PLAYMOBIL": "Espagne", "UK-PLAYMOBIL": "Royaume-Uni" };
-
 export default async function CountryPage({ params, searchParams }: { params: Promise<{ code: string }>; searchParams: Promise<{ filter?: string }> }) {
   const code = decodeURIComponent((await params).code).toUpperCase();
   const filter = (await searchParams).filter ?? "all";
   const market = await getMarket(code);
   if (!market) notFound();
+  const countryName = marketDisplayName(code, market.name);
   const returnTo = `/pays/${encodeURIComponent(code)}${filter === "all" ? "" : `?filter=${filter}`}`;
   const byKind = market.evidenceByKey;
   const variants = market.variants.filter((variant) => {
@@ -32,10 +31,10 @@ export default async function CountryPage({ params, searchParams }: { params: Pr
   const travelTargets = market.variants.filter((variant) => market.statuses.get(variant.id)?.inWishlist && (byKind.has(`${variant.id}:ATTESTED_EXCLUSIVE`) || byKind.has(`${variant.id}:MARKET_EDITION`) || market.commercialByVariant.has(variant.id)));
   const contextKinds = Object.keys(commercialContextLabels) as CommercialContextKind[];
   return <div className="page-shell listing-page">
-    <section className="page-heading country-heading"><span className="country-flag">{flags[code] ?? "🌍"}</span><div><span className="eyebrow">Marché documenté</span><h1>{names[code] ?? market.name}</h1><p><strong>{documentedVariants}</strong> variantes documentées</p><p>{exclusiveCount} exclusivités géographiques attestées · {editionCount} éditions spécifiques au marché · {presenceCount} présences documentées.</p></div></section>
-    {travelTargets.length > 0 && <section className="travel-callout"><strong>À chercher en {names[code] ?? market.name}</strong><span>{travelTargets.length} objets documentés pour ce marché sont dans « Mes recherches ».</span><ul>{travelTargets.slice(0, 12).map((variant) => {
+    <section className="page-heading country-heading"><CountryFlag code={code} label={countryName} large /><div><span className="eyebrow">Marché documenté</span><h1>{countryName}</h1><p><strong>{documentedVariants}</strong> variantes documentées</p><p>{exclusiveCount} exclusivités géographiques attestées · {editionCount} éditions spécifiques au marché · {presenceCount} présences documentées.</p></div></section>
+    {travelTargets.length > 0 && <section className="travel-callout"><strong>À chercher en {countryName}</strong><span>{travelTargets.length} objets documentés pour ce marché sont dans « Mes recherches ».</span><ul>{travelTargets.slice(0, 12).map((variant) => {
       const contexts = market.commercialByVariant.get(variant.id) ?? [];
-      const nature = byKind.has(`${variant.id}:ATTESTED_EXCLUSIVE`) ? `Exclusivité géographique attestée` : byKind.has(`${variant.id}:MARKET_EDITION`) ? `Édition ${names[code]?.toLowerCase() ?? "locale"}` : "Présence documentée";
+      const nature = byKind.has(`${variant.id}:ATTESTED_EXCLUSIVE`) ? `Exclusivité géographique attestée` : byKind.has(`${variant.id}:MARKET_EDITION`) ? `Édition ${countryName.toLowerCase()}` : "Présence documentée";
       return <li key={variant.id}><Link href={`/sets/${variant.id}?returnTo=${encodeURIComponent(`/pays/${code}`)}`}>♡ {variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey} — {variant.displayName}</Link><small>{nature}{contexts[0] ? ` · Partenaire/contexte : ${contexts[0].context.canonicalName}` : ""} · Recherché</small></li>;
     })}</ul></section>}
     {market.contextGroups.length > 0 && <section className="commercial-context-section"><div className="section-title"><span className="eyebrow">Contexte commercial</span><h2>Éditions, partenaires et opérations documentés</h2><p>Ces mentions décrivent un canal commercial ou éditorial. Elles ne prouvent jamais, à elles seules, une exclusivité géographique.</p></div><div className="commercial-context-grid">{contextKinds.map((kind) => {
