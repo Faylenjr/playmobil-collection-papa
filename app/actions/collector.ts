@@ -62,6 +62,34 @@ export async function updateCollectionItem(variantId: string, formData: FormData
 }
 
 export type CollectionActionState = { ok: boolean; message: string };
+export type InventoryActionState = CollectionActionState & {
+  revision: number;
+  saved?: { condition: string; isComplete: boolean | null; hasBox: boolean | null; hasInstructions: boolean | null; notes: string | null };
+};
+
+export async function updateInventoryItemState(variantId: string, previous: InventoryActionState, formData: FormData): Promise<InventoryActionState> {
+  try {
+    const id = variantIdSchema.parse(variantId);
+    const condition = z.enum(["SEALED", "NEW", "EXCELLENT", "GOOD", "FAIR", "POOR", "UNKNOWN"]).parse(formData.get("condition"));
+    const saved = {
+      condition,
+      isComplete: parseOptionalBoolean(formData.get("isComplete")),
+      hasBox: parseOptionalBoolean(formData.get("hasBox")),
+      hasInstructions: parseOptionalBoolean(formData.get("hasInstructions")),
+      notes: String(formData.get("notes") ?? "").trim().slice(0, 2000) || null,
+    };
+    const { db, collection } = await getCollectorContext();
+    if (!collection) throw new Error("Collection principale introuvable");
+    await db.collectionItem.update({
+      where: { collectionId_variantId: { collectionId: collection.id, variantId: id } },
+      data: saved,
+    });
+    refreshCollectorViews();
+    return { ok: true, message: "Enregistré. Passage à l’objet suivant…", revision: previous.revision + 1, saved };
+  } catch {
+    return { ok: false, message: "Impossible d’enregistrer. Aucune donnée n’a été modifiée.", revision: previous.revision + 1 };
+  }
+}
 
 export async function updateCollectionItemState(variantId: string, _previous: CollectionActionState, formData: FormData): Promise<CollectionActionState> {
   try {

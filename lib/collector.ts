@@ -4,6 +4,7 @@ import { PAGE_SIZE, visibleMediaWhere } from "./catalogue";
 import { orderMediaForDisplay } from "./media";
 import { COLLECTION_NAME, COLLECTOR_EMAIL, WISHLIST_NAME } from "./collector-constants";
 import { summarizeCollectionQuality } from "./collection-management";
+import type { InventoryScope } from "./collection-inventory";
 
 export { COLLECTION_NAME, COLLECTOR_EMAIL, WISHLIST_NAME } from "./collector-constants";
 
@@ -178,6 +179,71 @@ export async function getCollectionQualitySummary() {
 export async function getCollectionRangeOptions() {
   const { db } = await getCollectorContext();
   return db.productRange.findMany({ orderBy: { canonicalName: "asc" }, select: { slug: true, canonicalName: true } });
+}
+
+export async function getInventoryOptions() {
+  const { db, collection } = await getCollectorContext();
+  if (!collection) return { total: 0, physicalMissing: 0, themes: [], ranges: [], years: [] };
+  const items = await db.collectionItem.findMany({
+    where: { collectionId: collection.id },
+    select: {
+      condition: true, isComplete: true, hasBox: true, hasInstructions: true,
+      variant: {
+        select: {
+          releaseYear: true,
+          product: { select: { releaseYear: true, rangeMemberships: { select: { range: { select: { slug: true, canonicalName: true } } } }, themes: { select: { theme: { select: { slug: true, name: true } } } } } },
+          themes: { select: { theme: { select: { slug: true, name: true } } } },
+        },
+      },
+    },
+  });
+  const missing = (item: typeof items[number]) => item.condition === "UNKNOWN" || item.isComplete === null || item.hasBox === null || item.hasInstructions === null;
+  const themeMap = new Map<string, { slug: string; name: string; total: number; missing: number }>();
+  const rangeMap = new Map<string, { slug: string; name: string; total: number; missing: number }>();
+  const yearMap = new Map<number, { year: number; total: number; missing: number }>();
+  for (const item of items) {
+    const themes = new Map([...item.variant.product.themes, ...item.variant.themes].map(({ theme }) => [theme.slug, theme]));
+    for (const theme of themes.values()) {
+      const current = themeMap.get(theme.slug) ?? { slug: theme.slug, name: theme.name, total: 0, missing: 0 };
+      current.total += 1; current.missing += Number(missing(item)); themeMap.set(theme.slug, current);
+    }
+    for (const { range } of item.variant.product.rangeMemberships) {
+      const current = rangeMap.get(range.slug) ?? { slug: range.slug, name: range.canonicalName, total: 0, missing: 0 };
+      current.total += 1; current.missing += Number(missing(item)); rangeMap.set(range.slug, current);
+    }
+    const year = item.variant.releaseYear ?? item.variant.product.releaseYear;
+    if (year) {
+      const current = yearMap.get(year) ?? { year, total: 0, missing: 0 };
+      current.total += 1; current.missing += Number(missing(item)); yearMap.set(year, current);
+    }
+  }
+  return {
+    total: items.length,
+    physicalMissing: items.filter(missing).length,
+    themes: [...themeMap.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "fr")),
+    ranges: [...rangeMap.values()].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name, "fr")),
+    years: [...yearMap.values()].sort((a, b) => b.year - a.year),
+  };
+}
+
+export async function getInventoryItems(scope: InventoryScope, value = "") {
+  const { db, collection } = await getCollectorContext();
+  if (!collection) return [];
+  const where: Prisma.CollectionItemWhereInput = { collectionId: collection.id };
+  if (scope === "missing") where.OR = [{ condition: "UNKNOWN" }, { isComplete: null }, { hasBox: null }, { hasInstructions: null }];
+  if (scope === "condition") where.condition = "UNKNOWN";
+  if (scope === "complete") where.isComplete = null;
+  if (scope === "box") where.hasBox = null;
+  if (scope === "instructions") where.hasInstructions = null;
+  if (scope === "theme" && value) where.variant = collectionSearchWhere("", value);
+  if (scope === "range" && value) where.variant = collectionSearchWhere("", "", value);
+  if (scope === "year" && Number.isInteger(Number(value))) where.variant = collectionSearchWhere("", "", "", Number(value));
+  const rows = await db.collectionItem.findMany({
+    where,
+    orderBy: [{ variant: { releaseYear: { sort: "desc", nulls: "last" } } }, { variant: { canonicalKey: "asc" } }],
+    include: { variant: { include: { ...itemVariantInclude, product: { select: { ...itemVariantInclude.product.select, _count: { select: { variants: true } } } } } } },
+  });
+  return rows.map((item) => ({ ...item, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } }));
 }
 
 export async function searchCollectionCandidates(query: string, limit = 24) {

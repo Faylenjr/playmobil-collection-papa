@@ -23,6 +23,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
           <nav className="desktop-nav" aria-label="Navigation principale">
             <Link href="/">Accueil</Link>
             <Link href="/collection">Ma collection</Link>
+            <Link href="/collection/inventaire">Inventaire</Link>
             <Link href="/collection/ajouter">+ Ajouter</Link>
             <Link href="/catalogue">Catalogue</Link>
             <Link href="/nouveautes">Nouveautés</Link>
@@ -32,7 +33,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
             <Link href="/recherches">Mes recherches</Link>
             <Link href="/themes">Thèmes</Link>
           </nav>
-          <details className="mobile-menu"><summary>Menu</summary><nav aria-label="Navigation mobile"><Link href="/">Accueil</Link><Link href="/collection">Ma collection</Link><Link href="/collection/ajouter">+ Ajouter un Playmobil</Link><Link href="/catalogue">Catalogue</Link><Link href="/nouveautes">Nouveautés</Link><Link href="/gammes">Gammes</Link><Link href="/pays">Pays</Link><Link href="/bons-plans">Bons plans</Link><Link href="/recherches">Mes recherches</Link><Link href="/themes">Thèmes</Link></nav></details>
+          <details className="mobile-menu"><summary>Menu</summary><nav aria-label="Navigation mobile"><Link href="/">Accueil</Link><Link href="/collection">Ma collection</Link><Link href="/collection/inventaire">Mode inventaire</Link><Link href="/collection/vitrine">Ma vitrine</Link><Link href="/collection/ajouter">+ Ajouter un Playmobil</Link><Link href="/catalogue">Catalogue</Link><Link href="/nouveautes">Nouveautés</Link><Link href="/gammes">Gammes</Link><Link href="/pays">Pays</Link><Link href="/bons-plans">Bons plans</Link><Link href="/recherches">Mes recherches</Link><Link href="/themes">Thèmes</Link></nav></details>
         </header>
         <main>{children}</main>
         <footer><strong>Mon carnet Playmobil</strong><span>Catalogue personnel non commercial · Données issues des sources référencées</span></footer>
