@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ProductImage } from "./ProductImage";
+import { WishlistShortcut } from "./WishlistShortcut";
 
 export type DiscoveryProduct = {
   id: string;
@@ -22,6 +23,7 @@ export function DiscoveryProductCard({ product, inCollection, inWishlist, return
       <p className="reference">{product.reference}</p>
       <h2><Link href={href}>{product.name}</Link></h2>
       {product.detail && <div className="card-meta"><span>{product.detail}</span></div>}
+      <WishlistShortcut variantId={product.id} inCollection={inCollection} inWishlist={inWishlist} />
     </div>
   </article>;
 }

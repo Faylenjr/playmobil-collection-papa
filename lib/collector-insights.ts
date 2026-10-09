@@ -2,6 +2,7 @@ import { Prisma } from "../generated/prisma/client";
 import { getVariantsByIds } from "./catalogue";
 import { getCollectorContext, getCollectorStatuses } from "./collector";
 import { getDatabaseClient } from "./db";
+import { logicalDuplicateGroups } from "./collection-management";
 
 type CollectorState = { inCollection: boolean; inWishlist: boolean; quantity: number } | undefined;
 
@@ -110,7 +111,7 @@ export async function getRecentCommercialProducts(year: number, limit = 72) {
 
 export async function getCollectionInsights() {
   const { db, collection, wishlist } = await getCollectorContext();
-  if (!collection) return { totalCopies: 0, distinctVariants: 0, distinctProducts: 0, wishlist: 0, themes: [], years: [], multiples: [] };
+  if (!collection) return { totalCopies: 0, distinctVariants: 0, distinctProducts: 0, wishlist: 0, themes: [], years: [], multiples: [], potentialDuplicateGroups: [] };
   const items = await db.collectionItem.findMany({
     where: { collectionId: collection.id },
     include: { variant: { select: { id: true, productId: true, releaseYear: true, product: { select: { releaseYear: true } }, themes: { select: { theme: { select: { slug: true, name: true } } } } } } },
@@ -127,6 +128,10 @@ export async function getCollectionInsights() {
   }
   const multipleIds = items.filter(({ quantity }) => quantity > 1).map(({ variantId }) => variantId);
   const multiples = await getVariantsByIds(multipleIds);
+  const duplicateGroups = logicalDuplicateGroups(items.map((item) => ({ variantId: item.variantId, productId: item.variant.productId })));
+  const potentialIds = duplicateGroups.flatMap(({ variantIds }) => variantIds);
+  const potentialVariants = await getVariantsByIds(potentialIds);
+  const potentialById = new Map(potentialVariants.map((variant) => [variant.id, variant]));
   const quantityById = new Map(items.map(({ variantId, quantity }) => [variantId, quantity]));
   return {
     totalCopies: items.reduce((sum, item) => sum + item.quantity, 0),
@@ -136,6 +141,7 @@ export async function getCollectionInsights() {
     themes: [...themeMap.values()].map((theme) => ({ slug: theme.slug, name: theme.name, count: theme.products.size })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr")),
     years: [...yearMap].map(([year, products]) => ({ year, count: products.size })).sort((a, b) => b.year - a.year),
     multiples: multiples.map((variant) => ({ variant, quantity: quantityById.get(variant.id) ?? 1 })),
+    potentialDuplicateGroups: duplicateGroups.map(({ productId, variantIds }) => ({ productId, variants: variantIds.flatMap((id) => potentialById.get(id) ? [potentialById.get(id)!] : []) })),
   };
 }
 

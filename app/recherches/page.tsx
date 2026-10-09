@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { addToCollection, removeFromWishlist, updateWishlistItem } from "../actions/collector";
 import { ProductImage } from "../../components/ProductImage";
-import { getWishlistItems } from "../../lib/collector";
+import { getCollectorStatuses, getWishlistItems } from "../../lib/collector";
 import { getFrenchNames, getPreferredDisplayName } from "../../lib/display-name";
 import { PageJump } from "../../components/PageJump";
 import { buildInternalUrl, productHref, type SearchParamRecord } from "../../lib/navigation-context";
@@ -22,7 +22,7 @@ export default async function WishlistPage({ searchParams }: Props) {
   const result = await getWishlistItems(query, page);
   if (page > result.pages) redirect(buildInternalUrl("/recherches", params, { page: result.pages > 1 ? result.pages : null }));
   const variantIds = result.items.map(({ variant }) => variant.id);
-  const [frenchNames, priceHighlights] = await Promise.all([getFrenchNames(variantIds), getVariantPriceHighlights(variantIds)]);
+  const [frenchNames, priceHighlights, statuses] = await Promise.all([getFrenchNames(variantIds), getVariantPriceHighlights(variantIds), getCollectorStatuses(variantIds)]);
   const returnTo = buildInternalUrl("/recherches", params, { page: page > 1 ? page : null });
   const pageHref = (target: number) => {
     const search = new URLSearchParams();
@@ -42,6 +42,7 @@ export default async function WishlistPage({ searchParams }: Props) {
         const remove = removeFromWishlist.bind(null, variant.id);
         const update = updateWishlistItem.bind(null, variant.id);
         const pricing = priceHighlights.get(variant.id);
+        const owned = statuses.get(variant.id)?.inCollection ?? false;
         const officialFr = pricing?.listPrices.find(({ market }) => market.code === "FRANCE");
         const bestNew = pricing?.bestNew;
         const newObservation = bestNew?.observations[0];
@@ -53,8 +54,8 @@ export default async function WishlistPage({ searchParams }: Props) {
           <div><p className="reference">{variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey}</p><h2><Link href={productHref(variant.id, returnTo)}>{name}</Link></h2><p className="priority-label">Priorité : <strong>{priorityLabel[item.priority] ?? "Normale"}</strong></p>{item.notes && <p className="item-notes">{item.notes}</p>}<div className="wishlist-prices"><span>{officialFr?.validUntil ? "Dernier prix officiel FR connu" : "Prix officiel FR"} <strong>{officialFr ? formatMoney(Number(officialFr.amount), officialFr.currency) : "—"}</strong></span>{newObservation && <span>Meilleure offre neuve <strong>{formatMoney(Number(newObservation.itemPrice), newObservation.currency)}</strong><small>Total livré : {formatMoney(Number(newObservation.totalPrice ?? newObservation.itemPrice), newObservation.currency)}</small>{bestNew.promotion !== null && bestNew.promotion > 0 && <em>−{Math.round(bestNew.promotion * 100)} % sur le prix article</em>}</span>}{usedObservation && <span>Meilleure occasion <strong>{formatMoney(Number(usedObservation.itemPrice), usedObservation.currency)}</strong><small>Total livré : {formatMoney(Number(usedObservation.totalPrice ?? usedObservation.itemPrice), usedObservation.currency)}</small></span>}{latestObservation ? <small>{relativeRefreshLabel(latestObservation)}</small> : <small>Aucune offre fiable actuellement.</small>}</div></div>
           <div className="wishlist-actions">
             <form action={update}><label>Priorité<select name="priority" defaultValue={item.priority}><option value="0">Normale</option><option value="1">Souhaitée</option><option value="2">Importante</option><option value="3">Prioritaire</option></select></label><label>Note<input name="notes" defaultValue={item.notes ?? ""} /></label><button type="submit">Enregistrer</button></form>
-            <form action={add}><button className="primary-action" type="submit">Passer dans ma collection</button></form>
-            <form action={remove}><button className="text-action" type="submit">Retirer de mes recherches</button></form>
+            {owned ? <div className="wishlist-purchase-confirm"><strong>✓ Ajouté à la collection.</strong><span>Retirer également de Mes recherches ?</span><form action={remove}><button className="primary-action" type="submit">Oui, retirer</button></form><small>Sinon, laissez-le ici.</small></div> : <form action={add}><button className="primary-action" type="submit">Ajouter à ma collection</button></form>}
+            {!owned && <form action={remove}><button className="text-action" type="submit">Retirer de mes recherches</button></form>}
           </div>
         </article>;
       })}</section>{result.pages > 1 && <nav className="pagination simple-pagination" aria-label="Pagination des recherches">{page > 1 ? <Link href={pageHref(page - 1)}>← Précédente</Link> : <span aria-disabled="true">← Précédente</span>}<span>Page {page} sur {result.pages}</span>{page < result.pages ? <Link href={pageHref(page + 1)}>Suivante →</Link> : <span aria-disabled="true">Suivante →</span>}</nav>}<PageJump action="/recherches" currentPage={page} pages={result.pages} params={params} /></> : <section className="empty-state collector-empty wanted-empty"><span aria-hidden="true">♡</span><h2>Aucune recherche pour le moment</h2><p>Ajoutez les boîtes qui vous intéressent depuis le catalogue.</p><Link className="button" href="/catalogue">Explorer le catalogue</Link></section>}

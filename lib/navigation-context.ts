@@ -5,7 +5,7 @@ const allowedReturnPaths = new Set([
   "/recherches",
   "/themes",
 ]);
-const allowedReturnPrefixes = ["/pays/", "/collections-speciales/"];
+const allowedReturnPrefixes = ["/collection/", "/pays/", "/collections-speciales/", "/themes/", "/gammes/"];
 
 export type SearchParamRecord = Record<string, string | string[] | undefined>;
 
@@ -47,6 +47,7 @@ export function returnLabel(returnTo: string) {
   if (returnTo.startsWith("/recherches")) return "Retour à mes recherches";
   if (returnTo.startsWith("/nouveautes")) return "Retour aux nouveautés";
   if (returnTo.startsWith("/themes")) return "Retour aux thèmes";
+  if (returnTo.startsWith("/gammes")) return "Retour à la gamme";
   if (returnTo.startsWith("/pays")) return "Retour au pays";
   if (returnTo.startsWith("/collections-speciales")) return "Retour à la collection spéciale";
   return "Retour au catalogue";
