@@ -160,6 +160,16 @@ export async function getThemeCollectorView(slug: string, status = "all", limit 
     orderBy: [{ releaseYear: { sort: "desc", nulls: "last" } }, { canonicalKey: "asc" }],
     select: { id: true, variants: { orderBy: { canonicalKey: "asc" }, select: { id: true } } },
   });
+  const themedVariants = await db.$queryRaw<Array<{ productId: string; variantId: string }>>(Prisma.sql`
+    SELECT DISTINCT ON (pv."product_id") pv."product_id" AS "productId", pv."id" AS "variantId"
+    FROM "variant_themes" vt
+    JOIN "themes" t ON t."id"=vt."theme_id"
+    LEFT JOIN "themes" parent ON parent."id"=t."parent_id"
+    JOIN "product_variants" pv ON pv."id"=vt."variant_id"
+    WHERE t."slug"=${slug} OR parent."slug"=${slug}
+    ORDER BY pv."product_id", pv."canonical_key"
+  `);
+  const themedVariantByProduct = new Map(themedVariants.map(({ productId, variantId }) => [productId, variantId]));
   const allIds = products.flatMap(({ variants }) => variants.map(({ id }) => id));
   const statuses = await getCollectorStatuses(allIds);
   const progress = summarizeProductStates(products, statuses);
@@ -170,10 +180,14 @@ export async function getThemeCollectorView(slug: string, status = "all", limit 
     return status === "owned" ? owned : status === "wanted" ? wanted : status === "missing" ? !owned && !wanted : true;
   });
   const visibleProducts = selected.slice(0, limit);
-  const variants = await getVariantsByIds(visibleProducts.flatMap(({ variants: productVariants }) => productVariants[0]?.id ? [productVariants[0].id] : []));
+  const representativeIds = visibleProducts.flatMap((product) => {
+    const representativeId = themedVariantByProduct.get(product.id) ?? product.variants[0]?.id;
+    return representativeId ? [representativeId] : [];
+  });
+  const variants = await getVariantsByIds(representativeIds);
   const variantById = new Map(variants.map((variant) => [variant.id, variant]));
   const items = visibleProducts.flatMap((product) => {
-    const representativeId = product.variants[0]?.id;
+    const representativeId = themedVariantByProduct.get(product.id) ?? product.variants[0]?.id;
     const variant = representativeId ? variantById.get(representativeId) : null;
     if (!variant) return [];
     const states = product.variants.map(({ id }) => statuses.get(id));
