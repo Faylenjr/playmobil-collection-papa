@@ -9,6 +9,8 @@ import { ProductImage } from "./ProductImage";
 export type InventoryItem = InventoryPhysicalState & {
   id: string;
   variantId: string;
+  copyIndex: number;
+  copyTotal: number;
   notes: string | null;
   name: string;
   reference: string;
@@ -29,7 +31,7 @@ function TriButtons({ name, value, onDirty }: { name: string; value: boolean | n
 }
 
 function InventoryEditor({ item, onSaved, onDirty }: { item: InventoryItem; onSaved: (saved: NonNullable<InventoryActionState["saved"]>) => void; onDirty: () => void }) {
-  const action = updateInventoryItemState.bind(null, item.variantId);
+  const action = updateInventoryItemState.bind(null, item.id);
   const [state, formAction, pending] = useActionState(action, { ok: false, message: "", revision: 0 } satisfies InventoryActionState);
   const handledRevision = useRef(0);
   useEffect(() => {
@@ -87,9 +89,9 @@ export function InventorySession({ initialItems, storageKey, initialCounters }: 
   return <div className="inventory-session">
     <section className="inventory-quality-strip" aria-label="Informations restantes"><strong>Informations restantes</strong><span>État : {counters.condition}</span><span>Complet : {counters.complete}</span><span>Boîte : {counters.box}</span><span>Notice : {counters.instructions}</span></section>
     {restored && <p className="inventory-resume" role="status">Session reprise à l’objet {index + 1}. <button type="button" onClick={() => go(0)}>Recommencer</button></p>}
-    <div className="inventory-progress"><div><strong>{index + 1} / {items.length}</strong><span>objets parcourus</span></div><progress max={100} value={progress}>{progress} %</progress></div>
+    <div className="inventory-progress"><div><strong>{index + 1} / {items.length}</strong><span>exemplaires parcourus</span></div><progress max={100} value={progress}>{progress} %</progress></div>
     <article className="inventory-card">
-      <div className="inventory-identification"><div className="inventory-image"><ProductImage src={current.imageUrl} alt={current.name} priority /></div><div><p className="reference">{current.reference}</p><h1>{current.name}</h1><p>{[current.year, current.theme].filter(Boolean).join(" · ") || "Métadonnées non renseignées"}</p>{current.variantDescription && <strong>{current.variantDescription}</strong>}{current.needsVariantReview && <span className="variant-review">Variante à vérifier</span>}<Link href={`/sets/${current.variantId}?returnTo=${encodeURIComponent(`/collection/inventaire`)}`}>Ouvrir la fiche complète</Link></div></div>
+      <div className="inventory-identification"><div className="inventory-image"><ProductImage src={current.imageUrl} alt={current.name} priority /></div><div><p className="reference">{current.reference}</p><h1>{current.name}</h1>{current.copyTotal > 1 && <p className="copy-position">Exemplaire {current.copyIndex + 1} sur {current.copyTotal}</p>}<p>{[current.year, current.theme].filter(Boolean).join(" · ") || "Métadonnées non renseignées"}</p>{current.variantDescription && <strong>{current.variantDescription}</strong>}{current.needsVariantReview && <span className="variant-review">Variante à vérifier</span>}<Link href={`/sets/${current.variantId}?returnTo=${encodeURIComponent(`/collection/inventaire`)}`}>Ouvrir la fiche complète</Link></div></div>
       <InventoryEditor key={current.id} item={current} onSaved={onSaved} onDirty={() => setDirty(true)} />
     </article>
     <nav className="inventory-navigation" aria-label="Navigation dans l’inventaire"><button type="button" disabled={index === 0} onClick={() => go(index - 1)}>← Précédent</button><button type="button" disabled={index >= items.length - 1} onClick={() => go(index + 1)}>Passer</button></nav>

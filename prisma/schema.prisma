@@ -937,7 +937,27 @@ model CollectionItem {
   id              String               @id @default(uuid()) @db.Uuid
   collectionId    String               @map("collection_id") @db.Uuid
   variantId       String               @map("variant_id") @db.Uuid
-  quantity        Int                  @default(1)
+  legacyQuantity        Int                  @default(1) @map("quantity")
+  legacyCondition       CollectionCondition  @default(UNKNOWN) @map("condition")
+  legacyIsComplete      Boolean?             @map("is_complete")
+  legacyHasBox          Boolean?             @map("has_box")
+  legacyBoxCondition    CollectionCondition? @map("box_condition")
+  legacyHasInstructions Boolean?             @map("has_instructions")
+  legacyPurchaseDate    DateTime?            @map("purchase_date") @db.Date
+  legacyPurchasePrice   Decimal?             @map("purchase_price") @db.Decimal(12, 2)
+  legacyCurrency        String?              @map("currency") @db.VarChar(3)
+  legacyNotes           String?              @map("notes")
+  collection      Collection           @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  variant         ProductVariant       @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  copies          CollectionCopy[]
+
+  @@unique([collectionId, variantId])
+  @@map("collection_items")
+}
+
+model CollectionCopy {
+  id              String               @id @default(uuid()) @db.Uuid
+  collectionItemId String              @map("collection_item_id") @db.Uuid
   condition       CollectionCondition  @default(UNKNOWN)
   isComplete      Boolean?             @map("is_complete")
   hasBox          Boolean?             @map("has_box")
@@ -947,11 +967,12 @@ model CollectionItem {
   purchasePrice   Decimal?             @map("purchase_price") @db.Decimal(12, 2)
   currency        String?              @db.VarChar(3)
   notes           String?
-  collection      Collection           @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-  variant         ProductVariant       @relation(fields: [variantId], references: [id], onDelete: Restrict)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  collectionItem  CollectionItem       @relation(fields: [collectionItemId], references: [id], onDelete: Cascade)
 
-  @@unique([collectionId, variantId])
-  @@map("collection_items")
+  @@index([collectionItemId, createdAt])
+  @@map("collection_copies")
 }
 
 model Wishlist {

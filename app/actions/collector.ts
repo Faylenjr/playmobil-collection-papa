@@ -6,6 +6,7 @@ import { getCollectorContext } from "../../lib/collector";
 import { parseTriState } from "../../lib/collection-management";
 
 const variantIdSchema = z.string().uuid();
+const copyIdSchema = z.string().uuid();
 
 function refreshCollectorViews() {
   revalidatePath("/", "layout");
@@ -16,14 +17,23 @@ export async function addToCollection(variantId: string) {
   const { db, collection } = await getCollectorContext(true);
   if (!collection) throw new Error("Collection principale introuvable");
   await db.productVariant.findUniqueOrThrow({ where: { id }, select: { id: true } });
-  await db.collectionItem.upsert({ where: { collectionId_variantId: { collectionId: collection.id, variantId: id } }, update: {}, create: { collectionId: collection.id, variantId: id } });
+  await db.$transaction(async (tx) => {
+    const item = await tx.collectionItem.upsert({ where: { collectionId_variantId: { collectionId: collection.id, variantId: id } }, update: {}, create: { collectionId: collection.id, variantId: id } });
+    await tx.collectionCopy.create({ data: { collectionItemId: item.id } });
+  });
   refreshCollectorViews();
 }
 
-export async function removeFromCollection(variantId: string) {
-  const id = variantIdSchema.parse(variantId);
+export async function deleteCollectionCopy(copyId: string) {
+  const id = copyIdSchema.parse(copyId);
   const { db, collection } = await getCollectorContext();
-  if (collection) await db.collectionItem.deleteMany({ where: { collectionId: collection.id, variantId: id } });
+  if (!collection) throw new Error("Collection principale introuvable");
+  await db.$transaction(async (tx) => {
+    const copy = await tx.collectionCopy.findFirstOrThrow({ where: { id, collectionItem: { collectionId: collection.id } }, select: { collectionItemId: true } });
+    await tx.collectionCopy.delete({ where: { id } });
+    const remaining = await tx.collectionCopy.count({ where: { collectionItemId: copy.collectionItemId } });
+    if (remaining === 0) await tx.collectionItem.delete({ where: { id: copy.collectionItemId } });
+  });
   refreshCollectorViews();
 }
 
@@ -43,21 +53,14 @@ export async function removeFromWishlist(variantId: string) {
   refreshCollectorViews();
 }
 
-export async function updateCollectionItem(variantId: string, formData: FormData) {
-  const id = variantIdSchema.parse(variantId);
+export async function updateCollectionCopy(copyId: string, formData: FormData) {
+  const id = copyIdSchema.parse(copyId);
   const { db, collection } = await getCollectorContext(true);
   if (!collection) throw new Error("Collection principale introuvable");
-  const quantity = Math.max(1, Math.min(999, Number.parseInt(String(formData.get("quantity") ?? "1"), 10) || 1));
-  const condition = z.enum(["SEALED", "NEW", "EXCELLENT", "GOOD", "FAIR", "POOR", "UNKNOWN"]).catch("UNKNOWN").parse(formData.get("condition"));
-  const optionalBoolean = (name: string) => parseOptionalBoolean(formData.get(name));
-  const notes = String(formData.get("notes") ?? "").trim().slice(0, 2000) || null;
-  const purchaseDate = parseOptionalDate(formData.get("purchaseDate"));
-  const purchasePrice = parseOptionalPrice(formData.get("purchasePrice"));
-  const currency = purchasePrice === null ? null : z.string().trim().toUpperCase().length(3).catch("EUR").parse(formData.get("currency") ?? "EUR");
-  await db.collectionItem.update({
-    where: { collectionId_variantId: { collectionId: collection.id, variantId: id } },
-    data: { quantity, condition, isComplete: optionalBoolean("isComplete"), hasBox: optionalBoolean("hasBox"), hasInstructions: optionalBoolean("hasInstructions"), purchaseDate, purchasePrice, currency, notes },
-  });
+  const data = parseCopyData(formData);
+  const owned = await db.collectionCopy.findFirst({ where: { id, collectionItem: { collectionId: collection.id } }, select: { id: true } });
+  if (!owned) throw new Error("Exemplaire introuvable");
+  await db.collectionCopy.update({ where: { id }, data });
   refreshCollectorViews();
 }
 
@@ -67,9 +70,9 @@ export type InventoryActionState = CollectionActionState & {
   saved?: { condition: string; isComplete: boolean | null; hasBox: boolean | null; hasInstructions: boolean | null; notes: string | null };
 };
 
-export async function updateInventoryItemState(variantId: string, previous: InventoryActionState, formData: FormData): Promise<InventoryActionState> {
+export async function updateInventoryItemState(copyId: string, previous: InventoryActionState, formData: FormData): Promise<InventoryActionState> {
   try {
-    const id = variantIdSchema.parse(variantId);
+    const id = copyIdSchema.parse(copyId);
     const condition = z.enum(["SEALED", "NEW", "EXCELLENT", "GOOD", "FAIR", "POOR", "UNKNOWN"]).parse(formData.get("condition"));
     const saved = {
       condition,
@@ -80,10 +83,9 @@ export async function updateInventoryItemState(variantId: string, previous: Inve
     };
     const { db, collection } = await getCollectorContext();
     if (!collection) throw new Error("Collection principale introuvable");
-    await db.collectionItem.update({
-      where: { collectionId_variantId: { collectionId: collection.id, variantId: id } },
-      data: saved,
-    });
+    const owned = await db.collectionCopy.findFirst({ where: { id, collectionItem: { collectionId: collection.id } }, select: { id: true } });
+    if (!owned) throw new Error("Exemplaire introuvable");
+    await db.collectionCopy.update({ where: { id }, data: saved });
     refreshCollectorViews();
     return { ok: true, message: "Enregistré. Passage à l’objet suivant…", revision: previous.revision + 1, saved };
   } catch {
@@ -91,9 +93,9 @@ export async function updateInventoryItemState(variantId: string, previous: Inve
   }
 }
 
-export async function updateCollectionItemState(variantId: string, _previous: CollectionActionState, formData: FormData): Promise<CollectionActionState> {
+export async function updateCollectionCopyState(copyId: string, _previous: CollectionActionState, formData: FormData): Promise<CollectionActionState> {
   try {
-    await updateCollectionItem(variantId, formData);
+    await updateCollectionCopy(copyId, formData);
     return { ok: true, message: "Modifications enregistrées." };
   } catch {
     return { ok: false, message: "Impossible d’enregistrer. Réessayez." };
@@ -102,10 +104,17 @@ export async function updateCollectionItemState(variantId: string, _previous: Co
 
 export async function addToCollectionWithDetails(variantId: string, _previous: CollectionActionState, formData: FormData): Promise<CollectionActionState> {
   try {
-    await addToCollection(variantId);
-    const hasDetails = ["quantity", "condition", "isComplete", "hasBox", "hasInstructions", "purchaseDate", "purchasePrice", "notes"].some((name) => formData.has(name));
-    if (hasDetails) await updateCollectionItem(variantId, formData);
-    return { ok: true, message: "Ajouté à la collection. Les champs laissés vides restent inconnus." };
+    const id = variantIdSchema.parse(variantId);
+    const { db, collection } = await getCollectorContext(true);
+    if (!collection) throw new Error("Collection principale introuvable");
+    await db.productVariant.findUniqueOrThrow({ where: { id }, select: { id: true } });
+    const data = parseCopyData(formData);
+    await db.$transaction(async (tx) => {
+      const item = await tx.collectionItem.upsert({ where: { collectionId_variantId: { collectionId: collection.id, variantId: id } }, update: {}, create: { collectionId: collection.id, variantId: id } });
+      await tx.collectionCopy.create({ data: { collectionItemId: item.id, ...data } });
+    });
+    refreshCollectorViews();
+    return { ok: true, message: "Nouvel exemplaire ajouté. Les champs laissés vides restent inconnus." };
   } catch {
     return { ok: false, message: "Impossible d’ajouter cet objet." };
   }
@@ -113,19 +122,19 @@ export async function addToCollectionWithDetails(variantId: string, _previous: C
 
 export async function bulkUpdateCollectionItems(_previous: CollectionActionState, formData: FormData): Promise<CollectionActionState> {
   try {
-    const itemIds = [...new Set(formData.getAll("itemIds").map(String))].map((value) => variantIdSchema.parse(value));
-    if (!itemIds.length) return { ok: false, message: "Sélectionnez au moins un objet." };
+    const copyIds = [...new Set(formData.getAll("copyIds").map(String))].map((value) => copyIdSchema.parse(value));
+    if (!copyIds.length) return { ok: false, message: "Sélectionnez au moins un exemplaire." };
     const field = z.enum(["condition", "isComplete", "hasBox", "hasInstructions"]).parse(formData.get("field"));
     const { db, collection } = await getCollectorContext(true);
     if (!collection) throw new Error("Collection principale introuvable");
-    const owned = await db.collectionItem.findMany({ where: { id: { in: itemIds }, collectionId: collection.id }, select: { id: true } });
-    if (owned.length !== itemIds.length) throw new Error("Sélection invalide");
+    const owned = await db.collectionCopy.findMany({ where: { id: { in: copyIds }, collectionItem: { collectionId: collection.id } }, select: { id: true } });
+    if (owned.length !== copyIds.length) throw new Error("Sélection invalide");
     const data = field === "condition"
       ? { condition: z.enum(["SEALED", "NEW", "EXCELLENT", "GOOD", "FAIR", "POOR", "UNKNOWN"]).parse(formData.get("condition")) }
       : { [field]: parseOptionalBoolean(formData.get("booleanValue")) };
-    await db.$transaction(itemIds.map((id) => db.collectionItem.update({ where: { id }, data })));
+    await db.$transaction(copyIds.map((id) => db.collectionCopy.update({ where: { id }, data })));
     refreshCollectorViews();
-    return { ok: true, message: `${itemIds.length} objet${itemIds.length > 1 ? "s" : ""} modifié${itemIds.length > 1 ? "s" : ""}.` };
+    return { ok: true, message: `${copyIds.length} exemplaire${copyIds.length > 1 ? "s" : ""} modifié${copyIds.length > 1 ? "s" : ""}.` };
   } catch {
     return { ok: false, message: "La modification en série n’a pas été appliquée." };
   }
@@ -148,6 +157,21 @@ function parseOptionalPrice(value: FormDataEntryValue | null) {
   const amount = Number(text);
   if (!Number.isFinite(amount) || amount < 0 || amount > 1_000_000) throw new Error("Prix invalide");
   return amount.toFixed(2);
+}
+
+function parseCopyData(formData: FormData) {
+  const condition = z.enum(["SEALED", "NEW", "EXCELLENT", "GOOD", "FAIR", "POOR", "UNKNOWN"]).catch("UNKNOWN").parse(formData.get("condition"));
+  const purchasePrice = parseOptionalPrice(formData.get("purchasePrice"));
+  return {
+    condition,
+    isComplete: parseOptionalBoolean(formData.get("isComplete")),
+    hasBox: parseOptionalBoolean(formData.get("hasBox")),
+    hasInstructions: parseOptionalBoolean(formData.get("hasInstructions")),
+    purchaseDate: parseOptionalDate(formData.get("purchaseDate")),
+    purchasePrice,
+    currency: purchasePrice === null ? null : z.string().trim().toUpperCase().length(3).catch("EUR").parse(formData.get("currency") ?? "EUR"),
+    notes: String(formData.get("notes") ?? "").trim().slice(0, 2000) || null,
+  };
 }
 
 export async function updateWishlistItem(variantId: string, formData: FormData) {

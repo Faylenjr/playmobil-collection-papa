@@ -42,10 +42,10 @@ export async function getCollectorStatuses(variantIds: string[]) {
   if (!variantIds.length) return statuses;
   const { db, collection, wishlist } = await getCollectorContext();
   const [owned, wanted] = await Promise.all([
-    collection ? db.collectionItem.findMany({ where: { collectionId: collection.id, variantId: { in: variantIds } }, select: { variantId: true, quantity: true } }) : [],
+    collection ? db.collectionItem.findMany({ where: { collectionId: collection.id, variantId: { in: variantIds } }, select: { variantId: true, _count: { select: { copies: true } } } }) : [],
     wishlist ? db.wishlistItem.findMany({ where: { wishlistId: wishlist.id, variantId: { in: variantIds } }, select: { variantId: true } }) : [],
   ]);
-  for (const item of owned) statuses.set(item.variantId, { inCollection: true, inWishlist: false, quantity: item.quantity });
+  for (const item of owned) statuses.set(item.variantId, { inCollection: true, inWishlist: false, quantity: item._count.copies });
   for (const item of wanted) {
     const current = statuses.get(item.variantId);
     statuses.set(item.variantId, { inCollection: current?.inCollection ?? false, inWishlist: true, quantity: current?.quantity ?? 0 });
@@ -57,16 +57,19 @@ export async function getCollectorSummary() {
   const { db, collection, wishlist } = await getCollectorContext();
   const [catalogue, collectionCount, wishlistCount] = await Promise.all([
     db.productVariant.count(),
-    collection ? db.collectionItem.aggregate({ where: { collectionId: collection.id }, _sum: { quantity: true }, _count: true }) : null,
+    collection ? Promise.all([
+      db.collectionItem.count({ where: { collectionId: collection.id } }),
+      db.collectionCopy.count({ where: { collectionItem: { collectionId: collection.id } } }),
+    ]) : null,
     wishlist ? db.wishlistItem.count({ where: { wishlistId: wishlist.id } }) : 0,
   ]);
-  return { catalogue, collection: collectionCount?._sum.quantity ?? 0, distinctCollection: collectionCount?._count ?? 0, wishlist: wishlistCount };
+  return { catalogue, collection: collectionCount?.[1] ?? 0, distinctCollection: collectionCount?.[0] ?? 0, wishlist: wishlistCount };
 }
 
 export async function getVariantCollectorState(variantId: string) {
   const { db, collection, wishlist } = await getCollectorContext();
   const [item, wanted] = await Promise.all([
-    collection ? db.collectionItem.findUnique({ where: { collectionId_variantId: { collectionId: collection.id, variantId } } }) : null,
+    collection ? db.collectionItem.findUnique({ where: { collectionId_variantId: { collectionId: collection.id, variantId } }, include: { copies: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] } } }) : null,
     wishlist ? db.wishlistItem.findUnique({ where: { wishlistId_variantId: { wishlistId: wishlist.id, variantId } } }) : null,
   ]);
   return { item, wanted };
@@ -112,7 +115,7 @@ export type CollectionFilters = {
   purchaseDate?: "known" | "unknown" | undefined;
   purchasePrice?: "known" | "unknown" | undefined;
   multiple?: boolean | undefined;
-  review?: "all" | "condition" | "complete" | "box" | "instructions" | "purchaseDate" | "purchasePrice" | "quantity" | undefined;
+  review?: "all" | "condition" | "complete" | "box" | "instructions" | "purchaseDate" | "purchasePrice" | undefined;
 };
 
 function nullableBooleanFilter(value: CollectionFilters["complete"]): boolean | null | undefined {
@@ -126,29 +129,30 @@ export function buildCollectionItemWhere(collectionId: string, filters: Collecti
   };
   const allowedConditions = ["SEALED", "NEW", "EXCELLENT", "GOOD", "FAIR", "POOR", "UNKNOWN"] as const;
   const condition = allowedConditions.find((value) => value === filters.condition);
-  if (condition) where.condition = condition;
+  const copyFilters: Prisma.CollectionCopyWhereInput[] = [];
+  if (condition) copyFilters.push({ condition });
   const complete = nullableBooleanFilter(filters.complete);
   const box = nullableBooleanFilter(filters.box);
   const instructions = nullableBooleanFilter(filters.instructions);
-  if (complete !== undefined) where.isComplete = complete;
-  if (box !== undefined) where.hasBox = box;
-  if (instructions !== undefined) where.hasInstructions = instructions;
-  if (filters.purchaseDate) where.purchaseDate = filters.purchaseDate === "known" ? { not: null } : null;
-  if (filters.purchasePrice) where.purchasePrice = filters.purchasePrice === "known" ? { not: null } : null;
-  if (filters.multiple) where.quantity = { gt: 1 };
+  if (complete !== undefined) copyFilters.push({ isComplete: complete });
+  if (box !== undefined) copyFilters.push({ hasBox: box });
+  if (instructions !== undefined) copyFilters.push({ hasInstructions: instructions });
+  if (filters.purchaseDate) copyFilters.push({ purchaseDate: filters.purchaseDate === "known" ? { not: null } : null });
+  if (filters.purchasePrice) copyFilters.push({ purchasePrice: filters.purchasePrice === "known" ? { not: null } : null });
+  if (filters.multiple) where.copies = { some: {} };
   if (filters.review) {
-    const reviewWhere: Record<NonNullable<CollectionFilters["review"]>, Prisma.CollectionItemWhereInput> = {
-      all: { OR: [{ condition: "UNKNOWN" }, { isComplete: null }, { hasBox: null }, { hasInstructions: null }, { purchaseDate: null }, { purchasePrice: null }, { quantity: { lte: 0 } }, { quantity: { gt: 20 } }] },
+    const reviewWhere: Record<NonNullable<CollectionFilters["review"]>, Prisma.CollectionCopyWhereInput> = {
+      all: { OR: [{ condition: "UNKNOWN" }, { isComplete: null }, { hasBox: null }, { hasInstructions: null }, { purchaseDate: null }, { purchasePrice: null }] },
       condition: { condition: "UNKNOWN" },
       complete: { isComplete: null },
       box: { hasBox: null },
       instructions: { hasInstructions: null },
       purchaseDate: { purchaseDate: null },
       purchasePrice: { purchasePrice: null },
-      quantity: { OR: [{ quantity: { lte: 0 } }, { quantity: { gt: 20 } }] },
     };
-    Object.assign(where, { AND: [reviewWhere[filters.review]] });
+    copyFilters.push(reviewWhere[filters.review]);
   }
+  if (copyFilters.length) where.copies = { some: { AND: copyFilters } };
   return where;
 }
 
@@ -156,23 +160,27 @@ export async function getCollectionItems(filters: CollectionFilters, sort: strin
   const { db, collection } = await getCollectorContext();
   if (!collection) return { items: [], total: 0, pages: 1 };
   const orderBy: Prisma.CollectionItemOrderByWithRelationInput[] = sort === "quantity"
-    ? [{ quantity: "desc" }, { variant: { canonicalKey: "asc" } }]
+    ? [{ copies: { _count: "desc" } }, { variant: { canonicalKey: "asc" } }]
     : sort === "oldest"
       ? [{ variant: { releaseYear: { sort: "asc", nulls: "last" } } }]
       : [{ variant: { releaseYear: { sort: "desc", nulls: "last" } } }, { variant: { canonicalKey: "asc" } }];
-  const where = buildCollectionItemWhere(collection.id, filters);
+  let where = buildCollectionItemWhere(collection.id, filters);
+  if (filters.multiple) {
+    const multiples = await db.collectionCopy.groupBy({ by: ["collectionItemId"], where: { collectionItem: { collectionId: collection.id } }, _count: true, having: { collectionItemId: { _count: { gt: 1 } } } });
+    where = { ...where, id: { in: multiples.map(({ collectionItemId }) => collectionItemId) } };
+  }
   const [total, items] = await Promise.all([
     db.collectionItem.count({ where }),
-    db.collectionItem.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { variant: { include: itemVariantInclude } } }),
+    db.collectionItem.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { copies: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] }, variant: { include: itemVariantInclude } } }),
   ]);
-  return { items: items.map((item) => ({ ...item, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items: items.map((item) => ({ ...item, quantity: item.copies.length, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }
 
 export async function getCollectionQualitySummary() {
   const { db, collection } = await getCollectorContext();
   const empty = { total: 0, copies: 0, needsReview: 0, condition: { known: 0, unknown: 0 }, complete: { yes: 0, no: 0, unknown: 0 }, box: { yes: 0, no: 0, unknown: 0 }, instructions: { yes: 0, no: 0, unknown: 0 }, purchaseDate: { known: 0, unknown: 0 }, purchasePrice: { known: 0, unknown: 0 }, notes: { known: 0, unknown: 0 }, suspiciousQuantity: 0 };
   if (!collection) return empty;
-  const rows = await db.collectionItem.findMany({ where: { collectionId: collection.id }, select: { quantity: true, condition: true, isComplete: true, hasBox: true, hasInstructions: true, purchaseDate: true, purchasePrice: true, notes: true } });
+  const rows = await db.collectionCopy.findMany({ where: { collectionItem: { collectionId: collection.id } }, select: { condition: true, isComplete: true, hasBox: true, hasInstructions: true, purchaseDate: true, purchasePrice: true, notes: true } });
   return summarizeCollectionQuality(rows);
 }
 
@@ -184,17 +192,17 @@ export async function getCollectionRangeOptions() {
 export async function getInventoryOptions() {
   const { db, collection } = await getCollectorContext();
   if (!collection) return { total: 0, physicalMissing: 0, themes: [], ranges: [], years: [] };
-  const items = await db.collectionItem.findMany({
-    where: { collectionId: collection.id },
+  const items = await db.collectionCopy.findMany({
+    where: { collectionItem: { collectionId: collection.id } },
     select: {
       condition: true, isComplete: true, hasBox: true, hasInstructions: true,
-      variant: {
+      collectionItem: { select: { variant: {
         select: {
           releaseYear: true,
           product: { select: { releaseYear: true, rangeMemberships: { select: { range: { select: { slug: true, canonicalName: true } } } }, themes: { select: { theme: { select: { slug: true, name: true } } } } } },
           themes: { select: { theme: { select: { slug: true, name: true } } } },
         },
-      },
+      } } },
     },
   });
   const missing = (item: typeof items[number]) => item.condition === "UNKNOWN" || item.isComplete === null || item.hasBox === null || item.hasInstructions === null;
@@ -202,16 +210,17 @@ export async function getInventoryOptions() {
   const rangeMap = new Map<string, { slug: string; name: string; total: number; missing: number }>();
   const yearMap = new Map<number, { year: number; total: number; missing: number }>();
   for (const item of items) {
-    const themes = new Map([...item.variant.product.themes, ...item.variant.themes].map(({ theme }) => [theme.slug, theme]));
+    const variant = item.collectionItem.variant;
+    const themes = new Map([...variant.product.themes, ...variant.themes].map(({ theme }) => [theme.slug, theme]));
     for (const theme of themes.values()) {
       const current = themeMap.get(theme.slug) ?? { slug: theme.slug, name: theme.name, total: 0, missing: 0 };
       current.total += 1; current.missing += Number(missing(item)); themeMap.set(theme.slug, current);
     }
-    for (const { range } of item.variant.product.rangeMemberships) {
+    for (const { range } of variant.product.rangeMemberships) {
       const current = rangeMap.get(range.slug) ?? { slug: range.slug, name: range.canonicalName, total: 0, missing: 0 };
       current.total += 1; current.missing += Number(missing(item)); rangeMap.set(range.slug, current);
     }
-    const year = item.variant.releaseYear ?? item.variant.product.releaseYear;
+    const year = variant.releaseYear ?? variant.product.releaseYear;
     if (year) {
       const current = yearMap.get(year) ?? { year, total: 0, missing: 0 };
       current.total += 1; current.missing += Number(missing(item)); yearMap.set(year, current);
@@ -229,21 +238,33 @@ export async function getInventoryOptions() {
 export async function getInventoryItems(scope: InventoryScope, value = "") {
   const { db, collection } = await getCollectorContext();
   if (!collection) return [];
-  const where: Prisma.CollectionItemWhereInput = { collectionId: collection.id };
+  const where: Prisma.CollectionCopyWhereInput = { collectionItem: { collectionId: collection.id } };
   if (scope === "missing") where.OR = [{ condition: "UNKNOWN" }, { isComplete: null }, { hasBox: null }, { hasInstructions: null }];
   if (scope === "condition") where.condition = "UNKNOWN";
   if (scope === "complete") where.isComplete = null;
   if (scope === "box") where.hasBox = null;
   if (scope === "instructions") where.hasInstructions = null;
-  if (scope === "theme" && value) where.variant = collectionSearchWhere("", value);
-  if (scope === "range" && value) where.variant = collectionSearchWhere("", "", value);
-  if (scope === "year" && Number.isInteger(Number(value))) where.variant = collectionSearchWhere("", "", "", Number(value));
-  const rows = await db.collectionItem.findMany({
+  if (scope === "theme" && value) where.collectionItem = { collectionId: collection.id, variant: collectionSearchWhere("", value) };
+  if (scope === "range" && value) where.collectionItem = { collectionId: collection.id, variant: collectionSearchWhere("", "", value) };
+  if (scope === "year" && Number.isInteger(Number(value))) where.collectionItem = { collectionId: collection.id, variant: collectionSearchWhere("", "", "", Number(value)) };
+  const rows = await db.collectionCopy.findMany({
     where,
-    orderBy: [{ variant: { releaseYear: { sort: "desc", nulls: "last" } } }, { variant: { canonicalKey: "asc" } }],
-    include: { variant: { include: { ...itemVariantInclude, product: { select: { ...itemVariantInclude.product.select, _count: { select: { variants: true } } } } } } },
+    orderBy: [{ collectionItem: { variant: { releaseYear: { sort: "desc", nulls: "last" } } } }, { collectionItem: { variant: { canonicalKey: "asc" } } }, { createdAt: "asc" }, { id: "asc" }],
+    include: {
+      collectionItem: {
+        include: {
+          copies: { select: { id: true }, orderBy: [{ createdAt: "asc" }, { id: "asc" }] },
+          variant: {
+            include: {
+              ...itemVariantInclude,
+              product: { select: { ...itemVariantInclude.product.select, _count: { select: { variants: true } } } },
+            },
+          },
+        },
+      },
+    },
   });
-  return rows.map((item) => ({ ...item, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } }));
+  return rows.map((copy) => ({ ...copy, copyIndex: copy.collectionItem.copies.findIndex(({ id }) => id === copy.id), copyTotal: copy.collectionItem.copies.length, variant: { ...copy.collectionItem.variant, media: orderMediaForDisplay(copy.collectionItem.variant.media) } }));
 }
 
 export async function searchCollectionCandidates(query: string, limit = 24) {

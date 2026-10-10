@@ -8,7 +8,7 @@ describe("guided collection inventory", () => {
   });
 
   it("creates stable scoped resume keys", () => {
-    expect(inventoryStorageKey("theme", "Pirates & Corsaires")).toBe("playmobil-inventory:v1:theme:pirates-corsaires");
+    expect(inventoryStorageKey("theme", "Pirates & Corsaires")).toBe("playmobil-inventory:v2:theme:pirates-corsaires");
     expect(parseInventoryScope("box")).toBe("box");
     expect(parseInventoryScope("invalid")).toBe("missing");
   });

@@ -19,7 +19,7 @@ export function needsPhysicalInformation(item: InventoryPhysicalState) {
 
 export function inventoryStorageKey(scope: InventoryScope, value = "") {
   const safeValue = value.trim().toLowerCase().replace(/[^a-z0-9_-]+/g, "-").slice(0, 80);
-  return `playmobil-inventory:v1:${scope}:${safeValue || "all"}`;
+  return `playmobil-inventory:v2:${scope}:${safeValue || "all"}`;
 }
 
 export function clampInventoryIndex(index: number, total: number) {

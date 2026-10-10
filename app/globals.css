@@ -281,6 +281,15 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .quick-editor-form input, .quick-editor-form select, .quick-editor-form textarea { width: 100%; padding: 9px 10px; color: var(--ink); background: white; border: 1px solid #bdd0e0; border-radius: 8px; }
 .quick-editor-form .wide-field, .quick-editor-form button, .quick-editor-form .form-feedback { grid-column: 1 / -1; }
 .quick-editor-form button, .bulk-editor button { min-height: 42px; padding: 9px 14px; color: white; background: var(--blue-700); border: 0; border-radius: 9px; cursor: pointer; font-weight: 850; }
+.copy-list { margin-top: 9px; padding: 0 10px 10px; background: #f7fafc; border: 1px solid var(--line); border-radius: 14px; }
+.copy-list > summary { padding: 12px 4px; color: var(--blue-800); cursor: pointer; font-weight: 900; }
+.copy-card { margin-bottom: 10px; padding: 11px; background: white; border: 1px solid var(--line); border-radius: 12px; }
+.copy-card-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.copy-card-heading .bulk-select { margin: 0; }
+.copy-detail-list { display: grid; gap: 12px; margin: 14px 0; }
+.copy-detail-list .copy-card h3 { margin-top: 0; }
+.danger-link { margin-top: 9px; padding: 4px 0; color: #a52c32; background: transparent; border: 0; cursor: pointer; font-weight: 800; text-decoration: underline; }
+.copy-position { width: fit-content; padding: 5px 9px; color: #135c3b !important; background: #e5f5eb; border-radius: 999px; font-weight: 900; }
 .form-feedback { margin: 0; font-size: .84rem; font-weight: 800; }
 .form-feedback.success { color: #18743e; }
 .form-feedback.error { color: #b32e2e; }

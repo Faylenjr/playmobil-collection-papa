@@ -4,7 +4,9 @@ import { ProductImage } from "../../../components/ProductImage";
 import { CollectionControls } from "../../../components/CollectionControls";
 import { getVariant } from "../../../lib/catalogue";
 import { getVariantCollectorState } from "../../../lib/collector";
-import { updateCollectionItem } from "../../actions/collector";
+import { QuickCollectionEditor } from "../../../components/QuickCollectionEditor";
+import { DeleteCollectionCopyButton } from "../../../components/DeleteCollectionCopyButton";
+import { copyLabel } from "../../../lib/collection-management";
 import { returnLabel, sanitizeReturnTo } from "../../../lib/navigation-context";
 import { getVariantPriceSummary } from "../../../lib/discovery";
 import { calculatePromotion, deliveryEstimateLabel, isOfferFresh, marketplaceSearchLinks, priceHistoryStats, relativeRefreshLabel, safeExternalOfferUrl } from "../../../lib/pricing";
@@ -99,19 +101,12 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
         </div>
       </section>
 
-      <section className="collector-panel">
+      <section className="collector-panel" id="mes-exemplaires">
         <div className="section-heading"><span className="eyebrow">Mon inventaire</span><h2>Ma collection</h2></div>
         <CollectionControls variantId={variant.id} inCollection={Boolean(collectorState.item)} inWishlist={Boolean(collectorState.wanted)} />
-        {collectorState.item && <div className="owned-details">
-          <dl className="detail-grid">
-            <Field label="Quantité" value={collectorState.item.quantity} />
-            <Field label="État" value={conditionLabels[collectorState.item.condition]} />
-            <Field label="Complet" value={collectorState.item.isComplete === null ? "Non renseigné" : collectorState.item.isComplete ? "Oui" : "Non"} />
-            <Field label="Boîte" value={collectorState.item.hasBox === null ? "Non renseigné" : collectorState.item.hasBox ? "Oui" : "Non"} />
-            <Field label="Notice" value={collectorState.item.hasInstructions === null ? "Non renseigné" : collectorState.item.hasInstructions ? "Oui" : "Non"} />
-            <Field label="Notes" value={collectorState.item.notes} />
-          </dl>
-          <details className="edit-collection"><summary>Modifier les informations</summary><CollectionEditor variantId={variant.id} item={collectorState.item} /></details>
+        {collectorState.item && <div className="owned-details"><p><strong>{collectorState.item.copies.length}</strong> exemplaire{collectorState.item.copies.length > 1 ? "s" : ""} physique{collectorState.item.copies.length > 1 ? "s" : ""}</p>
+          <div className="copy-detail-list">{collectorState.item.copies.map((copy, index) => <article className="copy-card" key={copy.id}><h3>{copyLabel(index, collectorState.item!.copies.length)}</h3><dl className="detail-grid"><Field label="État" value={conditionLabels[copy.condition]} /><Field label="Complet" value={copy.isComplete === null ? "Non renseigné" : copy.isComplete ? "Oui" : "Non"} /><Field label="Boîte" value={copy.hasBox === null ? "Non renseigné" : copy.hasBox ? "Oui" : "Non"} /><Field label="Notice" value={copy.hasInstructions === null ? "Non renseigné" : copy.hasInstructions ? "Oui" : "Non"} /><Field label="Notes" value={copy.notes} /></dl><QuickCollectionEditor variantId={variant.id} copyId={copy.id} item={{ ...copy, purchasePrice: copy.purchasePrice === null ? null : String(copy.purchasePrice) }} /><DeleteCollectionCopyButton copyId={copy.id} isLast={collectorState.item!.copies.length === 1} /></article>)}</div>
+          <QuickCollectionEditor variantId={variant.id} addMode />
         </div>}
       </section>
 
@@ -187,18 +182,4 @@ function OfferGroup({ title, empty, offers, listPrices }: { title: string; empty
     const history = priceHistoryStats(offer.observations.map((item) => ({ itemPrice: Number(item.itemPrice), totalPrice: item.totalPrice === null ? null : Number(item.totalPrice), observedAt: item.observedAt })));
     return <article key={offer.id}><div><strong>{offer.retailer.name}</strong><span>{offer.condition === "USED" ? "Occasion" : offer.condition === "SEALED" ? "Scellé" : "Neuf"} · {offer.availability === "AVAILABLE" ? "Disponible" : offer.availability}</span></div>{latest ? <div className="offer-prices"><b>{Number(latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</b><small>Livraison {latest.shippingPrice === null ? "non renseignée" : Number(latest.shippingPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })} · Total {Number(latest.totalPrice ?? latest.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</small><small>{relativeRefreshLabel(latest.observedAt)} · {latest.observedAt.toLocaleString("fr-FR")}</small>{promotion !== null && promotion > 0 && <span className="promotion-badge">−{Math.round(promotion * 100)} % sur le prix article</span>}{history?.drop && <small>Baisse récente : −{history.drop.amount.toLocaleString("fr-FR", { style: "currency", currency: latest.currency })} ({Math.round(history.drop.percentage * 100)} %)</small>}{history && offer.observations.length > 1 && <details><summary>Historique ({offer.observations.length})</summary><p>Plus bas livré : {history.lowest.toLocaleString("fr-FR", { style: "currency", currency: latest.currency })} · plus haut : {history.highest.toLocaleString("fr-FR", { style: "currency", currency: latest.currency })}</p><ul>{offer.observations.slice(0, 10).map((item) => <li key={item.id}>{item.observedAt.toLocaleDateString("fr-FR")} · {Number(item.totalPrice ?? item.itemPrice).toLocaleString("fr-FR", { style: "currency", currency: item.currency })}</li>)}</ul></details>}</div> : <b>Prix indisponible</b>}{safeUrl && <a href={safeUrl} target="_blank" rel="noreferrer sponsored">Voir l’offre ↗</a>}</article>;
   })}</div> : <p className="muted-copy">{empty}</p>}</div>;
-}
-
-function CollectionEditor({ variantId, item }: { variantId: string; item: NonNullable<Awaited<ReturnType<typeof getVariantCollectorState>>["item"]> }) {
-  const update = updateCollectionItem.bind(null, variantId);
-  const booleanOptions = <><option value="unknown">Non renseigné</option><option value="yes">Oui</option><option value="no">Non</option></>;
-  return <form action={update} className="collection-editor">
-    <label>Quantité<input name="quantity" type="number" min="1" max="999" defaultValue={item.quantity} /></label>
-    <label>État<select name="condition" defaultValue={item.condition}><option value="UNKNOWN">Non renseigné</option><option value="SEALED">Sous blister</option><option value="NEW">Neuf</option><option value="EXCELLENT">Excellent</option><option value="GOOD">Bon</option><option value="FAIR">Correct</option><option value="POOR">Usé</option></select></label>
-    <label>Complet<select name="isComplete" defaultValue={item.isComplete === null ? "unknown" : item.isComplete ? "yes" : "no"}>{booleanOptions}</select></label>
-    <label>Avec boîte<select name="hasBox" defaultValue={item.hasBox === null ? "unknown" : item.hasBox ? "yes" : "no"}>{booleanOptions}</select></label>
-    <label>Avec notice<select name="hasInstructions" defaultValue={item.hasInstructions === null ? "unknown" : item.hasInstructions ? "yes" : "no"}>{booleanOptions}</select></label>
-    <label className="wide">Notes<textarea name="notes" defaultValue={item.notes ?? ""} rows={3} /></label>
-    <button type="submit">Enregistrer les modifications</button>
-  </form>;
 }

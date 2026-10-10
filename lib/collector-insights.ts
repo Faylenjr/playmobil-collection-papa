@@ -111,10 +111,10 @@ export async function getRecentCommercialProducts(year: number, limit = 72) {
 
 export async function getCollectionInsights() {
   const { db, collection, wishlist } = await getCollectorContext();
-  if (!collection) return { totalCopies: 0, distinctVariants: 0, distinctProducts: 0, wishlist: 0, themes: [], years: [], multiples: [], potentialDuplicateGroups: [] };
+  if (!collection) return { totalCopies: 0, distinctVariants: 0, distinctProducts: 0, wishlist: 0, themes: [], years: [], multiples: [], potentialDuplicateGroups: [], latestCopies: [] };
   const items = await db.collectionItem.findMany({
     where: { collectionId: collection.id },
-    include: { variant: { select: { id: true, productId: true, releaseYear: true, product: { select: { releaseYear: true } }, themes: { select: { theme: { select: { slug: true, name: true } } } } } } },
+    include: { copies: { orderBy: [{ createdAt: "desc" }, { id: "desc" }] }, variant: { select: { id: true, productId: true, releaseYear: true, product: { select: { releaseYear: true } }, themes: { select: { theme: { select: { slug: true, name: true } } } } } } },
   });
   const themeMap = new Map<string, { slug: string; name: string; products: Set<string> }>();
   const yearMap = new Map<number, Set<string>>();
@@ -126,21 +126,22 @@ export async function getCollectionInsights() {
     const year = item.variant.releaseYear ?? item.variant.product.releaseYear;
     if (year) { const products = yearMap.get(year) ?? new Set<string>(); products.add(item.variant.productId); yearMap.set(year, products); }
   }
-  const multipleIds = items.filter(({ quantity }) => quantity > 1).map(({ variantId }) => variantId);
+  const multipleIds = items.filter(({ copies }) => copies.length > 1).map(({ variantId }) => variantId);
   const multiples = await getVariantsByIds(multipleIds);
   const duplicateGroups = logicalDuplicateGroups(items.map((item) => ({ variantId: item.variantId, productId: item.variant.productId })));
   const potentialIds = duplicateGroups.flatMap(({ variantIds }) => variantIds);
   const potentialVariants = await getVariantsByIds(potentialIds);
   const potentialById = new Map(potentialVariants.map((variant) => [variant.id, variant]));
-  const quantityById = new Map(items.map(({ variantId, quantity }) => [variantId, quantity]));
+  const quantityById = new Map(items.map(({ variantId, copies }) => [variantId, copies.length]));
   return {
-    totalCopies: items.reduce((sum, item) => sum + item.quantity, 0),
+    totalCopies: items.reduce((sum, item) => sum + item.copies.length, 0),
     distinctVariants: items.length,
     distinctProducts: new Set(items.map(({ variant }) => variant.productId)).size,
     wishlist: wishlist ? await db.wishlistItem.count({ where: { wishlistId: wishlist.id } }) : 0,
     themes: [...themeMap.values()].map((theme) => ({ slug: theme.slug, name: theme.name, count: theme.products.size })).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "fr")),
     years: [...yearMap].map(([year, products]) => ({ year, count: products.size })).sort((a, b) => b.year - a.year),
     multiples: multiples.map((variant) => ({ variant, quantity: quantityById.get(variant.id) ?? 1 })),
+    latestCopies: items.flatMap((item) => item.copies.map((copy) => ({ copy, variantId: item.variantId }))).sort((a, b) => b.copy.createdAt.getTime() - a.copy.createdAt.getTime()).slice(0, 12),
     potentialDuplicateGroups: duplicateGroups.map(({ productId, variantIds }) => ({ productId, variants: variantIds.flatMap((id) => potentialById.get(id) ? [potentialById.get(id)!] : []) })),
   };
 }

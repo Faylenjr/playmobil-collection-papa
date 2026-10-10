@@ -52,7 +52,7 @@ async function main() {
       db.product.findMany({ where: { baseReference: { in: [...officialMissing2026References] } }, select: { baseReference: true, releaseYear: true, canonicalKey: true } }),
       db.externalCandidate.groupBy({ by: ["status"], where: { observations: { some: { announcedYear: 2027 } } }, _count: true }),
       db.productRange.findMany({ select: { slug: true, canonicalName: true, _count: { select: { memberships: true } } }, orderBy: { canonicalName: "asc" } }),
-      db.collection.findFirst({ where: { name: COLLECTION_NAME }, select: { items: { select: { quantity: true, variant: { select: { productId: true } } } }, user: { select: { wishlists: { where: { name: WISHLIST_NAME }, select: { _count: { select: { items: true } } } } } } } }),
+      db.collection.findFirst({ where: { name: COLLECTION_NAME }, select: { items: { select: { _count: { select: { copies: true } }, variant: { select: { productId: true } } } }, user: { select: { wishlists: { where: { name: WISHLIST_NAME }, select: { _count: { select: { items: true } } } } } } } }),
     ]);
     const imported = officialImports.filter(({ canonicalKey }) => canonicalKey.startsWith("official:playmobil:"));
     const items = collector?.items ?? [];
@@ -62,7 +62,7 @@ async function main() {
       official2026AuditImports: { expected: officialMissing2026References.length, imported: imported.length, withSourcedReleaseYear: imported.filter(({ releaseYear }) => releaseYear !== null).length, references: imported.map(({ baseReference }) => baseReference).sort() },
       candidates2027: Object.fromEntries(candidateGroups.map((row) => [row.status, row._count])),
       ranges: { count: ranges.length, memberships: ranges.reduce((sum, range) => sum + range._count.memberships, 0), items: ranges },
-      collection: { copies: items.reduce((sum, item) => sum + item.quantity, 0), variants: items.length, products: new Set(items.map(({ variant }) => variant.productId)).size, multiples: items.filter(({ quantity }) => quantity > 1).length, wishlist: collector?.user.wishlists[0]?._count.items ?? 0 },
+      collection: { copies: items.reduce((sum, item) => sum + item._count.copies, 0), variants: items.length, products: new Set(items.map(({ variant }) => variant.productId)).size, multiples: items.filter(({ _count }) => _count.copies > 1).length, wishlist: collector?.user.wishlists[0]?._count.items ?? 0 },
     }, null, 2));
   } finally { await db.$disconnect(); }
 }

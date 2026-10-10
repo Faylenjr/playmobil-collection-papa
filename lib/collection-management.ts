@@ -1,5 +1,4 @@
 export type PhysicalCollectionRow = {
-  quantity: number;
   condition: string;
   isComplete: boolean | null;
   hasBox: boolean | null;
@@ -21,8 +20,8 @@ export function summarizeCollectionQuality(rows: PhysicalCollectionRow[]) {
   });
   return {
     total: rows.length,
-    copies: rows.reduce((sum, row) => sum + row.quantity, 0),
-    needsReview: rows.filter((row) => row.condition === "UNKNOWN" || row.isComplete === null || row.hasBox === null || row.hasInstructions === null || row.purchaseDate === null || row.purchasePrice === null || row.quantity <= 0 || row.quantity > 20).length,
+    copies: rows.length,
+    needsReview: rows.filter((row) => row.condition === "UNKNOWN" || row.isComplete === null || row.hasBox === null || row.hasInstructions === null || row.purchaseDate === null || row.purchasePrice === null).length,
     condition: { known: rows.filter(({ condition }) => condition !== "UNKNOWN").length, unknown: rows.filter(({ condition }) => condition === "UNKNOWN").length },
     complete: tri((row) => row.isComplete),
     box: tri((row) => row.hasBox),
@@ -30,8 +29,33 @@ export function summarizeCollectionQuality(rows: PhysicalCollectionRow[]) {
     purchaseDate: { known: rows.filter(({ purchaseDate }) => purchaseDate !== null).length, unknown: rows.filter(({ purchaseDate }) => purchaseDate === null).length },
     purchasePrice: { known: rows.filter(({ purchasePrice }) => purchasePrice !== null).length, unknown: rows.filter(({ purchasePrice }) => purchasePrice === null).length },
     notes: { known: rows.filter(({ notes }) => Boolean(notes?.trim())).length, unknown: rows.filter(({ notes }) => !notes?.trim()).length },
-    suspiciousQuantity: rows.filter(({ quantity }) => quantity <= 0 || quantity > 20).length,
+    suspiciousQuantity: 0,
   };
+}
+
+export type LegacyCopyMetadata = Omit<PhysicalCollectionRow, never> & {
+  boxCondition?: string | null;
+  currency?: string | null;
+};
+
+/** Mirrors the conservative SQL backfill: only copy #1 inherits old physical data. */
+export function projectLegacyCopies(quantity: number, metadata: LegacyCopyMetadata) {
+  const count = Math.max(1, Math.trunc(quantity) || 1);
+  return Array.from({ length: count }, (_, index) => index === 0 ? { ...metadata } : {
+    condition: "UNKNOWN",
+    isComplete: null,
+    hasBox: null,
+    hasInstructions: null,
+    purchaseDate: null,
+    purchasePrice: null,
+    notes: null,
+    boxCondition: null,
+    currency: null,
+  });
+}
+
+export function copyLabel(index: number, total: number) {
+  return total > 1 ? `Exemplaire ${index + 1} sur ${total}` : "Mon exemplaire";
 }
 
 export function logicalDuplicateGroups(items: Array<{ variantId: string; productId: string }>) {

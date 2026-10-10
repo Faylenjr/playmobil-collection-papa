@@ -1,10 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { addToCollectionWithDetails, type CollectionActionState, updateCollectionItemState } from "../app/actions/collector";
+import { addToCollectionWithDetails, type CollectionActionState, updateCollectionCopyState } from "../app/actions/collector";
 
 type Item = {
-  quantity?: number;
   condition?: string;
   isComplete?: boolean | null;
   hasBox?: boolean | null;
@@ -22,15 +21,15 @@ function TriState({ name, label, value }: { name: string; label: string; value?:
   return <label>{label}<select name={name} defaultValue={value === true ? "yes" : value === false ? "no" : "unknown"}><option value="unknown">Non renseigné</option><option value="yes">Oui</option><option value="no">Non</option></select></label>;
 }
 
-export function QuickCollectionEditor({ variantId, item, addMode = false, open = false }: { variantId: string; item?: Item; addMode?: boolean; open?: boolean }) {
-  const action = addMode ? addToCollectionWithDetails.bind(null, variantId) : updateCollectionItemState.bind(null, variantId);
+export function QuickCollectionEditor({ variantId, copyId, item, addMode = false, open = false }: { variantId: string; copyId?: string; item?: Item; addMode?: boolean; open?: boolean }) {
+  if (!addMode && !copyId) throw new Error("Un exemplaire est requis pour l’édition");
+  const action = addMode ? addToCollectionWithDetails.bind(null, variantId) : updateCollectionCopyState.bind(null, copyId!);
   const [state, formAction, pending] = useActionState(action, initialState);
   const date = item?.purchaseDate ? new Date(item.purchaseDate).toISOString().slice(0, 10) : "";
   const price = item?.purchasePrice === null || item?.purchasePrice === undefined ? "" : String(item.purchasePrice);
   return <details className="quick-editor" open={open}>
-    <summary>{addMode ? "Ajouter avec des détails (facultatif)" : "Modifier rapidement"}</summary>
+    <summary>{addMode ? "Ajouter un nouvel exemplaire" : "Modifier rapidement"}</summary>
     <form action={formAction} className="quick-editor-form">
-      <label>Quantité<input name="quantity" inputMode="numeric" type="number" min="1" max="999" defaultValue={item?.quantity ?? 1} /></label>
       <label>État<select name="condition" defaultValue={item?.condition ?? "UNKNOWN"}>{conditions.map(([value, label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       <TriState name="isComplete" label="Complet" value={item?.isComplete} />
       <TriState name="hasBox" label="Boîte" value={item?.hasBox} />
@@ -39,7 +38,7 @@ export function QuickCollectionEditor({ variantId, item, addMode = false, open =
       <label>Prix d’achat<input name="purchasePrice" inputMode="decimal" type="number" min="0" step="0.01" defaultValue={price} /></label>
       <label>Devise<select name="currency" defaultValue={item?.currency ?? "EUR"}><option value="EUR">EUR</option><option value="CHF">CHF</option><option value="GBP">GBP</option><option value="USD">USD</option></select></label>
       <label className="wide-field">Notes<textarea name="notes" rows={2} defaultValue={item?.notes ?? ""} maxLength={2000} /></label>
-      <button type="submit" disabled={pending}>{pending ? "Enregistrement…" : addMode ? "Ajouter à ma collection" : "Enregistrer"}</button>
+      <button type="submit" disabled={pending}>{pending ? "Enregistrement…" : addMode ? "Ajouter cet exemplaire" : "Enregistrer"}</button>
       {state.message && <p className={`form-feedback ${state.ok ? "success" : "error"}`} role="status">{state.message}</p>}
     </form>
   </details>;

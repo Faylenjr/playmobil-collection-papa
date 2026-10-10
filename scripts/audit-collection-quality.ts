@@ -7,9 +7,10 @@ import { logicalDuplicateGroups, summarizeCollectionQuality } from "../lib/colle
 async function main() {
   const db = getNodeDatabaseClient();
   try {
-    const collection = await db.collection.findFirst({ where: { name: COLLECTION_NAME }, include: { items: { include: { variant: { select: { productId: true } } } } } });
+    const collection = await db.collection.findFirst({ where: { name: COLLECTION_NAME }, include: { items: { include: { copies: true, variant: { select: { productId: true } } } } } });
     const wishlist = await db.wishlist.findFirst({ where: { name: WISHLIST_NAME }, select: { _count: { select: { items: true } } } });
-    const rows = collection?.items ?? [];
+    const items = collection?.items ?? [];
+    const rows = items.flatMap(({ copies }) => copies);
     const missingFrench2026 = await db.$queryRaw<Array<{ reference: string }>>(Prisma.sql`
       WITH commercial AS (
         SELECT COALESCE(pr."base_value",pr."normalized_value") reference,p."id" product_id
@@ -38,7 +39,7 @@ async function main() {
     ]);
     console.log(JSON.stringify({
       generatedAt: new Date().toISOString(),
-      collection: { ...summarizeCollectionQuality(rows), entries: rows.length, logicalProducts: new Set(rows.map((row) => row.variant.productId)).size, wishlist: wishlist?._count.items ?? 0, quantityMultiples: rows.filter(({ quantity }) => quantity > 1).length, logicalDuplicateGroups: logicalDuplicateGroups(rows.map((row) => ({ variantId: row.variantId, productId: row.variant.productId }))).length },
+      collection: { ...summarizeCollectionQuality(rows), entries: items.length, logicalProducts: new Set(items.map((row) => row.variant.productId)).size, wishlist: wishlist?._count.items ?? 0, quantityMultiples: items.filter(({ copies }) => copies.length > 1).length, logicalDuplicateGroups: logicalDuplicateGroups(items.map((row) => ({ variantId: row.variantId, productId: row.variant.productId }))).length },
       missingFrench2026: missingFrench2026.map(({ reference }) => reference),
       ranges: { count: ranges.length, memberships: ranges.reduce((sum, range) => sum + range._count.memberships, 0), items: ranges },
       figureSeries: { products: figureSeries.length, items: figureSeries },

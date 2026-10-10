@@ -9,8 +9,8 @@ export function BulkCollectionForm() {
   const [field, setField] = useState("hasBox");
   const [state, action, pending] = useActionState(bulkUpdateCollectionItems, initialState);
   return <form id="bulk-collection-form" action={action} className="bulk-editor" onSubmit={(event) => {
-    const count = new FormData(event.currentTarget).getAll("itemIds").length;
-    if (!count || (count > 1 && !window.confirm(`${count} objets vont être modifiés. Continuer ?`))) event.preventDefault();
+    const count = new FormData(event.currentTarget).getAll("copyIds").length;
+    if (!count || (count > 1 && !window.confirm(`${count} exemplaires vont être modifiés. Continuer ?`))) event.preventDefault();
   }}>
     <strong>Modifier la sélection</strong>
     <label>Champ<select name="field" value={field} onChange={(event) => setField(event.target.value)}><option value="hasBox">Boîte</option><option value="hasInstructions">Notice</option><option value="isComplete">Complet</option><option value="condition">État</option></select></label>

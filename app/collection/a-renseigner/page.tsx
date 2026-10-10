@@ -9,7 +9,7 @@ import { buildInternalUrl, type SearchParamRecord } from "../../../lib/navigatio
 
 export const dynamic = "force-dynamic";
 type Props = { searchParams: Promise<SearchParamRecord> };
-const allowed = new Set(["all", "condition", "complete", "box", "instructions", "purchaseDate", "purchasePrice", "quantity"]);
+const allowed = new Set(["all", "condition", "complete", "box", "instructions", "purchaseDate", "purchasePrice"]);
 
 export default async function ReviewCollectionPage({ searchParams }: Props) {
   const params = await searchParams;
@@ -22,7 +22,7 @@ export default async function ReviewCollectionPage({ searchParams }: Props) {
   const returnTo = buildInternalUrl("/collection/a-renseigner", params, { page: page > 1 ? page : null });
   const filters = [
     ["all", "Tout", quality.needsReview],
-    ["condition", "État", quality.condition.unknown], ["complete", "Complet", quality.complete.unknown], ["box", "Boîte", quality.box.unknown], ["instructions", "Notice", quality.instructions.unknown], ["purchaseDate", "Date d’achat", quality.purchaseDate.unknown], ["purchasePrice", "Prix d’achat", quality.purchasePrice.unknown], ["quantity", "Quantité à vérifier", quality.suspiciousQuantity],
+    ["condition", "État", quality.condition.unknown], ["complete", "Complet", quality.complete.unknown], ["box", "Boîte", quality.box.unknown], ["instructions", "Notice", quality.instructions.unknown], ["purchaseDate", "Date d’achat", quality.purchaseDate.unknown], ["purchasePrice", "Prix d’achat", quality.purchasePrice.unknown],
   ] as const;
   return <div className="page-shell listing-page">
     <Link href="/collection" className="back-link">← Ma collection</Link>
