@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { ProductImage } from "./ProductImage";
 import { WishlistShortcut } from "./WishlistShortcut";
+import { useCollectorOptimisticState } from "./useCollectorOptimisticState";
 
 export type DiscoveryProduct = {
   id: string;
@@ -12,18 +15,19 @@ export type DiscoveryProduct = {
 };
 
 export function DiscoveryProductCard({ product, inCollection, inWishlist, returnTo }: { product: DiscoveryProduct; inCollection: boolean; inWishlist: boolean; returnTo: string }) {
+  const { state } = useCollectorOptimisticState(product.id, { inCollection, inWishlist });
   const href = `/sets/${product.id}?returnTo=${encodeURIComponent(returnTo)}`;
-  return <article className={`product-card ${inCollection ? "is-owned" : inWishlist ? "is-wanted" : ""}`}>
+  return <article className={`product-card ${state.inCollection ? "is-owned" : state.inWishlist ? "is-wanted" : ""}`}>
     <Link className="card-image" href={href} aria-label={`Voir ${product.name}`}>
       <ProductImage src={product.imageUrl} alt={product.name} />
-      {inCollection ? <span className="collector-badge owned-badge">✓ Possédé</span> : inWishlist ? <span className="collector-badge wanted-badge">♡ Recherché</span> : <span className="collector-badge missing-badge">Manquant</span>}
+      {state.inCollection ? <span className="collector-badge owned-badge">✓ Possédé</span> : state.inWishlist ? <span className="collector-badge wanted-badge">♥ Recherché</span> : <span className="collector-badge missing-badge">○ Manquant</span>}
       {product.year && <span className="year-badge">{product.year}</span>}
     </Link>
     <div className="card-body">
       <p className="reference">{product.reference}</p>
       <h2><Link href={href}>{product.name}</Link></h2>
       {product.detail && <div className="card-meta"><span>{product.detail}</span></div>}
-      <WishlistShortcut variantId={product.id} inCollection={inCollection} inWishlist={inWishlist} />
+      <WishlistShortcut variantId={product.id} inCollection={state.inCollection} inWishlist={state.inWishlist} />
     </div>
   </article>;
 }

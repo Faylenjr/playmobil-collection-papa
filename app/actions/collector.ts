@@ -12,16 +12,22 @@ function refreshCollectorViews() {
   revalidatePath("/", "layout");
 }
 
-export async function addToCollection(variantId: string) {
-  const id = variantIdSchema.parse(variantId);
-  const { db, collection } = await getCollectorContext(true);
-  if (!collection) throw new Error("Collection principale introuvable");
-  await db.productVariant.findUniqueOrThrow({ where: { id }, select: { id: true } });
-  await db.$transaction(async (tx) => {
-    const item = await tx.collectionItem.upsert({ where: { collectionId_variantId: { collectionId: collection.id, variantId: id } }, update: {}, create: { collectionId: collection.id, variantId: id } });
-    await tx.collectionCopy.create({ data: { collectionItemId: item.id } });
-  });
-  refreshCollectorViews();
+export type CollectorMutationResult = { ok: boolean; message: string };
+
+export async function addToCollection(variantId: string): Promise<CollectorMutationResult> {
+  try {
+    const id = variantIdSchema.parse(variantId);
+    const { db, collection } = await getCollectorContext(true);
+    if (!collection) throw new Error("Collection principale introuvable");
+    await db.productVariant.findUniqueOrThrow({ where: { id }, select: { id: true } });
+    await db.$transaction(async (tx) => {
+      const item = await tx.collectionItem.upsert({ where: { collectionId_variantId: { collectionId: collection.id, variantId: id } }, update: {}, create: { collectionId: collection.id, variantId: id } });
+      await tx.collectionCopy.create({ data: { collectionItemId: item.id } });
+    });
+    return { ok: true, message: "Ajouté à votre collection." };
+  } catch {
+    return { ok: false, message: "Impossible d’ajouter cet objet. Réessayez." };
+  }
 }
 
 export async function deleteCollectionCopy(copyId: string) {
@@ -37,20 +43,29 @@ export async function deleteCollectionCopy(copyId: string) {
   refreshCollectorViews();
 }
 
-export async function addToWishlist(variantId: string) {
-  const id = variantIdSchema.parse(variantId);
-  const { db, collection, wishlist } = await getCollectorContext(true);
-  if (!wishlist) throw new Error("Liste de recherches introuvable");
-  const owned = collection ? await db.collectionItem.findUnique({ where: { collectionId_variantId: { collectionId: collection.id, variantId: id } }, select: { id: true } }) : null;
-  if (!owned) await db.wishlistItem.upsert({ where: { wishlistId_variantId: { wishlistId: wishlist.id, variantId: id } }, update: {}, create: { wishlistId: wishlist.id, variantId: id } });
-  refreshCollectorViews();
+export async function addToWishlist(variantId: string): Promise<CollectorMutationResult> {
+  try {
+    const id = variantIdSchema.parse(variantId);
+    const { db, collection, wishlist } = await getCollectorContext(true);
+    if (!wishlist) throw new Error("Liste de recherches introuvable");
+    const owned = collection ? await db.collectionItem.findUnique({ where: { collectionId_variantId: { collectionId: collection.id, variantId: id } }, select: { id: true } }) : null;
+    if (owned) return { ok: false, message: "Cet objet est déjà dans votre collection." };
+    await db.wishlistItem.upsert({ where: { wishlistId_variantId: { wishlistId: wishlist.id, variantId: id } }, update: {}, create: { wishlistId: wishlist.id, variantId: id } });
+    return { ok: true, message: "Ajouté à Mes recherches." };
+  } catch {
+    return { ok: false, message: "Impossible d’enregistrer la modification. Réessayez." };
+  }
 }
 
-export async function removeFromWishlist(variantId: string) {
-  const id = variantIdSchema.parse(variantId);
-  const { db, wishlist } = await getCollectorContext();
-  if (wishlist) await db.wishlistItem.deleteMany({ where: { wishlistId: wishlist.id, variantId: id } });
-  refreshCollectorViews();
+export async function removeFromWishlist(variantId: string): Promise<CollectorMutationResult> {
+  try {
+    const id = variantIdSchema.parse(variantId);
+    const { db, wishlist } = await getCollectorContext();
+    if (wishlist) await db.wishlistItem.deleteMany({ where: { wishlistId: wishlist.id, variantId: id } });
+    return { ok: true, message: "Retiré de Mes recherches." };
+  } catch {
+    return { ok: false, message: "Impossible d’enregistrer la modification. Réessayez." };
+  }
 }
 
 export async function updateCollectionCopy(copyId: string, formData: FormData) {

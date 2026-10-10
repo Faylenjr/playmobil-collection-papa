@@ -1,24 +1,25 @@
+"use client";
+
 import Link from "next/link";
-import { addToCollection, addToWishlist, removeFromWishlist } from "../app/actions/collector";
+import { useCollectorOptimisticState } from "./useCollectorOptimisticState";
 
 type Props = { variantId: string; inCollection: boolean; inWishlist: boolean; compact?: boolean };
 
 export function CollectionControls({ variantId, inCollection, inWishlist, compact = false }: Props) {
-  const addCollection = addToCollection.bind(null, variantId);
-  const addWishlist = addToWishlist.bind(null, variantId);
-  const removeWishlist = removeFromWishlist.bind(null, variantId);
+  const { state, pending, message, mutate } = useCollectorOptimisticState(variantId, { inCollection, inWishlist });
   return (
     <div className={`collection-controls ${compact ? "compact" : ""}`}>
-      {inCollection ? (
+      {state.inCollection ? (
         <Link className="status-button owned" href={`/sets/${variantId}#mes-exemplaires`}>✓ Dans ma collection <span>Gérer les exemplaires</span></Link>
       ) : (
-        <form action={addCollection}><button className="status-button add" type="submit">+ Ajouter à ma collection</button></form>
+        <button className="status-button add" type="button" disabled={pending} onClick={() => mutate("ADD_COLLECTION")}>+ Ajouter à ma collection</button>
       )}
-      {!inCollection && (inWishlist ? (
-        <form action={removeWishlist}><button className="status-button wanted" type="submit">♡ Je recherche <span>Retirer</span></button></form>
+      {!state.inCollection && (state.inWishlist ? (
+        <button className="status-button wanted" type="button" disabled={pending} onClick={() => mutate("REMOVE_WISHLIST")}>♥ Recherché <span>Retirer</span></button>
       ) : (
-        <form action={addWishlist}><button className="status-button wishlist" type="submit">♡ Je recherche</button></form>
+        <button className="status-button wishlist" type="button" disabled={pending} onClick={() => mutate("ADD_WISHLIST")}>♡ Je recherche</button>
       ))}
+      {message && <small className={message.startsWith("Impossible") ? "optimistic-feedback error" : "optimistic-feedback"} role="status">{message}</small>}
     </div>
   );
 }

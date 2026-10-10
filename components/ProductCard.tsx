@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { ProductImage } from "./ProductImage";
 import { CollectionControls } from "./CollectionControls";
 import { productHref } from "../lib/navigation-context";
+import { useCollectorOptimisticState } from "./useCollectorOptimisticState";
 
 export type ProductCardData = {
   id: string;
@@ -15,14 +18,15 @@ export type ProductCardData = {
 };
 
 export function ProductCard({ data, inCollection, inWishlist, quantity, returnTo }: { data: ProductCardData; inCollection: boolean; inWishlist: boolean; quantity?: number; returnTo?: string }) {
-  const stateClass = inCollection ? "is-owned" : inWishlist ? "is-wanted" : "";
+  const { state } = useCollectorOptimisticState(data.id, { inCollection, inWishlist });
+  const stateClass = state.inCollection ? "is-owned" : state.inWishlist ? "is-wanted" : "";
   const href = productHref(data.id, returnTo);
   return (
     <article className={`product-card ${stateClass}`}>
       <Link href={href} className="card-image" aria-label={`Voir ${data.name}`}>
         <ProductImage src={data.imageUrl ?? null} alt={data.name} />
-        {inCollection && <span className="collector-badge owned-badge">✓ Dans ma collection</span>}
-        {!inCollection && inWishlist && <span className="collector-badge wanted-badge">♡ Je recherche</span>}
+        {state.inCollection && <span className="collector-badge owned-badge">✓ Dans ma collection</span>}
+        {!state.inCollection && state.inWishlist && <span className="collector-badge wanted-badge">♥ Recherché</span>}
         {data.year && <span className="year-badge">{data.year}</span>}
         {quantity && quantity > 1 ? <span className="quantity-badge">× {quantity}</span> : null}
       </Link>
@@ -34,7 +38,7 @@ export function ProductCard({ data, inCollection, inWishlist, quantity, returnTo
           {data.market && <span>{data.market}</span>}
           {data.variantLabel && <span>{data.variantLabel}</span>}
         </div>
-        <CollectionControls variantId={data.id} inCollection={inCollection} inWishlist={inWishlist} compact />
+        <CollectionControls variantId={data.id} inCollection={state.inCollection} inWishlist={state.inWishlist} compact />
       </div>
     </article>
   );

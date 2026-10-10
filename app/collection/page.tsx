@@ -7,6 +7,7 @@ import { getFrenchNames, getPreferredDisplayName } from "../../lib/display-name"
 import { PageJump } from "../../components/PageJump";
 import { buildInternalUrl, type SearchParamRecord } from "../../lib/navigation-context";
 import { redirect } from "next/navigation";
+import { CollectionSectionNav } from "../../components/CollectionSectionNav";
 
 type Props = { searchParams: Promise<SearchParamRecord> };
 export const dynamic = "force-dynamic";
@@ -29,7 +30,8 @@ export default async function CollectionPage({ searchParams }: Props) {
   const pageHref = (target: number) => buildInternalUrl("/collection", params, { page: target > 1 ? target : null });
   return (
     <div className="page-shell listing-page">
-      <section className="page-heading collector-page-heading collection-heading"><div><span className="eyebrow">Mon inventaire</span><h1>Ma collection</h1><p>Les références que je possède, avec chaque exemplaire physique géré séparément.</p><div className="heading-actions"><Link className="button" href="/collection/ajouter">+ Ajouter rapidement</Link><Link className="button secondary-button" href="/collection/inventaire">Mode inventaire</Link><Link className="inline-collector-link" href="/collection/vitrine">Voir la vitrine</Link><Link className="inline-collector-link" href="/collection/a-renseigner">À renseigner</Link><Link className="inline-collector-link" href="/collection/statistiques">Statistiques et multiples</Link></div></div><strong>{result.total.toLocaleString("fr-FR")}<small>référence{result.total > 1 ? "s" : ""}</small></strong></section>
+      <section className="page-heading collector-page-heading collection-heading"><div><span className="eyebrow">Mon inventaire</span><h1>Ma collection</h1><p>Les références que je possède, avec chaque exemplaire physique géré séparément.</p></div><strong>{result.total.toLocaleString("fr-FR")}<small>référence{result.total > 1 ? "s" : ""}</small></strong></section>
+      <CollectionSectionNav />
       <form className="filter-form" method="get">
         <label>Rechercher<input name="q" type="search" defaultValue={query} placeholder="Nom ou référence…" /></label>
         <label>Thème<select name="theme" defaultValue={theme}><option value="">Tous les thèmes</option>{themes.map((item) => <option key={item.slug} value={item.slug}>{item.name}</option>)}</select></label>
