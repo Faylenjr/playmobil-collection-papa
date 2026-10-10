@@ -10,7 +10,6 @@ export const metadata: Metadata = {
   title: { default: "Playmobil Collection", template: "%s · Playmobil Collection" },
   description: "Le carnet personnel pour gérer une collection Playmobil.",
   applicationName: "Playmobil Collection",
-  manifest: "/manifest.webmanifest",
   icons: {
     icon: [{ url: "/icons/app-icon-192.png", sizes: "192x192", type: "image/png" }, { url: "/icons/app-icon.svg", type: "image/svg+xml" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
@@ -24,6 +23,9 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
     <html lang="fr">
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" crossOrigin="use-credentials" />
+      </head>
       <body>
         <PwaClient />
         <header className="site-header">

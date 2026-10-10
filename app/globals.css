@@ -46,10 +46,10 @@ button, a, summary, input, select, textarea { -webkit-tap-highlight-color: trans
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 82px;
-  padding: 0 5vw;
+  min-height: calc(82px + env(safe-area-inset-top, 0px));
+  padding: env(safe-area-inset-top, 0px) 5vw 0;
   color: white;
-  background: rgba(6, 35, 74, 0.975);
+  background: var(--blue-950);
   border-bottom: 5px solid var(--yellow);
   backdrop-filter: blur(14px);
 }
@@ -656,7 +656,7 @@ footer strong { color: var(--blue-900); }
 
 @media (max-width: 760px) {
   body { padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
-  .site-header { min-height: calc(68px + env(safe-area-inset-top, 0px)); padding-top: env(safe-area-inset-top, 0px); padding-inline: 5vw; }
+  .site-header { min-height: calc(68px + env(safe-area-inset-top, 0px)); }
   .brand small { display: none; }
   .desktop-nav { display: none !important; }
   .mobile-menu { display: none; }

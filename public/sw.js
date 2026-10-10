@@ -1,4 +1,4 @@
-const CACHE = "playmobil-shell-v1";
+const CACHE = "playmobil-shell-v2";
 const STATIC_ASSETS = ["/offline.html", "/icons/app-icon-192.png", "/icons/app-icon-512.png"];
 
 self.addEventListener("install", (event) => {

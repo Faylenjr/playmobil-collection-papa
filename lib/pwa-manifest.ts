@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-export default function manifest(): MetadataRoute.Manifest {
+export function getPwaManifest(): MetadataRoute.Manifest {
   return {
     id: "/",
     name: "Playmobil Collection",
