@@ -33,8 +33,8 @@ describe("prices and offers", () => {
       { itemId: "partial", title: "Lot accessoires 170201", itemWebUrl: "https://www.ebay.fr/itm/partial" },
     ] }, "70201");
     expect(candidates.map(({ accepted }) => accepted)).toEqual([true, false]);
-    expect(ebayAdapterConfiguration({ EBAY_ENVIRONMENT: "sandbox" })).toMatchObject({ enabled: false, environment: "sandbox" });
-    expect(ebayAdapterConfiguration({ EBAY_CLIENT_ID: "id", EBAY_CLIENT_SECRET: "secret" })).toMatchObject({ enabled: true, deliveryCountry: "FR", deliveryPostalCode: null });
+    expect(ebayAdapterConfiguration({ NODE_ENV: "test", EBAY_ENVIRONMENT: "sandbox" })).toMatchObject({ enabled: false, environment: "sandbox" });
+    expect(ebayAdapterConfiguration({ NODE_ENV: "test", EBAY_CLIENT_ID: "id", EBAY_CLIENT_SECRET: "secret" })).toMatchObject({ enabled: true, deliveryCountry: "FR", deliveryPostalCode: null });
   });
 
   it("uses OAuth client credentials and the requested eBay marketplace", async () => {

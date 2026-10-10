@@ -161,6 +161,10 @@ export async function getCollectionItems(filters: CollectionFilters, sort: strin
   if (!collection) return { items: [], total: 0, pages: 1 };
   const orderBy: Prisma.CollectionItemOrderByWithRelationInput[] = sort === "quantity"
     ? [{ copies: { _count: "desc" } }, { variant: { canonicalKey: "asc" } }]
+    : sort === "name"
+      ? [{ variant: { name: { sort: "asc", nulls: "last" } } }, { variant: { canonicalKey: "asc" } }]
+      : sort === "reference"
+        ? [{ variant: { canonicalKey: "asc" } }]
     : sort === "oldest"
       ? [{ variant: { releaseYear: { sort: "asc", nulls: "last" } } }]
       : [{ variant: { releaseYear: { sort: "desc", nulls: "last" } } }, { variant: { canonicalKey: "asc" } }];
@@ -169,10 +173,20 @@ export async function getCollectionItems(filters: CollectionFilters, sort: strin
     const multiples = await db.collectionCopy.groupBy({ by: ["collectionItemId"], where: { collectionItem: { collectionId: collection.id } }, _count: true, having: { collectionItemId: { _count: { gt: 1 } } } });
     where = { ...where, id: { in: multiples.map(({ collectionItemId }) => collectionItemId) } };
   }
-  const [total, items] = await Promise.all([
-    db.collectionItem.count({ where }),
-    db.collectionItem.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { copies: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] }, variant: { include: itemVariantInclude } } }),
-  ]);
+  if (sort === "added") {
+    const ordered = await db.collectionItem.findMany({
+      where,
+      select: { id: true, copies: { orderBy: [{ createdAt: "desc" }, { id: "desc" }], take: 1, select: { createdAt: true } } },
+    });
+    ordered.sort((left, right) => (right.copies[0]?.createdAt.getTime() ?? 0) - (left.copies[0]?.createdAt.getTime() ?? 0) || left.id.localeCompare(right.id));
+    const total = ordered.length;
+    const ids = ordered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map(({ id }) => id);
+    const rows = await db.collectionItem.findMany({ where: { id: { in: ids } }, include: { copies: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] }, variant: { include: itemVariantInclude } } });
+    const position = new Map(ids.map((id, index) => [id, index]));
+    rows.sort((left, right) => (position.get(left.id) ?? 999) - (position.get(right.id) ?? 999));
+    return { items: rows.map((item) => ({ ...item, quantity: item.copies.length, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  }
+  const [total, items] = await Promise.all([db.collectionItem.count({ where }), db.collectionItem.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { copies: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] }, variant: { include: itemVariantInclude } } })]);
   return { items: items.map((item) => ({ ...item, quantity: item.copies.length, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }
 

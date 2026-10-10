@@ -18,7 +18,7 @@ export default async function CollectionPage({ searchParams }: Props) {
   const theme = single(params.theme).trim();
   const range = single(params.range).trim();
   const year = Number.parseInt(single(params.year), 10) || undefined;
-  const sort = (single(params.sort) || "recent").trim();
+  const sort = (single(params.sort) || "added").trim();
   const tri = (name: string) => { const value = single(params[name]); return value === "yes" || value === "no" || value === "unknown" ? value : undefined; };
   const filters: CollectionFilters = { query, theme, range, year, condition: single(params.condition) || undefined, complete: tri("complete"), box: tri("box"), instructions: tri("instructions"), multiple: single(params.multiple) === "yes" };
   const page = Math.max(1, Number.parseInt(single(params.page) || "1", 10) || 1);
@@ -40,7 +40,7 @@ export default async function CollectionPage({ searchParams }: Props) {
         <label>Boîte<select name="box" defaultValue={filters.box ?? ""}><option value="">Toutes</option><option value="yes">Oui</option><option value="no">Non</option><option value="unknown">Non renseigné</option></select></label>
         <label>Notice<select name="instructions" defaultValue={filters.instructions ?? ""}><option value="">Toutes</option><option value="yes">Oui</option><option value="no">Non</option><option value="unknown">Non renseigné</option></select></label>
         <label>Multiples<select name="multiple" defaultValue={filters.multiple ? "yes" : ""}><option value="">Tous</option><option value="yes">Quantité supérieure à 1</option></select></label>
-        <label>Trier<select name="sort" defaultValue={sort}><option value="recent">Année récente</option><option value="oldest">Année ancienne</option><option value="quantity">Quantité</option></select></label>
+        <label>Trier<select name="sort" defaultValue={sort}><option value="added">Derniers ajoutés</option><option value="recent">Année récente</option><option value="oldest">Année ancienne</option><option value="reference">Référence</option><option value="name">Nom</option><option value="quantity">Quantité</option></select></label>
         <button type="submit">Appliquer</button>
       </form>
       {result.items.length ? <><BulkCollectionForm /><section className="catalogue-grid collection-management-grid" aria-label="Objets de ma collection">{result.items.map((item) => {

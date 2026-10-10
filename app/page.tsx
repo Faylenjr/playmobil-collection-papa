@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCollectorSummary } from "../lib/collector";
+import { getCollectionQualitySummary, getCollectorSummary } from "../lib/collector";
 import { getThemes } from "../lib/catalogue";
 import { ProductImage } from "../components/ProductImage";
 import { ThemeCard } from "../components/ThemeCard";
@@ -7,7 +7,7 @@ import { ThemeCard } from "../components/ThemeCard";
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [summary, themes] = await Promise.all([getCollectorSummary(), getThemes(8)]);
+  const [summary, quality, themes] = await Promise.all([getCollectorSummary(), getCollectionQualitySummary(), getThemes(8)]);
   const featuredThemes = themes.slice(0, 3);
   const missing = Math.max(0, summary.catalogue - summary.distinctCollection);
   return <div className="page-shell home-page">
@@ -20,7 +20,7 @@ export default async function Home() {
           <label htmlFor="home-search">Rechercher une boîte ou une référence</label>
           <div><input id="home-search" name="q" type="search" placeholder="Ex. 70205, château, pirates…" /><button type="submit">Rechercher</button></div>
         </form>
-        <div className="hero-shortcuts"><Link href="/collection">Voir ma collection</Link><Link href="/recherches">Voir mes recherches</Link></div>
+        <div className="home-primary-actions"><Link className="home-add-action" href="/collection/ajouter"><span aria-hidden="true">＋</span><strong>Ajouter un Playmobil</strong><small>Par référence ou par nom</small></Link><div className="hero-shortcuts"><Link href="/collection">Ma collection</Link><Link href="/recherches">Mes recherches</Link></div></div>
       </div>
       <div className="collector-showcase" aria-label="Univers populaires">
         <span className="showcase-label">Univers populaires</span>
@@ -29,6 +29,12 @@ export default async function Home() {
         </div>
         <Link href="/themes" className="showcase-link">Voir tous les thèmes <span aria-hidden="true">→</span></Link>
       </div>
+    </section>
+    <section className="home-quick-grid" aria-label="Actions rapides">
+      <Link href="/collection/inventaire"><span aria-hidden="true">▣</span><strong>Continuer l’inventaire</strong><small>Renseigner rapidement chaque exemplaire</small></Link>
+      <Link href="/collection/a-renseigner"><span aria-hidden="true">?</span><strong>À renseigner</strong><small>{quality.needsReview.toLocaleString("fr-FR")} exemplaire{quality.needsReview > 1 ? "s" : ""} à vérifier</small></Link>
+      <Link href="/collection/vitrine"><span aria-hidden="true">▦</span><strong>Ma vitrine</strong><small>Parcourir la collection en images</small></Link>
+      <Link href="/nouveautes"><span aria-hidden="true">★</span><strong>Nouveautés</strong><small>Voir les vagues et sorties récentes</small></Link>
     </section>
     <section className="dashboard-grid">
       <article className="dashboard-card collection"><span className="dashboard-icon" aria-hidden="true">✓</span><div><span>Dans ma collection</span><strong>{summary.collection.toLocaleString("fr-FR")}</strong><small>{summary.distinctCollection.toLocaleString("fr-FR")} référence{summary.distinctCollection > 1 ? "s" : ""} différente{summary.distinctCollection > 1 ? "s" : ""}</small></div><Link href="/collection/statistiques">Voir mes statistiques <span aria-hidden="true">→</span></Link></article>
