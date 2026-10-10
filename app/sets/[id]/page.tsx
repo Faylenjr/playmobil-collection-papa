@@ -60,7 +60,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const klickypediaRecords = variant.sourceRecords.filter(({ source }) =>
     source.key.toLowerCase().includes("klickypedia") || source.baseUrl.toLowerCase().includes("klickypedia"),
   );
-  const identifiers = [...variant.productIdentifiers, ...variant.product.identifiers];
+  const identifiers = [...variant.identifiers, ...variant.product.identifiers];
   const currentOffers = prices.offers.filter((offer) => offer.availability === "AVAILABLE" && isOfferFresh(offer.lastObservedAt));
   const deliveredTotal = (offer: typeof currentOffers[number]) => Number(offer.observations[0]?.totalPrice ?? offer.observations[0]?.itemPrice ?? Number.POSITIVE_INFINITY);
   const newOffers = currentOffers.filter((offer) => offer.condition === "NEW" || offer.condition === "SEALED").sort((left, right) => deliveredTotal(left) - deliveredTotal(right));

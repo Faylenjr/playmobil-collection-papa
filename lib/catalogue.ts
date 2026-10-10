@@ -365,7 +365,7 @@ const getVariantCached = cache(async (id: string) => {
       figures: { include: { figure: true }, take: 100 },
       parts: { include: { part: true }, take: 100 },
       sourceRecords: { include: { source: true }, orderBy: { lastSeenAt: "desc" } },
-      productIdentifiers: { include: { source: true, market: true }, orderBy: { createdAt: "asc" } },
+      identifiers: { include: { source: true, market: true }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!variant) return null;
