@@ -2,7 +2,7 @@ import { Prisma } from "../generated/prisma/client";
 import { cache } from "react";
 import { getDatabaseClient } from "./db";
 import { getFrenchNames, getPreferredDisplayName } from "./display-name";
-import { orderMediaForDisplay } from "./media";
+import { getImageDisplayPolicy, getReviewedImageVariantIds, withVariantImages } from "./variant-images";
 import { getFrenchThemeName } from "./theme-names";
 import {
   collectorFactsCtesSql,
@@ -20,8 +20,15 @@ export const KLICKYPEDIA_PLACEHOLDER =
 
 export const visibleMediaWhere = {
   sourceUrl: { not: KLICKYPEDIA_PLACEHOLDER },
-  OR: [{ canDisplay: true }, { canDisplay: null }],
+  canDisplay: true,
 } satisfies Prisma.MediaAssetWhereInput;
+
+export const storedImageSelect = {
+  sourceUrl: true,
+  kind: true,
+  canDisplay: true,
+  source: { select: { key: true, kind: true } },
+} satisfies Prisma.MediaAssetSelect;
 
 export type CatalogueSort = "recommended" | "newest" | "oldest" | "reference";
 
@@ -121,7 +128,7 @@ const catalogueVariantSelect = {
   references: {
     orderBy: [{ isPrimary: "desc" as const }, { displayValue: "asc" as const }],
     take: 2,
-    select: { displayValue: true, isPrimary: true },
+    select: { displayValue: true, isPrimary: true, normalizedValue: true, identityClass: true },
   },
   themes: {
     orderBy: { isPrimary: "desc" as const },
@@ -133,7 +140,7 @@ const catalogueVariantSelect = {
     where: visibleMediaWhere,
     orderBy: [{ source: { priority: "asc" as const } }, { kind: "asc" as const }, { sourceUrl: "asc" as const }],
     take: 8,
-    select: { sourceUrl: true, kind: true },
+    select: storedImageSelect,
   },
 } satisfies Prisma.ProductVariantSelect;
 
@@ -148,9 +155,8 @@ export async function getVariantsByIds(ids: string[]) {
   return ids.flatMap((id) => {
     const variant = byId.get(id);
     return variant ? [{
-      ...variant,
+      ...withVariantImages(variant),
       themes: variant.themes.map((membership) => ({ ...membership, theme: { ...membership.theme, name: getFrenchThemeName(membership.theme) } })),
-      media: orderMediaForDisplay(variant.media),
       displayName: getPreferredDisplayName({ frenchName: frenchNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }),
     }] : [];
   });
@@ -208,7 +214,14 @@ export async function getCatalogue(
 
 export async function getThemes(limit = 30) {
   const db = await getDatabaseClient();
-  const themes = await db.$queryRaw<{ slug: string; name: string; count: number; imageUrl: string | null }[]>(Prisma.sql`
+  const policy = getImageDisplayPolicy();
+  const reviewedIds = getReviewedImageVariantIds(policy);
+  const reviewed = reviewedIds.length
+    ? Prisma.sql`pv."id" IN (${Prisma.join(reviewedIds.map((id) => Prisma.sql`${id}::uuid`))})`
+    : Prisma.sql`FALSE`;
+  const disabled = [...policy.disabled];
+  const allowed = disabled.length ? Prisma.sql`s."key" NOT IN (${Prisma.join(disabled)})` : Prisma.sql`TRUE`;
+  const themes = await db.$queryRaw<{ slug: string; name: string; count: number; imageVariantId: string | null }[]>(Prisma.sql`
     WITH themed AS (
       SELECT "theme_id", "variant_id" FROM "variant_themes"
       UNION ALL
@@ -218,25 +231,28 @@ export async function getThemes(limit = 30) {
       WHERE NOT EXISTS (SELECT 1 FROM "variant_themes" own_theme WHERE own_theme."variant_id" = pv."id")
     ), theme_media AS (
       SELECT themed."theme_id",
-             ma."source_url",
+             pv."id"::text AS "variant_id",
              ROW_NUMBER() OVER (
                PARTITION BY themed."theme_id"
                ORDER BY
+                 CASE WHEN ${reviewed} THEN 0 WHEN s."kind"::text = 'OFFICIAL' THEN 1 ELSE 2 END,
                  CASE LOWER(ma."kind") WHEN 'box_front' THEN 0 WHEN 'box_back' THEN 1 WHEN 'main' THEN 2 ELSE 3 END,
                  COALESCE(pv."release_year", p."release_year") DESC NULLS LAST,
                  s."priority" ASC,
-                 ma."source_url" ASC
+                 ma."source_url" ASC,
+                 pv."id" ASC
              ) AS media_rank
       FROM themed
       JOIN "product_variants" pv ON pv."id" = themed."variant_id"
       JOIN "products" p ON p."id" = pv."product_id"
-      JOIN "media_assets" ma ON ma."variant_id" = pv."id"
-      JOIN "sources" s ON s."id" = ma."source_id"
-      WHERE ma."can_display" IS DISTINCT FROM FALSE
-        AND ma."source_url" NOT LIKE 'https://images.brickset.com/sets/large/0-1.jpg%'
+      LEFT JOIN "media_assets" ma ON ma."variant_id" = pv."id" AND ma."can_display" IS TRUE
+      LEFT JOIN "sources" s ON s."id" = ma."source_id"
+      WHERE (${reviewed}) OR (ma."id" IS NOT NULL AND ${allowed}
+        AND (${!policy.disabled.has("playmobil-official")} OR s."kind"::text <> 'OFFICIAL')
+        AND ma."source_url" NOT LIKE 'https://images.brickset.com/sets/large/0-1.jpg%')
     )
     SELECT t."slug", t."name", COUNT(DISTINCT themed."variant_id")::int AS "count",
-           MAX(theme_media."source_url") FILTER (WHERE theme_media.media_rank = 1) AS "imageUrl"
+           MAX(theme_media."variant_id") FILTER (WHERE theme_media.media_rank = 1) AS "imageVariantId"
     FROM "themes" t
     JOIN themed ON themed."theme_id" = t."id"
     LEFT JOIN theme_media ON theme_media."theme_id" = t."id" AND theme_media.media_rank = 1
@@ -245,7 +261,11 @@ export async function getThemes(limit = 30) {
     ORDER BY "count" DESC, t."name" ASC
     LIMIT ${limit}
   `);
-  return themes.map((theme) => ({ ...theme, name: getFrenchThemeName(theme) }));
+  const representativeIds = [...new Set(themes.flatMap(({ imageVariantId }) => imageVariantId ? [imageVariantId] : []))];
+  const representatives = new Map((await getVariantsByIds(representativeIds)).map((variant) => [variant.id, variant.displayImages]));
+  return themes.map(({ imageVariantId, ...theme }) => ({
+    ...theme, name: getFrenchThemeName(theme), imageUrls: imageVariantId ? (representatives.get(imageVariantId) ?? []).map((image) => image.sourceUrl) : [],
+  }));
 }
 
 export async function getTheme(slug: string) {
@@ -370,7 +390,7 @@ const getVariantCached = cache(async (id: string) => {
   });
   if (!variant) return null;
   const frenchNames = await getFrenchNames([id]);
-  return { ...variant, media: orderMediaForDisplay(variant.media), displayName: getPreferredDisplayName({ frenchName: frenchNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }) };
+  return { ...withVariantImages(variant), displayName: getPreferredDisplayName({ frenchName: frenchNames.get(id), variantName: variant.name, productName: variant.product.name, fallback: variant.canonicalKey }) };
 });
 
 export function getVariant(id: string) {

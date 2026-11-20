@@ -127,7 +127,7 @@ export default async function CataloguePage({ searchParams }: CataloguePageProps
               const market = variant.markets.map(({ market: item }) => item.code).join(" · ");
 
               const status = statuses.get(variant.id)!;
-              return <ProductCard key={variant.id} data={{ id: variant.id, name, reference, year: year ?? null, theme: theme ?? null, market, variantLabel: variant.variantLabel, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} returnTo={returnTo} />;
+              return <ProductCard key={variant.id} data={{ id: variant.id, name, reference, year: year ?? null, theme: theme ?? null, market, variantLabel: variant.variantLabel, imageUrls: variant.displayImages.map((image) => image.sourceUrl) }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} returnTo={returnTo} />;
             })}
           </section>
 

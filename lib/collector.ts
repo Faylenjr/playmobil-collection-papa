@@ -1,7 +1,7 @@
 import type { Prisma } from "../generated/prisma/client";
 import { getDatabaseClient } from "./db";
-import { PAGE_SIZE, visibleMediaWhere } from "./catalogue";
-import { orderMediaForDisplay } from "./media";
+import { PAGE_SIZE, storedImageSelect, visibleMediaWhere } from "./catalogue";
+import { withVariantImages } from "./variant-images";
 import { COLLECTION_NAME, COLLECTOR_EMAIL, WISHLIST_NAME } from "./collector-constants";
 import { summarizeCollectionQuality } from "./collection-management";
 import type { InventoryScope } from "./collection-inventory";
@@ -77,10 +77,10 @@ export async function getVariantCollectorState(variantId: string) {
 
 const itemVariantInclude = {
   product: { select: { name: true, baseReference: true, releaseYear: true, kind: true, rangeMemberships: { take: 2, select: { range: { select: { slug: true, canonicalName: true } } } } } },
-  references: { orderBy: [{ isPrimary: "desc" as const }, { displayValue: "asc" as const }], take: 2, select: { displayValue: true } },
+  references: { orderBy: [{ isPrimary: "desc" as const }, { displayValue: "asc" as const }], take: 2, select: { displayValue: true, isPrimary: true, normalizedValue: true, identityClass: true } },
   markets: { orderBy: { market: { name: "asc" as const } }, select: { market: { select: { code: true, name: true } } } },
   themes: { orderBy: { isPrimary: "desc" as const }, take: 1, select: { theme: { select: { name: true, slug: true } } } },
-  media: { where: visibleMediaWhere, orderBy: [{ source: { priority: "asc" as const } }, { kind: "asc" as const }, { sourceUrl: "asc" as const }], take: 8, select: { sourceUrl: true, kind: true } },
+  media: { where: visibleMediaWhere, orderBy: [{ source: { priority: "asc" as const } }, { kind: "asc" as const }, { sourceUrl: "asc" as const }], take: 8, select: storedImageSelect },
 } satisfies Prisma.ProductVariantInclude;
 
 function collectionSearchWhere(query: string, theme: string, range = "", year?: number): Prisma.ProductVariantWhereInput {
@@ -184,10 +184,10 @@ export async function getCollectionItems(filters: CollectionFilters, sort: strin
     const rows = await db.collectionItem.findMany({ where: { id: { in: ids } }, include: { copies: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] }, variant: { include: itemVariantInclude } } });
     const position = new Map(ids.map((id, index) => [id, index]));
     rows.sort((left, right) => (position.get(left.id) ?? 999) - (position.get(right.id) ?? 999));
-    return { items: rows.map((item) => ({ ...item, quantity: item.copies.length, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+    return { items: rows.map((item) => ({ ...item, quantity: item.copies.length, variant: withVariantImages(item.variant) })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
   }
   const [total, items] = await Promise.all([db.collectionItem.count({ where }), db.collectionItem.findMany({ where, orderBy, skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { copies: { orderBy: [{ createdAt: "asc" }, { id: "asc" }] }, variant: { include: itemVariantInclude } } })]);
-  return { items: items.map((item) => ({ ...item, quantity: item.copies.length, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items: items.map((item) => ({ ...item, quantity: item.copies.length, variant: withVariantImages(item.variant) })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }
 
 export async function getCollectionQualitySummary() {
@@ -278,7 +278,7 @@ export async function getInventoryItems(scope: InventoryScope, value = "") {
       },
     },
   });
-  return rows.map((copy) => ({ ...copy, copyIndex: copy.collectionItem.copies.findIndex(({ id }) => id === copy.id), copyTotal: copy.collectionItem.copies.length, variant: { ...copy.collectionItem.variant, media: orderMediaForDisplay(copy.collectionItem.variant.media) } }));
+  return rows.map((copy) => ({ ...copy, copyIndex: copy.collectionItem.copies.findIndex(({ id }) => id === copy.id), copyTotal: copy.collectionItem.copies.length, variant: withVariantImages(copy.collectionItem.variant) }));
 }
 
 export async function searchCollectionCandidates(query: string, limit = 24) {
@@ -305,7 +305,7 @@ export async function searchCollectionCandidates(query: string, limit = 24) {
   if (!variantIds.length) return { exact, variants: [] };
   const variants = await db.productVariant.findMany({ where: { id: { in: variantIds } }, include: itemVariantInclude });
   const order = new Map(variantIds.map((id, index) => [id, index]));
-  return { exact, variants: variants.map((variant) => ({ ...variant, media: orderMediaForDisplay(variant.media) })).sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999)) };
+  return { exact, variants: variants.map(withVariantImages).sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999)) };
 }
 
 export async function getWishlistItems(query: string, page: number) {
@@ -316,5 +316,5 @@ export async function getWishlistItems(query: string, page: number) {
     db.wishlistItem.count({ where }),
     db.wishlistItem.findMany({ where, orderBy: [{ priority: "desc" }, { variant: { releaseYear: { sort: "desc", nulls: "last" } } }, { variant: { canonicalKey: "desc" } }, { id: "asc" }], skip: (page - 1) * PAGE_SIZE, take: PAGE_SIZE, include: { variant: { include: itemVariantInclude } } }),
   ]);
-  return { items: items.map((item) => ({ ...item, variant: { ...item.variant, media: orderMediaForDisplay(item.variant.media) } })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
+  return { items: items.map((item) => ({ ...item, variant: withVariantImages(item.variant) })), total, pages: Math.max(1, Math.ceil(total / PAGE_SIZE)) };
 }

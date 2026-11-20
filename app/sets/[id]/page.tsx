@@ -46,8 +46,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const originalName = variant.name?.trim() || variant.product.name?.trim();
   const reference = variant.references[0]?.displayValue ?? variant.product.baseReference;
   const year = variant.releaseYear ?? variant.product.releaseYear;
-  const primaryImage = variant.media[0];
-  const otherImages = variant.media.slice(1);
+  const otherImages = variant.displayImages.slice(1);
   const themes = variant.themes.length ? variant.themes : variant.product.themes;
   const translations = [
     ...new Map(
@@ -74,7 +73,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
 
       <section className="product-hero">
         <div className="hero-image">
-          <ProductImage src={primaryImage?.sourceUrl ?? null} alt={name} priority />
+          <ProductImage candidates={variant.displayImages.map((image) => image.sourceUrl)} alt={name} priority />
         </div>
         <div className="hero-copy">
           <span className="eyebrow">{variant.variantKind.replaceAll("_", " ")}</span>
@@ -123,7 +122,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
         <section className="detail-section">
           <div className="section-heading"><span className="eyebrow">Galerie</span><h2>Autres images</h2></div>
           <div className="media-grid">
-            {otherImages.map((media) => <ProductImage key={media.id} src={media.sourceUrl} alt={`${name} — ${media.kind}`} />)}
+            {otherImages.map((media) => <ProductImage key={media.sourceUrl} src={media.sourceUrl} alt={`${name} — ${media.kind}`} />)}
           </div>
         </section>
       )}

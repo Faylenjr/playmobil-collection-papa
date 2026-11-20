@@ -63,7 +63,7 @@ export async function getCollectorCategories() {
     total: category.memberships.length,
     owned: category.memberships.filter(({ variantId }) => statuses.get(variantId)?.inCollection).length,
     wanted: category.memberships.filter(({ variantId }) => !statuses.get(variantId)?.inCollection && statuses.get(variantId)?.inWishlist).length,
-    imageUrl: category.memberships[0]?.variantId ? representativeById.get(category.memberships[0].variantId)?.media[0]?.sourceUrl ?? null : null,
+    imageUrls: category.memberships[0]?.variantId ? (representativeById.get(category.memberships[0].variantId)?.displayImages ?? []).map((image) => image.sourceUrl) : [],
   }));
 }
 

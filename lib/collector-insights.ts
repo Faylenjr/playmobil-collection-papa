@@ -34,7 +34,7 @@ export async function getProductRanges() {
     const products = range.memberships.map(({ product }) => product);
     const progress = summarizeProductStates(products, statuses);
     const representativeId = range.memberships[0]?.product.variants[0]?.id;
-    return { ...range, ...progress, imageUrl: representativeId ? representativeById.get(representativeId)?.media[0]?.sourceUrl ?? null : null };
+    return { ...range, ...progress, imageUrls: representativeId ? (representativeById.get(representativeId)?.displayImages ?? []).map((image) => image.sourceUrl) : [] };
   });
 }
 

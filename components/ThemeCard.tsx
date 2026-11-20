@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ProductImage } from "./ProductImage";
 
 type ThemeCardProps = {
-  theme: { slug: string; name: string; count: number; imageUrl?: string | null };
+  theme: { slug: string; name: string; count: number; imageUrls?: readonly string[] };
   compact?: boolean;
   href?: string;
 };
@@ -10,7 +10,7 @@ type ThemeCardProps = {
 export function ThemeCard({ theme, compact = false, href }: ThemeCardProps) {
   return (
     <Link className={`theme-card ${compact ? "theme-card--compact" : ""}`} href={href ?? `/catalogue?theme=${encodeURIComponent(theme.slug)}`}>
-      <span className="theme-card__media"><ProductImage src={theme.imageUrl ?? null} alt={`Univers ${theme.name}`} /></span>
+      <span className="theme-card__media"><ProductImage candidates={theme.imageUrls ?? []} alt={`Univers ${theme.name}`} /></span>
       <span className="theme-card__shade" aria-hidden="true" />
       <span className="theme-card__content">
         <small>{theme.count.toLocaleString("fr-FR")} objet{theme.count > 1 ? "s" : ""}</small>

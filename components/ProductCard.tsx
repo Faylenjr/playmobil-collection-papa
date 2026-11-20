@@ -14,7 +14,7 @@ export type ProductCardData = {
   theme?: string | null;
   market?: string | null;
   variantLabel?: string | null;
-  imageUrl?: string | null;
+  imageUrls?: readonly string[];
 };
 
 export function ProductCard({ data, inCollection, inWishlist, quantity, returnTo }: { data: ProductCardData; inCollection: boolean; inWishlist: boolean; quantity?: number; returnTo?: string }) {
@@ -24,7 +24,7 @@ export function ProductCard({ data, inCollection, inWishlist, quantity, returnTo
   return (
     <article className={`product-card ${stateClass}`}>
       <Link href={href} className="card-image" aria-label={`Voir ${data.name}`}>
-        <ProductImage src={data.imageUrl ?? null} alt={data.name} />
+        <ProductImage candidates={data.imageUrls ?? []} alt={data.name} />
         {state.inCollection && <span className="collector-badge owned-badge">✓ Dans ma collection</span>}
         {!state.inCollection && state.inWishlist && <span className="collector-badge wanted-badge">♥ Recherché</span>}
         {data.year && <span className="year-badge">{data.year}</span>}
