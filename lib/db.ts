@@ -18,10 +18,9 @@ export async function getDatabaseClient(): Promise<PrismaClient> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) throw new Error("DATABASE_URL is required");
 
-  const client =
-    globalForPrisma.playmobilPrisma ??
-    new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
-
-  if (process.env.NODE_ENV !== "production") globalForPrisma.playmobilPrisma = client;
-  return client;
+  const createClient = () => new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+  // Reuse the connection pool across Next.js Node requests. Keep request-local
+  // clients in the Workers build, where socket I/O can be request-bound.
+  if (process.env.NODE_ENV === "production" && process.env.NEXT_RUNTIME !== "nodejs") return createClient();
+  return (globalForPrisma.playmobilPrisma ??= createClient());
 }
