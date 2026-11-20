@@ -11,26 +11,26 @@ répondu 404 et une observation indexée de Playmobil établit la provenance.
 
 Le sélecteur utilise l’identifiant de variante, sa référence primaire ASSIGNED
 et son type actuel. Il ne choisit aucun visuel sur une simple référence de base.
-Les `MediaAsset` existants restent utilisables quand `canDisplay=true` et que
-la source est admissible. Le manifeste complète ces médias en lecture seule et
+Les `MediaAsset` historiques restent utilisables quand `canDisplay` vaut
+`true` ou `null` et que la source est admissible. `false` exclut toujours
+le visuel. Le manifeste complète ces médias en lecture seule et
 préserve toutes les URL historiques. Aucun import ni migration ne sont requis.
 
 ## Affichage et retour arrière
 
 - `PLAYMOBIL_DISABLED_MEDIA_SOURCES` accepte des clés de source ou noms d’hôte
-  séparés par des virgules. La valeur par défaut est `klickypedia`.
+  séparés par des virgules. La valeur vide par défaut conserve les sources.
   Ajouter `playmobil-official` pour suspendre tous les visuels officiels.
-- `PLAYMOBIL_OFFICIAL_MEDIA_AUTHORIZATION` sert à référencer un accord
-  documenté couvrant l’intégration par URL distante dans ce catalogue. La
-  laisser vide tant que cet usage reste à clarifier. Cette variable sert de
-  réglage opérationnel et n’établit aucun droit par elle-même. Une valeur vide
-  retire tout le nouveau lot de l’affichage au prochain démarrage.
+- `PLAYMOBIL_REVIEWED_IMAGES_ENABLED` active le nouveau lot à `1`. Repasser à
+  `0` et redémarrer le Web pour le retirer sans rebuild ni écriture en base.
+  La valeur par défaut est `0`. Les droits d’utilisation se vérifient
+  séparément avant l’activation.
 - `PLAYMOBIL_OFFICIAL_MEDIA_PREVIEW=1` active le lot en développement avec une
   base PGlite de recette. Lancer le serveur sur `127.0.0.1` uniquement.
 
 Les images personnelles exactes marquées affichables prennent la priorité
 (`Source.key = collector-personal`). Viennent ensuite les visuels officiels,
-puis les autres images explicitement affichables. Chaque URL est tentée au
+puis les autres images admissibles et enfin Klickypedia. Chaque URL est tentée au
 plus une fois par liste de candidats. Si elles échouent toutes, la fiche affiche
 « Image indisponible ». Le navigateur charge l’URL directement.
 

@@ -41,9 +41,9 @@ function secureUrl(value: string) {
 }
 
 export function getImageDisplayPolicy(env: Readonly<Record<string, string | undefined>> = process.env) {
-  const disabled = new Set((env.PLAYMOBIL_DISABLED_MEDIA_SOURCES ?? "klickypedia").split(",").map((key) => key.trim().toLowerCase()).filter(Boolean));
+  const disabled = new Set((env.PLAYMOBIL_DISABLED_MEDIA_SOURCES ?? "").split(",").map((key) => key.trim().toLowerCase()).filter(Boolean));
   const preview = env.PLAYMOBIL_OFFICIAL_MEDIA_PREVIEW === "1" && env.NODE_ENV === "development" && Boolean(env.PGLITE_DIR);
-  return { disabled, reviewedOfficial: !disabled.has("playmobil-official") && (preview || Boolean(env.PLAYMOBIL_OFFICIAL_MEDIA_AUTHORIZATION?.trim())) };
+  return { disabled, reviewedOfficial: !disabled.has("playmobil-official") && (preview || env.PLAYMOBIL_REVIEWED_IMAGES_ENABLED === "1") };
 }
 
 export function getReviewedImageVariantIds(policy = getImageDisplayPolicy()) {
@@ -58,15 +58,18 @@ export function selectVariantImages(
   const personal: ImageCandidate[] = [];
   const official: ImageCandidate[] = [];
   const other: ImageCandidate[] = [];
+  const legacy: ImageCandidate[] = [];
   for (const asset of variant.media) {
-    if (asset.canDisplay !== true || policy.disabled.has(asset.source.key.toLowerCase())) continue;
+    if (asset.canDisplay === false || policy.disabled.has(asset.source.key.toLowerCase())) continue;
     const url = secureUrl(asset.sourceUrl);
     if (url && policy.disabled.has(url.hostname)) continue;
-    if (asset.source.key === "collector-personal" && (url || asset.sourceUrl.startsWith("/collection-photos/"))) {
-      personal.push(asset);
+    if (asset.source.key === "collector-personal") {
+      if (asset.canDisplay === true && (url || asset.sourceUrl.startsWith("/collection-photos/"))) personal.push(asset);
     } else if (asset.source.kind === "OFFICIAL") {
       if (!policy.disabled.has("playmobil-official") && url && officialImageHosts.has(url.hostname)) official.push(asset);
-    } else if (url && !(policy.disabled.has("klickypedia") && /(^|\.)klickypedia\.com$/.test(url.hostname))) {
+    } else if (url && (asset.source.key === "klickypedia" || /(^|\.)klickypedia\.com$/.test(url.hostname))) {
+      if (!policy.disabled.has("klickypedia")) legacy.push(asset);
+    } else if (url) {
       other.push(asset);
     }
   }
@@ -81,7 +84,7 @@ export function selectVariantImages(
     official.unshift(reviewed.image);
   }
 
-  const ordered = [...orderMediaForDisplay(personal), ...orderMediaForDisplay(official), ...orderMediaForDisplay(other)];
+  const ordered = [...orderMediaForDisplay(personal), ...orderMediaForDisplay(official), ...orderMediaForDisplay(other), ...orderMediaForDisplay(legacy)];
   const seen = new Set<string>();
   return ordered.flatMap(({ sourceUrl, kind }) => {
     if (seen.has(sourceUrl)) return [];
