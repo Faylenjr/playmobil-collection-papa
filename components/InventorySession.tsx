@@ -16,7 +16,7 @@ export type InventoryItem = InventoryPhysicalState & {
   reference: string;
   year: number | null;
   theme: string | null;
-  imageUrl: string | null;
+  imageUrls: readonly string[];
   variantDescription: string | null;
   needsVariantReview: boolean;
 };
@@ -91,7 +91,7 @@ export function InventorySession({ initialItems, storageKey, initialCounters }: 
     {restored && <p className="inventory-resume" role="status">Session reprise à l’objet {index + 1}. <button type="button" onClick={() => go(0)}>Recommencer</button></p>}
     <div className="inventory-progress"><div><strong>{index + 1} / {items.length}</strong><span>exemplaires parcourus</span></div><progress max={100} value={progress}>{progress} %</progress></div>
     <article className="inventory-card">
-      <div className="inventory-identification"><div className="inventory-image"><ProductImage src={current.imageUrl} alt={current.name} priority /></div><div><p className="reference">{current.reference}</p><h1>{current.name}</h1>{current.copyTotal > 1 && <p className="copy-position">Exemplaire {current.copyIndex + 1} sur {current.copyTotal}</p>}<p>{[current.year, current.theme].filter(Boolean).join(" · ") || "Métadonnées non renseignées"}</p>{current.variantDescription && <strong>{current.variantDescription}</strong>}{current.needsVariantReview && <span className="variant-review">Variante à vérifier</span>}<Link href={`/sets/${current.variantId}?returnTo=${encodeURIComponent(`/collection/inventaire`)}`}>Ouvrir la fiche complète</Link></div></div>
+      <div className="inventory-identification"><div className="inventory-image"><ProductImage candidates={current.imageUrls} alt={current.name} priority /></div><div><p className="reference">{current.reference}</p><h1>{current.name}</h1>{current.copyTotal > 1 && <p className="copy-position">Exemplaire {current.copyIndex + 1} sur {current.copyTotal}</p>}<p>{[current.year, current.theme].filter(Boolean).join(" · ") || "Métadonnées non renseignées"}</p>{current.variantDescription && <strong>{current.variantDescription}</strong>}{current.needsVariantReview && <span className="variant-review">Variante à vérifier</span>}<Link href={`/sets/${current.variantId}?returnTo=${encodeURIComponent(`/collection/inventaire`)}`}>Ouvrir la fiche complète</Link></div></div>
       <InventoryEditor key={current.id} item={current} onSaved={onSaved} onDirty={() => setDirty(true)} />
     </article>
     <nav className="inventory-navigation" aria-label="Navigation dans l’inventaire"><button type="button" disabled={index === 0} onClick={() => go(index - 1)}>← Précédent</button><button type="button" disabled={index >= items.length - 1} onClick={() => go(index + 1)}>Passer</button></nav>

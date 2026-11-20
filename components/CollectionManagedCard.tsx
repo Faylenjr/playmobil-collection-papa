@@ -15,7 +15,7 @@ type Props = {
       product: { name: string | null; baseReference: string | null; releaseYear: number | null };
       references: Array<{ displayValue: string }>;
       themes: Array<{ theme: { name: string } }>;
-      media: Array<{ sourceUrl: string }>;
+      displayImages: Array<{ sourceUrl: string }>;
     };
   };
   name: string;
@@ -27,7 +27,7 @@ type Props = {
 export function CollectionManagedCard({ item, name, returnTo, selectable = true, openEditor = false }: Props) {
   const variant = item.variant;
   return <div className="collection-managed-card">
-    <ProductCard data={{ id: variant.id, name, reference: variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey, year: variant.releaseYear ?? variant.product.releaseYear, theme: variant.themes[0]?.theme.name ?? null, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection inWishlist={false} quantity={item.quantity} returnTo={returnTo} />
+    <ProductCard data={{ id: variant.id, name, reference: variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey, year: variant.releaseYear ?? variant.product.releaseYear, theme: variant.themes[0]?.theme.name ?? null, imageUrls: variant.displayImages.map((image) => image.sourceUrl) }} inCollection inWishlist={false} quantity={item.quantity} returnTo={returnTo} />
     <details className="copy-list" open={openEditor || item.copies.length > 1}>
       <summary>{item.copies.length > 1 ? `Voir les ${item.copies.length} exemplaires` : "Gérer mon exemplaire"}</summary>
       {item.copies.map((copy, index) => <section className="copy-card" key={copy.id}>

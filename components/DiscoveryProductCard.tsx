@@ -10,7 +10,7 @@ export type DiscoveryProduct = {
   name: string;
   reference: string;
   year: number | null;
-  imageUrl: string | null;
+  imageUrls: readonly string[];
   detail?: string | null;
 };
 
@@ -19,7 +19,7 @@ export function DiscoveryProductCard({ product, inCollection, inWishlist, return
   const href = `/sets/${product.id}?returnTo=${encodeURIComponent(returnTo)}`;
   return <article className={`product-card ${state.inCollection ? "is-owned" : state.inWishlist ? "is-wanted" : ""}`}>
     <Link className="card-image" href={href} aria-label={`Voir ${product.name}`}>
-      <ProductImage src={product.imageUrl} alt={product.name} />
+      <ProductImage candidates={product.imageUrls} alt={product.name} />
       {state.inCollection ? <span className="collector-badge owned-badge">✓ Possédé</span> : state.inWishlist ? <span className="collector-badge wanted-badge">♥ Recherché</span> : <span className="collector-badge missing-badge">○ Manquant</span>}
       {product.year && <span className="year-badge">{product.year}</span>}
     </Link>

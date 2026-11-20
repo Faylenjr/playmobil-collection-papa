@@ -17,7 +17,7 @@ export default async function ThemesPage() {
       <nav className="explore-hubs" aria-label="Explorer les thèmes et séries"><Link href="#themes"><strong>Thèmes</strong><span>Les grands univers Playmobil</span></Link><Link href="/gammes"><strong>Gammes & séries</strong><span>Les collections commerciales officielles</span></Link><Link href="/themes/geants-xxl"><strong>Géants / XXL</strong><span>Les grandes figurines de collection</span></Link></nav>
       <section className="theme-grid" id="themes" aria-label="Thèmes du catalogue">
         {themes.map((theme) => <ThemeCard href={`/themes/${theme.slug}`} theme={theme} key={theme.slug} />)}
-        {collectorCategories.map((category) => <ThemeCard href={`/themes/${category.slug}`} theme={{ slug: category.slug, name: category.name, count: category.total, imageUrl: category.imageUrl }} key={`collector-${category.slug}`} />)}
+        {collectorCategories.map((category) => <ThemeCard href={`/themes/${category.slug}`} theme={{ slug: category.slug, name: category.name, count: category.total, imageUrls: category.imageUrls }} key={`collector-${category.slug}`} />)}
       </section>
     </div>
   );

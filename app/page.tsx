@@ -25,7 +25,7 @@ export default async function Home() {
       <div className="collector-showcase" aria-label="Univers populaires">
         <span className="showcase-label">Univers populaires</span>
         <div className="showcase-shelf">
-          {featuredThemes.map((theme, index) => <Link href={`/catalogue?theme=${encodeURIComponent(theme.slug)}`} key={theme.slug} className={`showcase-item showcase-item-${index + 1}`} aria-label={`Explorer ${theme.name}`}><ProductImage src={theme.imageUrl ?? null} alt={`Univers ${theme.name}`} priority={index === 0} /><span>{theme.name}</span></Link>)}
+          {featuredThemes.map((theme, index) => <Link href={`/catalogue?theme=${encodeURIComponent(theme.slug)}`} key={theme.slug} className={`showcase-item showcase-item-${index + 1}`} aria-label={`Explorer ${theme.name}`}><ProductImage candidates={theme.imageUrls} alt={`Univers ${theme.name}`} priority={index === 0} /><span>{theme.name}</span></Link>)}
         </div>
         <Link href="/themes" className="showcase-link">Voir tous les thèmes <span aria-hidden="true">→</span></Link>
       </div>

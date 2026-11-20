@@ -13,7 +13,7 @@ export default async function GiantsXxlPage() {
     <div className="catalogue-grid discovery-products">
       {category.variants.map((variant) => {
         const status = category.statuses.get(variant.id)!;
-        return <ProductCard key={variant.id} data={{ id: variant.id, name: variant.displayName, reference: variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey, year: variant.releaseYear ?? variant.product.releaseYear, theme: variant.themes[0]?.theme.name ?? null, market: variant.markets.map(({ market }) => market.code).join(" · "), variantLabel: variant.variantLabel, imageUrl: variant.media[0]?.sourceUrl ?? null }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} returnTo={returnTo} />;
+        return <ProductCard key={variant.id} data={{ id: variant.id, name: variant.displayName, reference: variant.references[0]?.displayValue ?? variant.product.baseReference ?? variant.canonicalKey, year: variant.releaseYear ?? variant.product.releaseYear, theme: variant.themes[0]?.theme.name ?? null, market: variant.markets.map(({ market }) => market.code).join(" · "), variantLabel: variant.variantLabel, imageUrls: variant.displayImages.map((image) => image.sourceUrl) }} inCollection={status.inCollection} inWishlist={status.inWishlist} quantity={status.quantity} returnTo={returnTo} />;
       })}
     </div>
   </div>;
