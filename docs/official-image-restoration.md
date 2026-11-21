@@ -16,6 +16,22 @@ Les `MediaAsset` historiques restent utilisables quand `canDisplay` vaut
 le visuel. Le manifeste complète ces médias en lecture seule et
 préserve toutes les URL historiques. Aucun import ni migration ne sont requis.
 
+## Recherches sans résultat
+
+Le [registre des variantes sans visuel confirmé](../data/audit/unresolved-official-images.json)
+conserve la dernière conclusion par identifiant de variante. Avant une recherche,
+consulter le manifeste et ce registre. Reprendre une variante inscrite au
+registre uniquement si une nouvelle preuve est disponible. Si elle est
+confirmée, déplacer son identifiant vers le manifeste. Le registre sert
+uniquement au suivi des recherches.
+
+| Motif | Constat |
+| --- | --- |
+| `PAGE_NOT_FOUND` | Aucune fiche officielle exacte trouvée au moment de la recherche. |
+| `NO_USABLE_IMAGE` | La fiche ne publie aucun visuel exploitable et attribuable à la variante. |
+| `AMBIGUOUS_EDITION` | Les éléments connus ne distinguent pas l’édition. |
+| `IDENTITY_MISMATCH` | L’année ou l’identité de la fiche contredit la variante recherchée. |
+
 ## Affichage et retour arrière
 
 - `PLAYMOBIL_DISABLED_MEDIA_SOURCES` accepte des clés de source ou noms d’hôte

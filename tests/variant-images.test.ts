@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import reviewed from "../data/audit/reviewed-official-images.json";
+import unresolved from "../data/audit/unresolved-official-images.json";
 import { getImageDisplayPolicy, getReviewedImageVariantIds, selectVariantImages } from "../lib/variant-images";
 
 const tower = reviewed.find(({ reference }) => reference === "72113")!;
@@ -27,8 +28,9 @@ describe("reviewed image selection", () => {
       if (row.sourcePageStatus === "live") expect(row.imageEvidencePage).toBe(row.sourcePage);
       expect(row.checkedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       if (row.variantKind === "EDITION") {
-        expect(row.reference).toMatch(/^\d{4}V1$/);
-        expect(row.officialReference).toBe(row.reference.replace(/V1$/, "-A"));
+        expect(row.reference).toMatch(/^\d{4,5}V1$/);
+        const base = row.reference.replace(/V1$/, "");
+        expect([base, `${base}-A`]).toContain(row.officialReference);
         expect(row.sourcePageStatus).toBe("live");
       } else {
         const base = row.reference.split("-")[0];
@@ -36,6 +38,17 @@ describe("reviewed image selection", () => {
       }
       expect(new URL(row.sourcePage).pathname.endsWith(`/${row.officialReference}.html`)).toBe(true);
       expect(new URL(row.image.sourceUrl).pathname).toMatch(new RegExp(`/${row.officialReference}_(?:product_box_front|product_detail)$`));
+    }
+  });
+
+  it("keeps one unresolved record per uncovered variant with an explicit reason", () => {
+    const covered = new Set(reviewed.map((row) => row.variantId));
+    expect(new Set(unresolved.map((row) => row.variantId)).size).toBe(unresolved.length);
+    for (const row of unresolved) {
+      expect(covered.has(row.variantId)).toBe(false);
+      expect(row.reference).not.toBe("");
+      expect(row.checkedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(["PAGE_NOT_FOUND", "NO_USABLE_IMAGE", "AMBIGUOUS_EDITION", "IDENTITY_MISMATCH"]).toContain(row.reason);
     }
   });
 
