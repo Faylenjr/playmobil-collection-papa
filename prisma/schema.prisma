@@ -224,6 +224,7 @@ model ProductVariant {
   themes                    VariantTheme[]
   markets                   VariantMarket[]
   media                     MediaAsset[]
+  personalPhoto             PersonalPhoto?
   instructions              Instruction[]
   figures                   VariantFigure[]
   parts                     VariantPart[]
@@ -528,6 +529,16 @@ model MediaAsset {
 
   @@unique([variantId, sourceUrl])
   @@map("media_assets")
+}
+
+model PersonalPhoto {
+  variantId String         @id @map("variant_id") @db.Uuid
+  data      Bytes
+  revision  String        @db.Char(64)
+  updatedAt DateTime      @updatedAt @map("updated_at")
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@map("personal_photos")
 }
 
 model Instruction {

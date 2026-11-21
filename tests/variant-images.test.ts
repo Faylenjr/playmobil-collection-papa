@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import reviewed from "../data/audit/reviewed-official-images.json";
 import unresolved from "../data/audit/unresolved-official-images.json";
+import { personalPhotoUrl } from "../lib/personal-photo";
 import { getImageDisplayPolicy, getReviewedImageVariantIds, selectVariantImages } from "../lib/variant-images";
 
 const tower = reviewed.find(({ reference }) => reference === "72113")!;
@@ -72,12 +73,14 @@ describe("reviewed image selection", () => {
   });
 
   it("orders an admissible personal image, the exact official image, then historical alternatives", () => {
-    const personal = { sourceUrl: "/collection-photos/exact.webp", kind: "main", canDisplay: true, source: { key: "collector-personal", kind: "OTHER" } };
+    const personal = { sourceUrl: personalPhotoUrl(variant.id), kind: "main", contentHash: "a".repeat(64), canDisplay: true, source: { key: "collector-personal", kind: "OTHER" } };
     const input = { ...variant, media: [...variant.media, personal] };
     expect(selectVariantImages(input, enabled).map(({ sourceUrl }) => sourceUrl)).toEqual([
-      personal.sourceUrl, tower.image.sourceUrl, "https://example.org/permission-unknown.jpg",
+      `${personal.sourceUrl}?v=${personal.contentHash}`, tower.image.sourceUrl, "https://example.org/permission-unknown.jpg",
       "https://example.org/approved.jpg", "https://www.klickypedia.com/legacy.jpg",
     ]);
+    expect(selectVariantImages({ ...input, id: "another-variant" }, enabled)
+      .some(({ sourceUrl }) => sourceUrl.startsWith("/collection-photos/"))).toBe(false);
     expect(input.media).toContain(variant.media[0]);
   });
 
