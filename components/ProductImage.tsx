@@ -8,6 +8,7 @@ type ProductImageProps = {
   alt: string;
   priority?: boolean;
   className?: string;
+  showSource?: boolean;
 };
 
 export function ProductImage({ src, candidates, ...props }: ProductImageProps) {
@@ -15,16 +16,19 @@ export function ProductImage({ src, candidates, ...props }: ProductImageProps) {
   return <ImageAttempt key={JSON.stringify(urls)} urls={urls} {...props} />;
 }
 
-function ImageAttempt({ urls, alt, priority = false, className }: Omit<ProductImageProps, "src" | "candidates"> & { urls: string[] }) {
+function ImageAttempt({ urls, alt, priority = false, className, showSource }: Omit<ProductImageProps, "src" | "candidates"> & { urls: string[] }) {
   const [index, setIndex] = useState(0);
+  const [loaded, setLoaded] = useState<string>();
   const imageRef = useRef<HTMLImageElement>(null);
   const src = urls[index];
   useEffect(() => {
     const image = imageRef.current;
     if (image?.complete && image.naturalWidth === 0) {
       setIndex((current) => current === index ? current + 1 : current);
+    } else if (showSource && image?.complete && image.naturalWidth > 0) {
+      setLoaded(src);
     }
-  }, [index, src]);
+  }, [index, showSource, src]);
 
   if (!src) {
     return (
@@ -35,7 +39,10 @@ function ImageAttempt({ urls, alt, priority = false, className }: Omit<ProductIm
     );
   }
 
-  return (
+  const source = src.startsWith("/collection-photos/") ? "Photo personnelle"
+    : /^https:\/\/(?:media\.playmobil\.com|playmobil\.a\.bigcontent\.io)\//.test(src) ? "Image officielle"
+    : null;
+  return <>
     <img
       key={src}
       ref={imageRef}
@@ -44,7 +51,9 @@ function ImageAttempt({ urls, alt, priority = false, className }: Omit<ProductIm
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
+      onLoad={showSource ? () => setLoaded(src) : undefined}
       onError={() => setIndex((current) => current === index ? current + 1 : current)}
     />
-  );
+    {showSource && loaded === src && source && <span className="photo-origin">{source}</span>}
+  </>;
 }

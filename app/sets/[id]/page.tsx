@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { ProductImage } from "../../../components/ProductImage";
 import { CollectionControls } from "../../../components/CollectionControls";
@@ -11,6 +12,9 @@ import { returnLabel, sanitizeReturnTo } from "../../../lib/navigation-context";
 import { getVariantPriceSummary } from "../../../lib/discovery";
 import { calculatePromotion, deliveryEstimateLabel, isOfferFresh, marketplaceSearchLinks, priceHistoryStats, relativeRefreshLabel, safeExternalOfferUrl } from "../../../lib/pricing";
 import { getFrenchThemeName } from "../../../lib/theme-names";
+import { PersonalPhotoControls } from "../../../components/PersonalPhotoControls";
+import { personalPhotoUrl, PERSONAL_PHOTO_SOURCE } from "../../../lib/personal-photo";
+import { getPhotoAccessConfig, hasPhotoAccess } from "../../../lib/personal-photo-policy";
 
 type ProductPageProps = { params: Promise<{ id: string }>; searchParams: Promise<{ returnTo?: string | string[] }> };
 
@@ -42,6 +46,10 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
   const [variant, collectorState, prices] = await Promise.all([getVariant(id), getVariantCollectorState(id), getVariantPriceSummary(id)]);
   if (!variant) notFound();
 
+  const photoConfig = getPhotoAccessConfig();
+  const canManagePhoto = photoConfig && await hasPhotoAccess(await headers(), photoConfig);
+  const personalPhoto = variant.media.find((image) =>
+    image.source.key === PERSONAL_PHOTO_SOURCE && image.sourceUrl === personalPhotoUrl(variant.id));
   const name = variant.displayName;
   const originalName = variant.name?.trim() || variant.product.name?.trim();
   const reference = variant.references[0]?.displayValue ?? variant.product.baseReference;
@@ -72,8 +80,11 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
       <Link href={returnTo} className="back-link">← {returnLabel(returnTo)}</Link>
 
       <section className="product-hero">
-        <div className="hero-image">
-          <ProductImage candidates={variant.displayImages.map((image) => image.sourceUrl)} alt={name} priority />
+        <div className="hero-media">
+          <div className="hero-image">
+            <ProductImage candidates={variant.displayImages.map((image) => image.sourceUrl)} alt={name} priority showSource />
+          </div>
+          {canManagePhoto && <PersonalPhotoControls variantId={variant.id} revision={personalPhoto?.contentHash ?? null} />}
         </div>
         <div className="hero-copy">
           <span className="eyebrow">{variant.variantKind.replaceAll("_", " ")}</span>

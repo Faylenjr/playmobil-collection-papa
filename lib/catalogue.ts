@@ -27,6 +27,7 @@ export const storedImageSelect = {
   sourceUrl: true,
   kind: true,
   canDisplay: true,
+  contentHash: true,
   source: { select: { key: true, kind: true } },
 } satisfies Prisma.MediaAssetSelect;
 

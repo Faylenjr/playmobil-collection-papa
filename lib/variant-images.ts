@@ -1,10 +1,12 @@
 import reviewedImages from "../data/audit/reviewed-official-images.json";
 import { orderMediaForDisplay } from "./media";
+import { personalPhotoUrl, PERSONAL_PHOTO_SOURCE, PHOTO_REVISION } from "./personal-photo";
 
 export type ImageCandidate = { sourceUrl: string; kind: string };
 
 type StoredImage = ImageCandidate & {
   canDisplay: boolean | null;
+  contentHash?: string | null;
   source: { key: string; kind: string };
 };
 
@@ -63,8 +65,11 @@ export function selectVariantImages(
     if (asset.canDisplay === false || policy.disabled.has(asset.source.key.toLowerCase())) continue;
     const url = secureUrl(asset.sourceUrl);
     if (url && policy.disabled.has(url.hostname)) continue;
-    if (asset.source.key === "collector-personal") {
-      if (asset.canDisplay === true && (url || asset.sourceUrl.startsWith("/collection-photos/"))) personal.push(asset);
+    if (asset.source.key === PERSONAL_PHOTO_SOURCE) {
+      if (asset.canDisplay === true && (url || asset.sourceUrl === personalPhotoUrl(variant.id))) {
+        const versioned = asset.sourceUrl === personalPhotoUrl(variant.id) && asset.contentHash && PHOTO_REVISION.test(asset.contentHash);
+        personal.push(versioned ? { ...asset, sourceUrl: `${asset.sourceUrl}?v=${asset.contentHash}` } : asset);
+      }
     } else if (asset.source.kind === "OFFICIAL") {
       if (!policy.disabled.has("playmobil-official") && url && officialImageHosts.has(url.hostname)) official.push(asset);
     } else if (url && (asset.source.key === "klickypedia" || /(^|\.)klickypedia\.com$/.test(url.hostname))) {

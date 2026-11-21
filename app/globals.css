@@ -242,8 +242,22 @@ h1 { margin: 9px 0 0; font-size: clamp(2rem, 4vw, 3.7rem); line-height: 1.04; le
 .detail-page { padding-block: 36px 80px; }
 .back-link { display: inline-flex; margin-bottom: 22px; color: var(--blue-700); font-weight: 800; }
 .product-hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(360px, 0.95fr); gap: clamp(30px, 5vw, 74px); align-items: center; }
-.hero-image { aspect-ratio: 1.2; overflow: hidden; padding: 30px; background: white; border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow); }
+.hero-media { min-width: 0; }
+.hero-image { position: relative; aspect-ratio: 1.2; overflow: hidden; padding: 30px; background: white; border: 1px solid var(--line); border-radius: 26px; box-shadow: var(--shadow); }
 .hero-image > img { width: 100%; height: 100%; object-fit: contain; }
+.photo-origin { position: absolute; bottom: 10px; right: 12px; padding: 5px 10px; border-radius: 8px; background: #eef5fb; color: #193a5c; font-size: .8rem; }
+.personal-photo-controls { margin-top: 14px; padding: 0 14px; border: 1px solid var(--line); border-radius: 14px; background: #fff; }
+.personal-photo-controls > summary { min-height: 44px; padding: 11px 0; font-weight: 700; cursor: pointer; }
+.personal-photo-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.personal-photo-actions button { min-height: 44px; text-align: center; }
+.personal-photo-actions .secondary { border: 1px solid var(--line); background: #eef5fb; color: #193a5c; }
+.personal-photo-actions .secondary:hover { background: #e0eef9; }
+.personal-photo-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.personal-photo-preview { margin-top: 12px; }
+.personal-photo-preview img { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #f3f6f9; border-radius: 10px; }
+.personal-photo-preview img + .personal-photo-actions { margin-top: 10px; }
+.photo-status { margin: 10px 0; }
+.photo-status:empty { margin-bottom: 0; }
 .hero-copy h1 { margin-block: 6px 18px; }
 .hero-reference { margin: 16px 0 0; color: var(--blue-700); font-weight: 900; letter-spacing: 0.06em; }
 .description { color: #4a5f76; font-size: 1.05rem; line-height: 1.7; }
