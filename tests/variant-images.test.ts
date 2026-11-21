@@ -26,8 +26,14 @@ describe("reviewed image selection", () => {
       expect(["live", "indexed_only", "recorded"]).toContain(row.sourcePageStatus);
       if (row.sourcePageStatus === "live") expect(row.imageEvidencePage).toBe(row.sourcePage);
       expect(row.checkedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      const base = row.reference.split("-")[0];
-      expect([base, `${base}-A`]).toContain(row.officialReference);
+      if (row.variantKind === "EDITION") {
+        expect(row.reference).toMatch(/^\d{4}V1$/);
+        expect(row.officialReference).toBe(row.reference.replace(/V1$/, "-A"));
+        expect(row.sourcePageStatus).toBe("live");
+      } else {
+        const base = row.reference.split("-")[0];
+        expect([base, `${base}-A`]).toContain(row.officialReference);
+      }
       expect(new URL(row.sourcePage).pathname.endsWith(`/${row.officialReference}.html`)).toBe(true);
       expect(new URL(row.image.sourceUrl).pathname).toMatch(new RegExp(`/${row.officialReference}_(?:product_box_front|product_detail)$`));
     }
