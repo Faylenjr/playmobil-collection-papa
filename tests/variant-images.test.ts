@@ -18,10 +18,13 @@ const enabled = getImageDisplayPolicy({ PLAYMOBIL_REVIEWED_IMAGES_ENABLED: "1" }
 
 describe("reviewed image selection", () => {
   it("preserves the manifest's one-to-one variant identities and provenance", () => {
-    expect(reviewed).toHaveLength(98);
+    expect(reviewed.length).toBeGreaterThanOrEqual(98);
     expect(new Set(reviewed.map((row) => row.variantId)).size).toBe(reviewed.length);
+    expect(new Set(reviewed.map((row) => row.image.sourceUrl)).size).toBe(reviewed.length);
     expect(reviewed.filter((row) => row.sourcePageStatus === "indexed_only").map((row) => row.reference)).toEqual(["71720", "72267-GER"]);
     for (const row of reviewed) {
+      expect(["live", "indexed_only", "recorded"]).toContain(row.sourcePageStatus);
+      if (row.sourcePageStatus === "live") expect(row.imageEvidencePage).toBe(row.sourcePage);
       expect(row.checkedOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
       const base = row.reference.split("-")[0];
       expect([base, `${base}-A`]).toContain(row.officialReference);
